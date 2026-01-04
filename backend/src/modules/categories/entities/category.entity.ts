@@ -13,13 +13,14 @@ export class Category {
   id: string;
 
   @Column({ unique: true })
-  name: string; // Product A, Product B, etc.
+  name: string;
 
   @Column({ default: true })
   isActive: boolean;
 
   @OneToOne(() => CategoryConfig, config => config.category, {
     cascade: true,
+    eager: true,
   })
   config: CategoryConfig;
 

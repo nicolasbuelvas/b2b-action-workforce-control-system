@@ -7,6 +7,12 @@ import {
 } from 'typeorm';
 import { Category } from './category.entity';
 
+export interface CooldownRule {
+  actionsRequired: number;
+  cooldownMs: number;
+  dailyLimit?: number;
+}
+
 @Entity('category_configs')
 export class CategoryConfig {
   @PrimaryGeneratedColumn('uuid')
@@ -16,24 +22,16 @@ export class CategoryConfig {
   @JoinColumn()
   category: Category;
 
-  // Cooldown days (business rule)
-  @Column({ type: 'int', default: 7 })
-  websiteInquiryCooldownDays: number;
-
-  @Column({ type: 'int', default: 14 })
-  linkedinInquiryCooldownDays: number;
-
-  // Daily limits
-  @Column({ type: 'int', default: 50 })
-  websiteInquiryDailyLimit: number;
-
-  @Column({ type: 'int', default: 30 })
-  linkedinInquiryDailyLimit: number;
-
-  // Actions required (future proof)
-  @Column({ type: 'int', default: 1 })
-  websiteInquiryActionsRequired: number;
-
-  @Column({ type: 'int', default: 3 })
-  linkedinInquiryActionsRequired: number;
+  /**
+   * Ej:
+   * {
+   *   linkedin_message: {
+   *     actionsRequired: 3,
+   *     cooldownMs: 172800000,
+   *     dailyLimit: 30
+   *   }
+   * }
+   */
+  @Column({ type: 'jsonb', default: {} })
+  cooldownRules: Record<string, CooldownRule>;
 }

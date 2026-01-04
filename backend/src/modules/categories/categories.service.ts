@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { Category } from './entities/category.entity';
 import { CategoryConfig } from './entities/category-config.entity';
 
@@ -12,21 +13,15 @@ export class CategoriesService {
   constructor(
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
-
-    @InjectRepository(CategoryConfig)
-    private readonly configRepo: Repository<CategoryConfig>,
   ) {}
 
   async findAll() {
-    return this.categoryRepo.find({
-      relations: ['config'],
-    });
+    return this.categoryRepo.find();
   }
 
-  async findById(id: string) {
+  async getById(id: string) {
     const category = await this.categoryRepo.findOne({
       where: { id },
-      relations: ['config'],
     });
 
     if (!category) {
@@ -39,7 +34,9 @@ export class CategoriesService {
   async create(name: string) {
     const category = this.categoryRepo.create({
       name,
-      config: this.configRepo.create(),
+      config: {
+        cooldownRules: {},
+      },
     });
 
     return this.categoryRepo.save(category);
@@ -47,14 +44,12 @@ export class CategoriesService {
 
   async updateConfig(
     categoryId: string,
-    config: Partial<CategoryConfig>,
+    cooldownRules: Record<string, any>,
   ) {
-    const category = await this.findById(categoryId);
+    const category = await this.getById(categoryId);
 
-    Object.assign(category.config, config);
+    category.config.cooldownRules = cooldownRules;
 
-    await this.configRepo.save(category.config);
-
-    return this.findById(categoryId);
+    return this.categoryRepo.save(category);
   }
 }
