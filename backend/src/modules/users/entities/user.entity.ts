@@ -34,7 +34,7 @@ export class User {
   status: 'active' | 'suspended';
 
   @CreateDateColumn()
-  created_at: Date;
+  createdAt: Date;
 
   @OneToMany(() => UserRole, ur => ur.user)
   roles: UserRole[];

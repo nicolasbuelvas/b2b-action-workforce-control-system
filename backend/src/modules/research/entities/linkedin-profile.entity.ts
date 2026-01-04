@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  Index,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity('linkedin_profiles')
 @Index(['normalizedUrl'], { unique: true })
@@ -11,4 +17,7 @@ export class LinkedInProfile {
 
   @Column()
   normalizedUrl: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

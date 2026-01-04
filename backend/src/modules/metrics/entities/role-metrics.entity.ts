@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 
 @Entity('role_metrics')
-@Index(['userId', 'role', 'date'], { unique: true })
+@Index(['userId', 'role', 'categoryId', 'date'], { unique: true })
 export class RoleMetrics {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -15,9 +15,25 @@ export class RoleMetrics {
   @Column()
   userId: string;
 
+  /**
+   * Ej:
+   * - website_researcher
+   * - linkedin_inquirer
+   * - website_auditor
+   */
   @Column()
   role: string;
 
+  /**
+   * Product A / Product B / Product C
+   * NULL = métricas globales (opcional)
+   */
+  @Column({ nullable: true })
+  categoryId: string;
+
+  /**
+   * YYYY-MM-DD
+   */
   @Column({ type: 'date' })
   date: string;
 

@@ -6,9 +6,7 @@ import { ActionPrice } from './entities/action-price.entity';
 import { PaymentRecord } from './entities/payment-record.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([ActionPrice, PaymentRecord]),
-  ],
+  imports: [TypeOrmModule.forFeature([ActionPrice, PaymentRecord])],
   providers: [PaymentsService],
   exports: [PaymentsService],
 })

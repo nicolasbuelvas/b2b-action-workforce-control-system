@@ -1,8 +1,13 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  BadRequestException,
+  NotImplementedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { normalizeDomain } from '../../common/utils/normalization.util';
+import { Repository, DataSource } from 'typeorm';
 
+import { normalizeDomain } from '../../common/utils/normalization.util';
 import { Company } from './entities/company.entity';
 import { ResearchTask, ResearchStatus } from './entities/research-task.entity';
 import { CreateResearchDto } from './dto/create-research.dto';
@@ -10,6 +15,8 @@ import { CreateResearchDto } from './dto/create-research.dto';
 @Injectable()
 export class ResearchService {
   constructor(
+    private readonly dataSource: DataSource,
+
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
 
@@ -19,44 +26,65 @@ export class ResearchService {
 
   async submit(dto: CreateResearchDto, userId: string) {
     if (dto.targetType !== 'COMPANY') {
-      throw new Error('LinkedIn research not implemented yet');
+      throw new NotImplementedException(
+        'LinkedIn research not enabled in phase 2',
+      );
     }
 
-    const normalizedDomain = normalizeDomain(dto.domainOrProfile);
+    return this.dataSource.transaction(async manager => {
+      const normalizedDomain = normalizeDomain(dto.domainOrProfile);
 
-    let company = await this.companyRepo.findOne({
-      where: { normalizedDomain },
-    });
-
-    if (!company) {
-      company = this.companyRepo.create({
-        name: dto.nameOrUrl,
-        domain: dto.domainOrProfile,
-        normalizedDomain,
-        country: dto.country,
+      let company = await manager.findOne(Company, {
+        where: { normalizedDomain },
       });
-      await this.companyRepo.save(company);
-    }
 
-    const existingTask = await this.researchRepo.findOne({
-      where: {
+      if (!company) {
+        company = manager.create(Company, {
+          name: dto.nameOrUrl,
+          domain: dto.domainOrProfile,
+          normalizedDomain,
+          country: dto.country,
+        });
+        await manager.save(company);
+      }
+
+      const approved = await manager.findOne(ResearchTask, {
+        where: {
+          categoryId: dto.categoryId,
+          targetId: company.id,
+          status: ResearchStatus.APPROVED,
+        },
+      });
+
+      if (approved) {
+        throw new ConflictException(
+          'Research already approved for this company',
+        );
+      }
+
+      const existingPending = await manager.findOne(ResearchTask, {
+        where: {
+          categoryId: dto.categoryId,
+          targetId: company.id,
+          status: ResearchStatus.PENDING,
+        },
+      });
+
+      if (existingPending) {
+        throw new ConflictException(
+          'Research already pending for this company',
+        );
+      }
+
+      const task = manager.create(ResearchTask, {
         categoryId: dto.categoryId,
+        submittedByUserId: userId,
+        targetType: 'COMPANY',
         targetId: company.id,
-        status: ResearchStatus.APPROVED,
-      },
+        status: ResearchStatus.PENDING,
+      });
+
+      return manager.save(task);
     });
-
-    if (existingTask) {
-      throw new ConflictException('Research already approved for this entity');
-    }
-
-    const task = this.researchRepo.create({
-      categoryId: dto.categoryId,
-      submittedByUserId: userId,
-      targetType: 'COMPANY',
-      targetId: company.id,
-    });
-
-    return this.researchRepo.save(task);
   }
 }

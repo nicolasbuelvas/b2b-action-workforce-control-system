@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  Index,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity('companies')
 @Index(['normalizedDomain'], { unique: true })
@@ -17,4 +23,7 @@ export class Company {
 
   @Column()
   country: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

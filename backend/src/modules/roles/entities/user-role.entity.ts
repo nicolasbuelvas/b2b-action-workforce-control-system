@@ -1,10 +1,23 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  Index,
+} from 'typeorm';
 
-@Entity('roles')
-export class Role {
+@Entity('user_roles')
+@Index(['userId', 'roleId'], { unique: true })
+export class UserRole {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
-  name: string;
+  @Column()
+  userId: string;
+
+  @Column()
+  roleId: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }
