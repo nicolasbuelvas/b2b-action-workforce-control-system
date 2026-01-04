@@ -6,8 +6,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { ResearchTask, ResearchStatus } from '../research/entities/research-task.entity';
+import {
+  ResearchTask,
+  ResearchStatus,
+} from '../research/entities/research-task.entity';
 import { ResearchAudit } from './entities/research-audit.entity';
+import { FlaggedAction } from './entities/flagged-action.entity';
 import { AuditResearchDto } from './dto/audit-research.dto';
 
 @Injectable()
@@ -18,6 +22,9 @@ export class AuditService {
 
     @InjectRepository(ResearchAudit)
     private readonly auditRepo: Repository<ResearchAudit>,
+
+    @InjectRepository(FlaggedAction)
+    private readonly flaggedRepo: Repository<FlaggedAction>,
   ) {}
 
   async auditResearch(
@@ -38,10 +45,11 @@ export class AuditService {
     }
 
     if (task.submittedByUserId === auditorUserId) {
-      throw new ForbiddenException('Auditor cannot audit own submission');
+      throw new ForbiddenException(
+        'Auditor cannot audit own submission',
+      );
     }
 
-    // 1️⃣ Insert audit record (immutable)
     await this.auditRepo.save({
       researchTaskId,
       auditorUserId,
@@ -49,13 +57,22 @@ export class AuditService {
       rejectionReasonId: dto.rejectionReasonId,
     });
 
-    // 2️⃣ Update task status (single source of state)
     task.status =
       dto.decision === 'APPROVED'
         ? ResearchStatus.APPROVED
         : ResearchStatus.REJECTED;
 
-    task.rejectionReasonId = dto.rejectionReasonId;
+    task.rejectionReasonId = dto.rejectionReasonId ?? null;
+
+    if (dto.decision === 'REJECTED') {
+      await this.flaggedRepo.save({
+        userId: task.submittedByUserId,
+        targetId: researchTaskId,
+        actionType: 'RESEARCH',
+        reason:
+          dto.rejectionReasonId ?? 'MANUAL_REJECTION',
+      });
+    }
 
     return this.researchRepo.save(task);
   }

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { CooldownRecord } from './entities/cooldown-record.entity';
-import { COOLDOWN_RULES } from '../../common/config/cooldown.config';
+import { COOLDOWN_RULES } from '../../config/cooldown.config';
 
 @Injectable()
 export class CooldownService {
@@ -20,7 +20,7 @@ export class CooldownService {
     const { userId, targetId, actionType } = params;
 
     const cooldownMs = COOLDOWN_RULES[actionType];
-    if (!cooldownMs) return; // acción sin cooldown
+    if (!cooldownMs) return;
 
     const record = await this.cooldownRepo.findOne({
       where: { userId, targetId, actionType },
@@ -32,13 +32,14 @@ export class CooldownService {
       Date.now() - record.lastPerformedAt.getTime();
 
     if (elapsed < cooldownMs) {
-      const remaining = Math.ceil(
+      const remainingMinutes = Math.ceil(
         (cooldownMs - elapsed) / 1000 / 60,
       );
 
-      throw new ForbiddenException(
-        `Cooldown active. Try again in ${remaining} minutes.`,
-      );
+      throw new ForbiddenException({
+        code: 'COOLDOWN_ACTIVE',
+        remainingMinutes,
+      });
     }
   }
 
@@ -48,6 +49,16 @@ export class CooldownService {
     actionType: string;
   }) {
     const { userId, targetId, actionType } = params;
+
+    const existing = await this.cooldownRepo.findOne({
+      where: { userId, targetId, actionType },
+    });
+
+    if (existing) {
+      existing.lastPerformedAt = new Date();
+      await this.cooldownRepo.save(existing);
+      return;
+    }
 
     await this.cooldownRepo.save({
       userId,

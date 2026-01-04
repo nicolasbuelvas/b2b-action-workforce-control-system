@@ -16,7 +16,7 @@ export class CooldownRecord {
   userId: string;
 
   @Column()
-  targetId: string; // companyId, domainId, linkedinProfileId
+  targetId: string;
 
   @Column()
   actionType: string;

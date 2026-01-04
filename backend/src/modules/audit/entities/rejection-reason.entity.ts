@@ -5,22 +5,16 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 
-@Entity('research_audits')
-export class ResearchAudit {
+@Entity('rejection_reasons')
+export class RejectionReason {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  researchTaskId: string;
+  @Column({ unique: true })
+  code: string; 
 
   @Column()
-  auditorUserId: string;
-
-  @Column()
-  decision: 'APPROVED' | 'REJECTED';
-
-  @Column({ nullable: true })
-  rejectionReasonId?: string;
+  description: string;
 
   @CreateDateColumn()
   createdAt: Date;
