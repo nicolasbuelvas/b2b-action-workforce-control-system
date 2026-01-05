@@ -74,7 +74,7 @@ let UsersService = class UsersService {
     async findById(id) {
         const user = await this.userRepo.findOne({
             where: { id },
-            relations: ['roles', 'roles.role'],
+            relations: ['roles'],
         });
         if (!user) {
             throw new common_1.NotFoundException('User not found');
@@ -84,12 +84,12 @@ let UsersService = class UsersService {
     async findByEmail(email) {
         return this.userRepo.findOne({
             where: { email },
-            relations: ['roles', 'roles.role'],
+            relations: ['roles'],
         });
     }
     async findAll() {
         return this.userRepo.find({
-            relations: ['roles', 'roles.role'],
+            relations: ['roles'],
             order: { createdAt: 'DESC' },
         });
     }

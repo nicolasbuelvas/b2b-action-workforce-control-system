@@ -41,7 +41,7 @@ export class UsersService {
   async findById(id: string): Promise<User> {
     const user = await this.userRepo.findOne({
       where: { id },
-      relations: ['roles', 'roles.role'],
+      relations: ['roles'],
     });
 
     if (!user) {
@@ -54,13 +54,13 @@ export class UsersService {
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepo.findOne({
       where: { email },
-      relations: ['roles', 'roles.role'],
+      relations: ['roles'],
     });
   }
 
   async findAll(): Promise<User[]> {
     return this.userRepo.find({
-      relations: ['roles', 'roles.role'],
+      relations: ['roles'],
       order: { createdAt: 'DESC' },
     });
   }

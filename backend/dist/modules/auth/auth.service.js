@@ -66,7 +66,7 @@ let AuthService = class AuthService {
     async login(user) {
         const payload = {
             sub: user.id,
-            roles: user.roles?.map(r => r.name) ?? [],
+            roles: user.roles?.map(r => r.roleId) ?? [],
         };
         return {
             accessToken: this.jwtService.sign(payload, {
@@ -81,7 +81,10 @@ let AuthService = class AuthService {
         try {
             const payload = this.jwtService.verify(refreshToken);
             return {
-                accessToken: this.jwtService.sign({ sub: payload.sub, roles: payload.roles }, { expiresIn: '15m' }),
+                accessToken: this.jwtService.sign({
+                    sub: payload.sub,
+                    roles: payload.roles,
+                }, { expiresIn: '15m' }),
             };
         }
         catch {

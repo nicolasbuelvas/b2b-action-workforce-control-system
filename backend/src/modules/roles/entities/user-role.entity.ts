@@ -14,10 +14,10 @@ export class UserRole {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'uuid' })
   userId: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 50 })
   roleId: string;
 
   @ManyToOne(() => User, user => user.roles, {
