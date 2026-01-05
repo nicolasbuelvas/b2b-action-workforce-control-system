@@ -1,6 +1,6 @@
 import { IsString, IsArray } from 'class-validator';
 
-export class CreateSubAdminDto {
+export class AssignCategoryDto {
   @IsString()
   userId: string;
 

@@ -4,8 +4,7 @@ import { AssignCategoryDto } from './dto/assign-category.dto';
 
 @Injectable()
 export class AdminService {
-
-  private subAdmins = new Map<string, string[]>(); 
+  private subAdmins = new Map<string, string[]>();
 
   createSubAdmin(dto: CreateSubAdminDto) {
     this.subAdmins.set(dto.userId, dto.categoryIds);
@@ -18,10 +17,10 @@ export class AdminService {
   }
 
   assignCategories(dto: AssignCategoryDto) {
-    this.subAdmins.set(dto.subAdminId, dto.categoryIds);
+    this.subAdmins.set(dto.userId, dto.categoryIds);
 
     return {
-      subAdminId: dto.subAdminId,
+      userId: dto.userId,
       categories: dto.categoryIds,
     };
   }

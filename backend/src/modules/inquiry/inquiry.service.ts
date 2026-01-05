@@ -46,8 +46,10 @@ export class InquiryService {
     await this.cooldownService.enforceCooldown({
       userId,
       targetId: task.targetId,
+      categoryId: task.categoryId,
       actionType: dto.actionType,
     });
+
 
     const screenshotHash =
       await this.screenshotsService.processScreenshot(
@@ -72,8 +74,10 @@ export class InquiryService {
     await this.cooldownService.recordAction({
       userId,
       targetId: task.targetId,
+      categoryId: task.categoryId,
       actionType: dto.actionType,
     });
+
 
     task.status = InquiryStatus.COMPLETED;
     await this.taskRepo.save(task);

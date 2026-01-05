@@ -26,7 +26,7 @@ export class CooldownService {
 
     const category = await this.categoriesService.getById(categoryId);
 
-    const rule = category.cooldownRules?.[actionType];
+    const rule = category.config?.cooldownRules?.[actionType];
     if (!rule) return; // acción sin cooldown
 
     const { actionsRequired, cooldownMs } = rule;
@@ -70,7 +70,7 @@ export class CooldownService {
     const { userId, targetId, categoryId, actionType } = params;
 
     const category = await this.categoriesService.getById(categoryId);
-    const rule = category.cooldownRules?.[actionType];
+    const rule = category.config?.cooldownRules?.[actionType];
 
     if (!rule) return;
 

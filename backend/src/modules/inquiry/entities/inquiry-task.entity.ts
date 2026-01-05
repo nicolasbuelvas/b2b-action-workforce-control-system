@@ -17,7 +17,7 @@ export class InquiryTask {
   id: string;
 
   @Column()
-  targetId: string; // companyId / domainId / linkedinProfileId
+  targetId: string;
 
   @Column()
   categoryId: string;

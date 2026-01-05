@@ -6,30 +6,28 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 /* === CORE MODULES === */
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
-import { RolesModule } from './roles/roles.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { RolesModule } from './modules/roles/roles.module';
 
 /* === BUSINESS MODULES === */
-import { CategoriesModule } from './categories/categories.module';
-import { ResearchModule } from './research/research.module';
-import { InquiryModule } from './inquiry/inquiry.module';
-import { AuditModule } from './audit/audit.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { ResearchModule } from './modules/research/research.module';
+import { InquiryModule } from './modules/inquiry/inquiry.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 /* === SYSTEM MODULES === */
-import { CooldownModule } from './cooldown/cooldown.module';
-import { ScreenshotsModule } from './screenshots/screenshots.module';
-import { MetricsModule } from './metrics/metrics.module';
-import { PaymentsModule } from './payments/payments.module';
+import { CooldownModule } from './modules/cooldown/cooldown.module';
+import { ScreenshotsModule } from './modules/screenshots/screenshots.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 /* === ADMIN === */
-import { AdminModule } from './admin/admin.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
 
     TypeOrmModule.forRoot({
       type: 'postgres',
@@ -39,27 +37,23 @@ import { AdminModule } from './admin/admin.module';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'backend',
       autoLoadEntities: true,
-      synchronize: true, // ⚠️ SOLO LOCAL – fase 2
+      synchronize: true,
     }),
 
-    /* Core */
     AuthModule,
     UsersModule,
     RolesModule,
 
-    /* Business */
     CategoriesModule,
     ResearchModule,
     InquiryModule,
     AuditModule,
 
-    /* System */
     CooldownModule,
     ScreenshotsModule,
     MetricsModule,
     PaymentsModule,
 
-    /* Admin */
     AdminModule,
   ],
   controllers: [AppController],

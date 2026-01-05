@@ -1,7 +1,6 @@
 import {
   Injectable,
   ConflictException,
-  BadRequestException,
   NotImplementedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,7 +8,10 @@ import { Repository, DataSource } from 'typeorm';
 
 import { normalizeDomain } from '../../common/utils/normalization.util';
 import { Company } from './entities/company.entity';
-import { ResearchTask, ResearchStatus } from './entities/research-task.entity';
+import {
+  ResearchTask,
+  ResearchStatus,
+} from './entities/research-task.entity';
 import { CreateResearchDto } from './dto/create-research.dto';
 
 @Injectable()
@@ -48,17 +50,17 @@ export class ResearchService {
         await manager.save(company);
       }
 
-      const approved = await manager.findOne(ResearchTask, {
+      const completed = await manager.findOne(ResearchTask, {
         where: {
           categoryId: dto.categoryId,
           targetId: company.id,
-          status: ResearchStatus.APPROVED,
+          status: ResearchStatus.COMPLETED,
         },
       });
 
-      if (approved) {
+      if (completed) {
         throw new ConflictException(
-          'Research already approved for this company',
+          'Research already completed for this company',
         );
       }
 
@@ -78,7 +80,7 @@ export class ResearchService {
 
       const task = manager.create(ResearchTask, {
         categoryId: dto.categoryId,
-        submittedByUserId: userId,
+        assignedToUserId: userId,
         targetType: 'COMPANY',
         targetId: company.id,
         status: ResearchStatus.PENDING,

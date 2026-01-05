@@ -16,13 +16,15 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @Controller('inquiry')
 @UseGuards(JwtGuard)
 export class InquiryController {
-  constructor(private readonly inquiryService: InquiryService) {}
+  constructor(
+    private readonly inquiryService: InquiryService,
+  ) {}
 
   @Post('submit')
   @UseInterceptors(FileInterceptor('screenshot'))
   submitInquiry(
     @Body() dto: SubmitInquiryDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @CurrentUser('id') userId: string,
   ) {
     return this.inquiryService.submitInquiry(
@@ -31,4 +33,5 @@ export class InquiryController {
       userId,
     );
   }
+
 }

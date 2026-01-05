@@ -44,7 +44,7 @@ export class AuditService {
       throw new BadRequestException('Research task already audited');
     }
 
-    if (task.submittedByUserId === auditorUserId) {
+    if (task.assignedToUserId === auditorUserId) {
       throw new ForbiddenException(
         'Auditor cannot audit own submission',
       );
@@ -54,23 +54,19 @@ export class AuditService {
       researchTaskId,
       auditorUserId,
       decision: dto.decision,
-      rejectionReasonId: dto.rejectionReasonId,
     });
 
     task.status =
       dto.decision === 'APPROVED'
-        ? ResearchStatus.APPROVED
+        ? ResearchStatus.COMPLETED
         : ResearchStatus.REJECTED;
-
-    task.rejectionReasonId = dto.rejectionReasonId ?? null;
 
     if (dto.decision === 'REJECTED') {
       await this.flaggedRepo.save({
-        userId: task.submittedByUserId,
+        userId: task.assignedToUserId,
         targetId: researchTaskId,
         actionType: 'RESEARCH',
-        reason:
-          dto.rejectionReasonId ?? 'MANUAL_REJECTION',
+        reason: 'MANUAL_REJECTION',
       });
     }
 

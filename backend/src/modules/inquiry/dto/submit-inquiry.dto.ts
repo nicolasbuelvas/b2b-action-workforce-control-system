@@ -1,37 +1,15 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-} from 'typeorm';
+import { IsEnum, IsUUID } from 'class-validator';
 
-export enum InquiryStatus {
-  PENDING = 'PENDING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
+export enum InquiryActionType {
+  EMAIL = 'EMAIL',
+  LINKEDIN = 'LINKEDIN',
+  CALL = 'CALL',
 }
 
-@Entity('inquiry_tasks')
-export class InquiryTask {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export class SubmitInquiryDto {
+  @IsUUID()
+  inquiryTaskId: string;
 
-  @Column()
-  targetId: string; // companyId / domainId / linkedinProfileId
-
-  @Column()
-  categoryId: string;
-
-  @Column({
-    type: 'enum',
-    enum: InquiryStatus,
-    default: InquiryStatus.PENDING,
-  })
-  status: InquiryStatus;
-
-  @Column()
-  assignedToUserId: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
+  @IsEnum(InquiryActionType)
+  actionType: InquiryActionType;
 }

@@ -2,21 +2,35 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  Index,
   CreateDateColumn,
 } from 'typeorm';
 
-@Entity('linkedin_profiles')
-@Index(['normalizedUrl'], { unique: true })
-export class LinkedInProfile {
+export enum ResearchStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  REJECTED = 'REJECTED',
+}
+
+@Entity('research_tasks')
+export class ResearchTask {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  url: string;
+  targetId: string;
 
   @Column()
-  normalizedUrl: string;
+  categoryId: string;
+
+  @Column({
+    type: 'enum',
+    enum: ResearchStatus,
+    default: ResearchStatus.PENDING,
+  })
+  status: ResearchStatus;
+
+  @Column({ nullable: true })
+  assignedToUserId: string;
 
   @CreateDateColumn()
   createdAt: Date;
