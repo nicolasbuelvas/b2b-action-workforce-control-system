@@ -39,7 +39,7 @@ exports.AppModule = AppModule = __decorate([
                 password: process.env.DB_PASSWORD || 'postgres',
                 database: process.env.DB_NAME || 'backend',
                 autoLoadEntities: true,
-                synchronize: true,
+                synchronize: false,
             }),
             auth_module_1.AuthModule,
             users_module_1.UsersModule,

@@ -37,7 +37,7 @@ import { AdminModule } from './modules/admin/admin.module';
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'backend',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
     }),
 
     AuthModule,
