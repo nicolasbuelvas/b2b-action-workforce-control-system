@@ -21,7 +21,10 @@ exports.RolesModule = RolesModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([role_entity_1.Role, user_role_entity_1.UserRole]),
         ],
         providers: [roles_service_1.RolesService],
-        exports: [roles_service_1.RolesService],
+        exports: [
+            roles_service_1.RolesService,
+            typeorm_1.TypeOrmModule,
+        ],
     })
 ], RolesModule);
 //# sourceMappingURL=roles.module.js.map

@@ -1,18 +1,22 @@
+import { Repository } from 'typeorm';
+import { User } from '../users/entities/user.entity';
+import { Role } from '../roles/entities/role.entity';
+import { UserRole } from '../roles/entities/user-role.entity';
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignCategoryDto } from './dto/assign-category.dto';
 export declare class AdminService {
-    private subAdmins;
-    createSubAdmin(dto: CreateSubAdminDto): {
+    private readonly userRepo;
+    private readonly roleRepo;
+    private readonly userRoleRepo;
+    constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>);
+    createSubAdmin(dto: CreateSubAdminDto): Promise<{
         userId: string;
-        categories: string[];
         role: string;
-    };
-    assignCategories(dto: AssignCategoryDto): {
+        categories: string[];
+    }>;
+    assignCategories(dto: AssignCategoryDto): Promise<{
         userId: string;
         categories: string[];
-    };
-    getSubAdmins(): {
-        userId: string;
-        categories: string[];
-    }[];
+    }>;
+    getSubAdmins(): Promise<UserRole[]>;
 }

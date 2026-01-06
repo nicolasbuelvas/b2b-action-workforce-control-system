@@ -17,6 +17,9 @@ const common_1 = require("@nestjs/common");
 const admin_service_1 = require("./admin.service");
 const create_sub_admin_dto_1 = require("./dto/create-sub-admin.dto");
 const assign_category_dto_1 = require("./dto/assign-category.dto");
+const jwt_guard_1 = require("../../common/guards/jwt.guard");
+const roles_guard_1 = require("../../common/guards/roles.guard");
+const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 let AdminController = class AdminController {
     constructor(adminService) {
         this.adminService = adminService;
@@ -53,6 +56,8 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getSubAdmins", null);
 exports.AdminController = AdminController = __decorate([
+    (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('super_admin'),
     (0, common_1.Controller)('admin'),
     __metadata("design:paramtypes", [admin_service_1.AdminService])
 ], AdminController);
