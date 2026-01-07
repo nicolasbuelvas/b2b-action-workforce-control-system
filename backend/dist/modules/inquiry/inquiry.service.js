@@ -29,12 +29,36 @@ let InquiryService = class InquiryService {
         this.screenshotsService = screenshotsService;
         this.cooldownService = cooldownService;
     }
+    async takeInquiry(targetId, categoryId, userId) {
+        const active = await this.taskRepo.findOne({
+            where: {
+                assignedToUserId: userId,
+                status: inquiry_task_entity_1.InquiryStatus.IN_PROGRESS,
+            },
+        });
+        if (active) {
+            throw new common_1.BadRequestException('User already has an active inquiry');
+        }
+        const task = this.taskRepo.create({
+            targetId,
+            categoryId,
+            assignedToUserId: userId,
+            status: inquiry_task_entity_1.InquiryStatus.IN_PROGRESS,
+        });
+        return this.taskRepo.save(task);
+    }
     async submitInquiry(dto, screenshotBuffer, userId) {
         const task = await this.taskRepo.findOne({
             where: { id: dto.inquiryTaskId },
         });
         if (!task) {
             throw new common_1.BadRequestException('Inquiry task not found');
+        }
+        if (task.assignedToUserId !== userId) {
+            throw new common_1.BadRequestException('Not your inquiry task');
+        }
+        if (task.status !== inquiry_task_entity_1.InquiryStatus.IN_PROGRESS) {
+            throw new common_1.BadRequestException('Inquiry is not in progress');
         }
         await this.cooldownService.enforceCooldown({
             userId,

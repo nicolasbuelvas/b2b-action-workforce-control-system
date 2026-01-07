@@ -12,6 +12,7 @@ export declare class InquiryService {
     private readonly screenshotsService;
     private readonly cooldownService;
     constructor(actionRepo: Repository<InquiryAction>, taskRepo: Repository<InquiryTask>, outreachRepo: Repository<OutreachRecord>, screenshotsService: ScreenshotsService, cooldownService: CooldownService);
+    takeInquiry(targetId: string, categoryId: string, userId: string): Promise<InquiryTask>;
     submitInquiry(dto: SubmitInquiryDto, screenshotBuffer: Buffer, userId: string): Promise<{
         inquiryTaskId: string;
         performedByUserId: string;

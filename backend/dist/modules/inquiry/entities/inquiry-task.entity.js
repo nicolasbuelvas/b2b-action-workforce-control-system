@@ -14,8 +14,11 @@ const typeorm_1 = require("typeorm");
 var InquiryStatus;
 (function (InquiryStatus) {
     InquiryStatus["PENDING"] = "PENDING";
+    InquiryStatus["IN_PROGRESS"] = "IN_PROGRESS";
     InquiryStatus["COMPLETED"] = "COMPLETED";
-    InquiryStatus["FAILED"] = "FAILED";
+    InquiryStatus["APPROVED"] = "APPROVED";
+    InquiryStatus["REJECTED"] = "REJECTED";
+    InquiryStatus["FLAGGED"] = "FLAGGED";
 })(InquiryStatus || (exports.InquiryStatus = InquiryStatus = {}));
 let InquiryTask = class InquiryTask {
 };

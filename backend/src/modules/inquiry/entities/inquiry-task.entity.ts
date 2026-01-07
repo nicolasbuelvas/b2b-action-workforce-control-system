@@ -7,8 +7,11 @@ import {
 
 export enum InquiryStatus {
   PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  FLAGGED = 'FLAGGED',
 }
 
 @Entity('inquiry_tasks')

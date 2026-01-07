@@ -20,6 +20,18 @@ export class InquiryController {
     private readonly inquiryService: InquiryService,
   ) {}
 
+  @Post('take')
+  takeInquiry(
+    @Body() body: { targetId: string; categoryId: string },
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.inquiryService.takeInquiry(
+      body.targetId,
+      body.categoryId,
+      userId,
+    );
+  }
+
   @Post('submit')
   @UseInterceptors(FileInterceptor('screenshot'))
   submitInquiry(
@@ -33,5 +45,4 @@ export class InquiryController {
       userId,
     );
   }
-
 }

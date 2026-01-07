@@ -23,11 +23,22 @@ let InquiryController = class InquiryController {
     constructor(inquiryService) {
         this.inquiryService = inquiryService;
     }
+    takeInquiry(body, userId) {
+        return this.inquiryService.takeInquiry(body.targetId, body.categoryId, userId);
+    }
     submitInquiry(dto, file, userId) {
         return this.inquiryService.submitInquiry(dto, file.buffer, userId);
     }
 };
 exports.InquiryController = InquiryController;
+__decorate([
+    (0, common_1.Post)('take'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], InquiryController.prototype, "takeInquiry", null);
 __decorate([
     (0, common_1.Post)('submit'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('screenshot')),
