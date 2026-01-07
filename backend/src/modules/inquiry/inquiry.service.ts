@@ -5,8 +5,14 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { InquiryAction } from './entities/inquiry-action.entity';
-import { InquiryTask, InquiryStatus } from './entities/inquiry-task.entity';
+import {
+  InquiryAction,
+  InquiryActionStatus,
+} from './entities/inquiry-action.entity';
+import {
+  InquiryTask,
+  InquiryStatus,
+} from './entities/inquiry-task.entity';
 import { OutreachRecord } from './entities/outreach-record.entity';
 
 import { ScreenshotsService } from '../screenshots/screenshots.service';
@@ -87,6 +93,31 @@ export class InquiryService {
       );
     }
 
+    const pending = await this.actionRepo.findOne({
+      where: {
+        taskId: task.id,
+        status: InquiryActionStatus.PENDING,
+      },
+    });
+
+    if (pending) {
+      throw new BadRequestException(
+        'There is already a pending action',
+      );
+    }
+
+    const lastApproved = await this.actionRepo.findOne({
+      where: {
+        taskId: task.id,
+        status: InquiryActionStatus.APPROVED,
+      },
+      order: { actionIndex: 'DESC' },
+    });
+
+    const nextIndex = lastApproved
+      ? lastApproved.actionIndex + 1
+      : 1;
+
     await this.cooldownService.enforceCooldown({
       userId,
       targetId: task.targetId,
@@ -101,10 +132,10 @@ export class InquiryService {
       );
 
     const action = await this.actionRepo.save({
-      inquiryTaskId: task.id,
+      taskId: task.id,
+      actionIndex: nextIndex,
       performedByUserId: userId,
-      actionType: dto.actionType,
-      screenshotHash,
+      status: InquiryActionStatus.PENDING,
     });
 
     await this.outreachRepo.save({
@@ -120,9 +151,6 @@ export class InquiryService {
       categoryId: task.categoryId,
       actionType: dto.actionType,
     });
-
-    task.status = InquiryStatus.COMPLETED;
-    await this.taskRepo.save(task);
 
     return action;
   }

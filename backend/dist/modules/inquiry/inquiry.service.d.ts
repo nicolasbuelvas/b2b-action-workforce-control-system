@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm';
-import { InquiryAction } from './entities/inquiry-action.entity';
+import { InquiryAction, InquiryActionStatus } from './entities/inquiry-action.entity';
 import { InquiryTask } from './entities/inquiry-task.entity';
 import { OutreachRecord } from './entities/outreach-record.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
@@ -14,9 +14,9 @@ export declare class InquiryService {
     constructor(actionRepo: Repository<InquiryAction>, taskRepo: Repository<InquiryTask>, outreachRepo: Repository<OutreachRecord>, screenshotsService: ScreenshotsService, cooldownService: CooldownService);
     takeInquiry(targetId: string, categoryId: string, userId: string): Promise<InquiryTask>;
     submitInquiry(dto: SubmitInquiryDto, screenshotBuffer: Buffer, userId: string): Promise<{
-        inquiryTaskId: string;
+        taskId: string;
+        actionIndex: number;
         performedByUserId: string;
-        actionType: import("./dto/submit-inquiry.dto").InquiryActionType;
-        screenshotHash: string;
+        status: InquiryActionStatus.PENDING;
     } & InquiryAction>;
 }

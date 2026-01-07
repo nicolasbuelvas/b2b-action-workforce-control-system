@@ -15,15 +15,7 @@ class ResubmitInquiryDto {
 }
 exports.ResubmitInquiryDto = ResubmitInquiryDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], ResubmitInquiryDto.prototype, "inquiryTaskId", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], ResubmitInquiryDto.prototype, "actionType", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], ResubmitInquiryDto.prototype, "previousActionId", void 0);
 //# sourceMappingURL=resubmit-inquiry.dto.js.map

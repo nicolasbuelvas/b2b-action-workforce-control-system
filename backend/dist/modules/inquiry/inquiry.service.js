@@ -60,6 +60,25 @@ let InquiryService = class InquiryService {
         if (task.status !== inquiry_task_entity_1.InquiryStatus.IN_PROGRESS) {
             throw new common_1.BadRequestException('Inquiry is not in progress');
         }
+        const pending = await this.actionRepo.findOne({
+            where: {
+                taskId: task.id,
+                status: inquiry_action_entity_1.InquiryActionStatus.PENDING,
+            },
+        });
+        if (pending) {
+            throw new common_1.BadRequestException('There is already a pending action');
+        }
+        const lastApproved = await this.actionRepo.findOne({
+            where: {
+                taskId: task.id,
+                status: inquiry_action_entity_1.InquiryActionStatus.APPROVED,
+            },
+            order: { actionIndex: 'DESC' },
+        });
+        const nextIndex = lastApproved
+            ? lastApproved.actionIndex + 1
+            : 1;
         await this.cooldownService.enforceCooldown({
             userId,
             targetId: task.targetId,
@@ -68,10 +87,10 @@ let InquiryService = class InquiryService {
         });
         const screenshotHash = await this.screenshotsService.processScreenshot(screenshotBuffer, userId);
         const action = await this.actionRepo.save({
-            inquiryTaskId: task.id,
+            taskId: task.id,
+            actionIndex: nextIndex,
             performedByUserId: userId,
-            actionType: dto.actionType,
-            screenshotHash,
+            status: inquiry_action_entity_1.InquiryActionStatus.PENDING,
         });
         await this.outreachRepo.save({
             inquiryTaskId: task.id,
@@ -85,8 +104,6 @@ let InquiryService = class InquiryService {
             categoryId: task.categoryId,
             actionType: dto.actionType,
         });
-        task.status = inquiry_task_entity_1.InquiryStatus.COMPLETED;
-        await this.taskRepo.save(task);
         return action;
     }
 };

@@ -1,8 +1,15 @@
+export declare enum InquiryActionStatus {
+    PENDING = "PENDING",
+    SUBMITTED = "SUBMITTED",
+    APPROVED = "APPROVED",
+    REJECTED = "REJECTED"
+}
 export declare class InquiryAction {
     id: string;
-    inquiryTaskId: string;
+    taskId: string;
+    actionIndex: number;
     performedByUserId: string;
-    actionType: string;
-    screenshotHash: string;
+    status: InquiryActionStatus;
     createdAt: Date;
+    reviewedAt: Date | null;
 }

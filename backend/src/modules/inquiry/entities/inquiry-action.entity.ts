@@ -5,23 +5,37 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 
+export enum InquiryActionStatus {
+  PENDING = 'PENDING',
+  SUBMITTED = 'SUBMITTED',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
 @Entity('inquiry_actions')
 export class InquiryAction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'taskId' })
+  taskId: string;
+
   @Column()
-  inquiryTaskId: string;
+  actionIndex: number;
 
   @Column()
   performedByUserId: string;
 
-  @Column()
-  actionType: string; // linkedin_message, email, form, etc.
-
-  @Column()
-  screenshotHash: string;
+  @Column({
+    type: 'enum',
+    enum: InquiryActionStatus,
+    default: InquiryActionStatus.PENDING,
+  })
+  status: InquiryActionStatus;
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ nullable: true })
+  reviewedAt: Date | null;
 }
