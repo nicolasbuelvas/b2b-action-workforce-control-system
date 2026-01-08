@@ -1,0 +1,65 @@
+.sa-shell {
+  display: flex;
+  min-height: 100vh;
+  background: #f6f7fb;
+}
+
+.sa-sidebar {
+  width: 240px;
+  background: #111827;
+  color: #fff;
+  padding: 20px;
+}
+
+.sa-logo {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.sa-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sa-link {
+  padding: 10px 12px;
+  border-radius: 6px;
+  color: #d1d5db;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.sa-link.active {
+  background: #1f2937;
+  color: #fff;
+}
+
+.sa-section {
+  margin-top: 16px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.sa-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sa-topbar {
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  font-weight: 500;
+}
+
+.sa-content {
+  padding: 24px;
+}
