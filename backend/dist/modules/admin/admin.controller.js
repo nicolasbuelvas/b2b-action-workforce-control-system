@@ -33,6 +33,9 @@ let AdminController = class AdminController {
     getSubAdmins() {
         return this.adminService.getSubAdmins();
     }
+    getDashboard() {
+        return this.adminService.getDashboard();
+    }
 };
 exports.AdminController = AdminController;
 __decorate([
@@ -55,6 +58,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getSubAdmins", null);
+__decorate([
+    (0, common_1.Get)('dashboard'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getDashboard", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('super_admin'),

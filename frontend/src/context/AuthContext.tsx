@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { loginApi } from '../api/auth.api';
+import type { UserRole } from '../types/roles';
 
 interface User {
   id?: string;
-  role?: string;
+  role: UserRole;
 }
 
 interface AuthContextType {
@@ -16,6 +17,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function decodeJwt(token: string): any {
+  try {
+    const payload = token.split('.')[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,20 +33,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
-      setUser({ role: 'admin' }); // placeholder realista
+      const decoded = decodeJwt(token);
+      if (decoded?.roles?.length === 1) {
+        setUser({
+          id: decoded.sub,
+          role: decoded.roles[0],
+        });
+      }
     }
     setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
-    const data = await loginApi(email, password);
+    try {
+      const data = await loginApi(email, password);
 
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
 
-    setUser({ role: 'admin' });
-    setLoading(false);
+      const decoded = decodeJwt(data.accessToken);
+
+      if (!decoded?.roles?.length) {
+        throw new Error('No role in token');
+      }
+
+      setUser({
+        id: decoded.sub,
+        role: decoded.roles[0],
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
@@ -61,6 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuthContext() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuthContext must be used inside AuthProvider');
+  if (!ctx) {
+    throw new Error('useAuthContext must be used inside AuthProvider');
+  }
   return ctx;
 }

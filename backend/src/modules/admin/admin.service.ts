@@ -81,4 +81,18 @@ export class AdminService {
       ])
       .getMany();
   }
+
+  async getDashboard() {
+    const usersCount = await this.userRepo.count();
+    const subAdminsCount = await this.userRoleRepo.count({
+      where: { role: { name: 'sub_admin' } },
+    });
+
+    return {
+      usersCount,
+      subAdminsCount,
+      status: 'ok',
+    };
+  }
+
 }

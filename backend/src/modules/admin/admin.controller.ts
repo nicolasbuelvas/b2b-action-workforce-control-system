@@ -34,4 +34,10 @@ export class AdminController {
   getSubAdmins() {
     return this.adminService.getSubAdmins();
   }
+
+  @Get('dashboard')
+  getDashboard() {
+    return this.adminService.getDashboard();
+  }
+
 }

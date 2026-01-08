@@ -14,4 +14,9 @@ export declare class AdminController {
         categories: string[];
     }>;
     getSubAdmins(): Promise<import("../roles/entities/user-role.entity").UserRole[]>;
+    getDashboard(): Promise<{
+        usersCount: number;
+        subAdminsCount: number;
+        status: string;
+    }>;
 }

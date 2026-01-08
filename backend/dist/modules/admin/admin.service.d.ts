@@ -19,4 +19,9 @@ export declare class AdminService {
         categories: string[];
     }>;
     getSubAdmins(): Promise<UserRole[]>;
+    getDashboard(): Promise<{
+        usersCount: number;
+        subAdminsCount: number;
+        status: string;
+    }>;
 }
