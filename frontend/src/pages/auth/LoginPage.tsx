@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuthContext } from '../../context/AuthContext';
-import '../../styles/auth.css';
+import './auth.css';
 
 export default function LoginPage() {
   const { login, loading } = useAuthContext();
@@ -15,7 +15,7 @@ export default function LoginPage() {
     try {
       await login(email, password);
     } catch {
-      setError('Credenciales inválidas');
+      setError('Invalid credentials. Please check and try again.');
     }
   };
 
@@ -23,18 +23,21 @@ export default function LoginPage() {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-header">
-          <h1>B2B Platform</h1>
-          <p>Accede a tu panel</p>
+          {}
+          <div className="auth-logo-icon">B2B</div>
+          <h1>Workforce Portal</h1>
+          <p>Task Verification & Control System</p>
         </div>
 
         <form className="auth-form" onSubmit={submit}>
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-error-message">{error}</div>}
 
           <div className="auth-field">
-            <label>Email</label>
+            <label htmlFor="email">Work Email</label>
             <input
+              id="email"
               type="email"
-              placeholder="you@company.com"
+              placeholder="nicolas@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -42,8 +45,9 @@ export default function LoginPage() {
           </div>
 
           <div className="auth-field">
-            <label>Password</label>
+            <label htmlFor="password">Password</label>
             <input
+              id="password"
               type="password"
               placeholder="••••••••"
               value={password}
@@ -52,13 +56,18 @@ export default function LoginPage() {
             />
           </div>
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Ingresando…' : 'Login'}
+          <button 
+            type="submit" 
+            className="btn-auth-primary" 
+            disabled={loading}
+          >
+            {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
 
         <div className="auth-footer">
-          © 2026 B2B Workforce System
+          <p>© 2026 B2B System Core</p>
+          <span className="auth-version">v1.0.4</span>
         </div>
       </div>
     </div>

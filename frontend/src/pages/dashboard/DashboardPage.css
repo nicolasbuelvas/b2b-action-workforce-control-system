@@ -1,0 +1,35 @@
+.dashboard-container {
+  padding: 2rem;
+}
+
+.welcome-banner {
+  background: linear-gradient(90deg, #0284c7 0%, #2563eb 100%);
+  color: white;
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-banner h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.welcome-banner p {
+  opacity: 0.9;
+  margin-top: 8px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h3 {
+  font-size: 1.2rem;
+  color: var(--text-main);
+}

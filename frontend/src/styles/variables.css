@@ -1,0 +1,30 @@
+:root {
+  --primary-emerald: #00897b;
+  --primary-dark: #00695c;
+  --bg-main: #f8fafc;
+  --bg-sidebar: #064e3b;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --white: #ffffff;
+
+  --status-active-bg: #ecfdf5;
+  --status-active-text: #059669;
+  --status-pending-bg: #fff7ed;
+  --status-pending-text: #ea580c;
+  --status-completed-bg: #eff6ff;
+  --status-completed-text: #2563eb;
+  --status-error-bg: #fef2f2;
+  --status-error-text: #dc2626;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+  --radius-lg: 12px;
+  --radius-md: 8px;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+}

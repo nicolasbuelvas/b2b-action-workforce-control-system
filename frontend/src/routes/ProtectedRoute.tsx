@@ -8,8 +8,8 @@ export default function ProtectedRoute({
 }) {
   const { isAuthenticated, loading } = useAuthContext();
 
-  if (loading) return <div>Loading...</div>;
-  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (loading) return <div style={{ padding: 40 }}>Loading...</div>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   return children;
 }
