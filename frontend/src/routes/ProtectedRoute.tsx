@@ -15,17 +15,17 @@ export default function ProtectedRoute({ allowedRoles }: Props) {
   }
 
   if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && (!user || !allowedRoles.includes(user.role))) {
     return (
       <Navigate
-        to="/login"
+        to="/forbidden"
         replace
         state={{ from: location.pathname }}
       />
     );
-  }
-
-  if (allowedRoles && (!user || !allowedRoles.includes(user.role))) {
-    return <Navigate to="/forbidden" replace />;
   }
 
   return <Outlet />;

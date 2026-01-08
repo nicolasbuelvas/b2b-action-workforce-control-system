@@ -9,7 +9,11 @@ export default function SuperAdminLayout() {
 
       <div className="sa-main">
         <header className="sa-topbar">
-          <span>Super Admin Panel</span>
+          <span className="sa-topbar-title">Super Admin Panel</span>
+
+          <div className="sa-topbar-actions">
+            <button className="sa-logout-btn">Logout</button>
+          </div>
         </header>
 
         <main className="sa-content">

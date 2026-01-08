@@ -1,0 +1,97 @@
+.sa-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sa-dashboard-header {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #fff;
+  padding: 24px;
+  border-radius: 12px;
+}
+
+.sa-dashboard-header h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.sa-dashboard-header p {
+  margin-top: 6px;
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+.sa-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.sa-stat {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.sa-stat-title {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.sa-stat-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.sa-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 20px;
+}
+
+.sa-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.sa-card h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.sa-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sa-list li {
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sa-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.sa-actions button {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5f5;
+  background: #f8fafc;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.sa-actions button:hover {
+  background: #eef2ff;
+}

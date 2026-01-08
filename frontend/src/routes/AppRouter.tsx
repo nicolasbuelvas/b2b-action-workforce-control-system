@@ -23,7 +23,7 @@ export default function AppRouter() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forbidden" element={<ForbiddenPage />} />
 
-      {/* Super Admin (PROTECTED) */}
+      {/* Super Admin */}
       <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
         <Route path="/super-admin" element={<SuperAdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -37,13 +37,12 @@ export default function AppRouter() {
 
           <Route path="action-config" element={<ActionConfigPage />} />
           <Route path="pricing" element={<PricingPage />} />
-
           <Route path="role-performance" element={<RolePerformancePage />} />
           <Route path="logs" element={<SystemLogsPage />} />
         </Route>
       </Route>
 
-      {/* Catch all */}
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
