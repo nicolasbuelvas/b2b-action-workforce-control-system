@@ -3,7 +3,7 @@ import { loginApi } from '../api/auth.api';
 import type { UserRole } from '../types/roles';
 
 interface User {
-  id?: string;
+  id: string;
   role: UserRole;
 }
 
@@ -11,7 +11,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<UserRole>;
   logout: () => void;
 }
 
@@ -26,6 +26,19 @@ function decodeJwt(token: string): any {
   }
 }
 
+function buildUserFromToken(token: string): User {
+  const decoded = decodeJwt(token);
+
+  if (!decoded?.sub || !decoded?.roles || decoded.roles.length !== 1) {
+    throw new Error('Invalid token payload');
+  }
+
+  return {
+    id: decoded.sub,
+    role: decoded.roles[0],
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,18 +46,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
-      const decoded = decodeJwt(token);
-      if (decoded?.roles?.length === 1) {
-        setUser({
-          id: decoded.sub,
-          role: decoded.roles[0],
-        });
+      try {
+        const user = buildUserFromToken(token);
+        setUser(user);
+      } catch {
+        localStorage.clear();
+        setUser(null);
       }
     }
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<UserRole> => {
     setLoading(true);
     try {
       const data = await loginApi(email, password);
@@ -52,16 +65,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
 
-      const decoded = decodeJwt(data.accessToken);
+      const user = buildUserFromToken(data.accessToken);
+      setUser(user);
 
-      if (!decoded?.roles?.length) {
-        throw new Error('No role in token');
-      }
-
-      setUser({
-        id: decoded.sub,
-        role: decoded.roles[0],
-      });
+      return user.role;
+    } catch (err) {
+      localStorage.clear();
+      setUser(null);
+      throw err;
     } finally {
       setLoading(false);
     }

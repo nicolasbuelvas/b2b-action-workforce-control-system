@@ -22,11 +22,14 @@ export default function ProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
-  if (
-    allowedRoles &&
-    (!user || !allowedRoles.includes(user.role))
-  ) {
-    return <Navigate to={location.pathname} replace />;
+  if (allowedRoles && (!user || !allowedRoles.includes(user.role))) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
   }
 
   return children;

@@ -1,19 +1,35 @@
+// frontend/src/pages/auth/LoginPage.tsx
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
 import './auth.css';
 
 export default function LoginPage() {
   const { login, loading } = useAuthContext();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     try {
-      await login(email, password);
+      const role = await login(email, password);
+
+      setSuccess('Authentication successful. Redirecting…');
+
+      setTimeout(() => {
+        if (role === 'super_admin') {
+          navigate('/super-admin/dashboard', { replace: true });
+        } else {
+          navigate('/login', { replace: true });
+        }
+      }, 600);
     } catch {
       setError('Invalid credentials. Please check and try again.');
     }
@@ -23,7 +39,6 @@ export default function LoginPage() {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-header">
-          {}
           <div className="auth-logo-icon">B2B</div>
           <h1>Workforce Portal</h1>
           <p>Task Verification & Control System</p>
@@ -31,6 +46,7 @@ export default function LoginPage() {
 
         <form className="auth-form" onSubmit={submit}>
           {error && <div className="auth-error-message">{error}</div>}
+          {success && <div className="auth-success-message">{success}</div>}
 
           <div className="auth-field">
             <label htmlFor="email">Work Email</label>
@@ -56,12 +72,12 @@ export default function LoginPage() {
             />
           </div>
 
-          <button 
-            type="submit" 
-            className="btn-auth-primary" 
+          <button
+            type="submit"
+            className="btn-auth-primary"
             disabled={loading}
           >
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? 'Authenticating…' : 'Sign In'}
           </button>
         </form>
 
