@@ -1,6 +1,25 @@
+import { useEffect, useState } from 'react';
+import { getAdminDashboard } from '../../api/admin.api';
 import StatCard from '../../components/cards/StatCard';
 
+interface DashboardData {
+  usersCount: number;
+  subAdminsCount: number;
+}
+
 export default function SuperAdminDashboard() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getAdminDashboard()
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div>Loading dashboard...</div>;
+  if (!data) return <div>No dashboard data</div>;
+
   return (
     <div className="dashboard-container">
       <header className="welcome-banner">
@@ -9,38 +28,8 @@ export default function SuperAdminDashboard() {
       </header>
 
       <section className="stats-grid">
-        <StatCard title="Total Actions" value={1240} />
-        <StatCard title="Active Workers" value={86} />
-        <StatCard title="Categories" value={5} />
-        <StatCard title="Approval Rate" value="92%" />
-      </section>
-
-      <div className="section-header">
-        <h3>Top Performing Roles</h3>
-        <button className="btn-primary">View Details</button>
-      </div>
-
-      <section className="data-table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Role</th>
-              <th>Workers</th>
-              <th>Approval Rate</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>LinkedIn Inquirers</td>
-              <td>24</td>
-              <td>94%</td>
-              <td>
-                <span className="badge badge-active">Healthy</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <StatCard title="Total Users" value={data.usersCount} />
+        <StatCard title="Sub Admins" value={data.subAdminsCount} />
       </section>
     </div>
   );

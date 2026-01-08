@@ -22,6 +22,22 @@ export class AdminService {
     private readonly userRoleRepo: Repository<UserRole>,
   ) {}
 
+  async getDashboard() {
+    const usersCount = await this.userRepo.count();
+
+    const subAdminsCount = await this.userRoleRepo
+      .createQueryBuilder('ur')
+      .innerJoin('ur.role', 'role')
+      .where('role.name = :role', { role: 'sub_admin' })
+      .getCount();
+
+    return {
+      usersCount,
+      subAdminsCount,
+      status: 'ok',
+    };
+  }
+
   async createSubAdmin(dto: CreateSubAdminDto) {
     const user = await this.userRepo.findOne({
       where: { id: dto.userId },
@@ -44,7 +60,6 @@ export class AdminService {
       roleId: role.id,
     });
 
-    
     return {
       userId: user.id,
       role: role.name,
@@ -81,18 +96,4 @@ export class AdminService {
       ])
       .getMany();
   }
-
-  async getDashboard() {
-    const usersCount = await this.userRepo.count();
-    const subAdminsCount = await this.userRoleRepo.count({
-      where: { role: { name: 'sub_admin' } },
-    });
-
-    return {
-      usersCount,
-      subAdminsCount,
-      status: 'ok',
-    };
-  }
-
 }

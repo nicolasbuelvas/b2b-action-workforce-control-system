@@ -20,6 +20,11 @@ import { Roles } from '../../common/decorators/roles.decorator';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
+  @Get('dashboard')
+  getDashboard() {
+    return this.adminService.getDashboard();
+  }
+
   @Post('sub-admin')
   createSubAdmin(@Body() dto: CreateSubAdminDto) {
     return this.adminService.createSubAdmin(dto);
@@ -34,10 +39,4 @@ export class AdminController {
   getSubAdmins() {
     return this.adminService.getSubAdmins();
   }
-
-  @Get('dashboard')
-  getDashboard() {
-    return this.adminService.getDashboard();
-  }
-
 }

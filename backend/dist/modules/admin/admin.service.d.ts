@@ -9,6 +9,11 @@ export declare class AdminService {
     private readonly roleRepo;
     private readonly userRoleRepo;
     constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>);
+    getDashboard(): Promise<{
+        usersCount: number;
+        subAdminsCount: number;
+        status: string;
+    }>;
     createSubAdmin(dto: CreateSubAdminDto): Promise<{
         userId: string;
         role: string;
@@ -19,9 +24,4 @@ export declare class AdminService {
         categories: string[];
     }>;
     getSubAdmins(): Promise<UserRole[]>;
-    getDashboard(): Promise<{
-        usersCount: number;
-        subAdminsCount: number;
-        status: string;
-    }>;
 }

@@ -4,6 +4,11 @@ import { AssignCategoryDto } from './dto/assign-category.dto';
 export declare class AdminController {
     private readonly adminService;
     constructor(adminService: AdminService);
+    getDashboard(): Promise<{
+        usersCount: number;
+        subAdminsCount: number;
+        status: string;
+    }>;
     createSubAdmin(dto: CreateSubAdminDto): Promise<{
         userId: string;
         role: string;
@@ -14,9 +19,4 @@ export declare class AdminController {
         categories: string[];
     }>;
     getSubAdmins(): Promise<import("../roles/entities/user-role.entity").UserRole[]>;
-    getDashboard(): Promise<{
-        usersCount: number;
-        subAdminsCount: number;
-        status: string;
-    }>;
 }
