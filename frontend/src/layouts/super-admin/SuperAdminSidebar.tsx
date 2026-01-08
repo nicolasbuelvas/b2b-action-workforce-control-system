@@ -1,9 +1,13 @@
 import { NavLink } from 'react-router-dom';
+import './SuperAdminSidebar.css';
 
 export default function SuperAdminSidebar() {
   return (
     <aside className="sa-sidebar">
-      <div className="sa-logo">Super Admin</div>
+      <div className="sa-logo">
+        <div className="logo-box">SA</div>
+        <span>Super Admin</span>
+      </div>
 
       <nav className="sa-nav">
         <NavLink to="/super-admin/dashboard" className="sa-link">
