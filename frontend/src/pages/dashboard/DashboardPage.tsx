@@ -1,21 +1,12 @@
-import { useEffect, useState } from 'react';
-import { getMe } from '../../api/auth.api';
+import { useAuthContext } from '../../context/AuthContext';
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    getMe()
-      .then(setUser)
-      .catch(() => {});
-  }, []);
-
-  if (!user) return <p>Cargando...</p>;
+  const { logout } = useAuthContext();
 
   return (
-    <div>
+    <div style={{ padding: 40 }}>
       <h1>Dashboard</h1>
-      <pre>{JSON.stringify(user, null, 2)}</pre>
+      <button onClick={logout}>Logout</button>
     </div>
   );
 }

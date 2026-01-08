@@ -1,52 +1,35 @@
 import { useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
-import '../../styles/auth.css';
+import { useAuthContext } from '../../context/AuthContext';
 
 export default function LoginPage() {
-  const { login, loading } = useAuth();
-
+  const { login } = useAuthContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
-    try {
-      await login(email, password);
-    } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
-    }
+    await login(email, password);
   };
 
   return (
-    <div className="auth-container">
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>Welcome back</h1>
-        <p>Please sign in to continue</p>
+    <div style={{ padding: 40 }}>
+      <h2>Login</h2>
 
-        {error && <div className="auth-error">{error}</div>}
-
+      <form onSubmit={submit}>
         <input
-          type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required
         />
-
+        <br />
         <input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
         />
-
-        <button type="submit" disabled={loading}>
-          {loading ? 'Signing in...' : 'Login'}
-        </button>
+        <br />
+        <button type="submit">Login</button>
       </form>
     </div>
   );
