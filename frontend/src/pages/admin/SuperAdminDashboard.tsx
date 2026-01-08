@@ -5,6 +5,7 @@ import StatCard from '../../components/cards/StatCard';
 interface DashboardData {
   usersCount: number;
   subAdminsCount: number;
+  status?: string;
 }
 
 export default function SuperAdminDashboard() {
@@ -14,11 +15,12 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     getAdminDashboard()
       .then(setData)
+      .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div>Loading dashboard...</div>;
-  if (!data) return <div>No dashboard data</div>;
+  if (!data) return <div>Failed to load dashboard</div>;
 
   return (
     <div className="dashboard-container">

@@ -7,8 +7,8 @@ export default function StatCard({ title, value }: Props) {
   return (
     <div className="stat-card">
       <div className="stat-card-info">
-        <h4>{title}</h4>
-        <span className="value">{value}</span>
+        <h4 className="stat-card-title">{title}</h4>
+        <span className="stat-card-value">{value}</span>
       </div>
     </div>
   );
