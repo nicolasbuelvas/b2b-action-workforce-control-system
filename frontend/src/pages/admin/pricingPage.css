@@ -1,0 +1,47 @@
+@import './categoriesPage.css';
+
+/* Category tag */
+.category-tag {
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Price & bonus */
+.price-badge {
+  background: #ecfeff;
+  border: 1px solid #67e8f9;
+  color: #0369a1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bonus-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+/* Status pill */
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-pill.active {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.status-pill.inactive {
+  background: #fef2f2;
+  color: #b91c1c;
+}

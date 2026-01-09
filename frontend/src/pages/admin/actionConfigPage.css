@@ -1,0 +1,44 @@
+@import './categoriesPage.css';
+
+/* Role tag */
+.role-tag {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Approval */
+.approval {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.approval.yes {
+  color: #b45309;
+}
+
+.approval.no {
+  color: #047857;
+}
+
+/* Status pill (reuse pattern) */
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-pill.enabled {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.status-pill.disabled {
+  background: #fef2f2;
+  color: #b91c1c;
+}

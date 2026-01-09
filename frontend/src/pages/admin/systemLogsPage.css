@@ -1,0 +1,56 @@
+@import './superAdminDashboard.css';
+
+/* ===== FILTER BAR ===== */
+.logs-filter-bar {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.logs-filter-bar input {
+  flex: 1;
+  min-width: 240px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.logs-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.logs-filters select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  font-size: 12px;
+}
+
+/* ===== EXTENDED FEED ===== */
+.activity-feed.extended {
+  max-height: none;
+}
+
+.activity-actions {
+  margin-left: auto;
+}
+
+/* Reuse dashboard buttons */
+.btn-clear {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
