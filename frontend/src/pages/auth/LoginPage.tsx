@@ -1,4 +1,3 @@
-// frontend/src/pages/auth/LoginPage.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
@@ -20,14 +19,17 @@ export default function LoginPage() {
 
     try {
       const role = await login(email, password);
-
       setSuccess('Authentication successful. Redirecting…');
 
       setTimeout(() => {
-        if (role === 'super_admin') {
+        if (role === 'super_admin' || role === 'sub_admin') {
           navigate('/super-admin/dashboard', { replace: true });
+        } else if (role.includes('auditor')) {
+          navigate('/auditor/dashboard', { replace: true });
+        } else if (role.includes('researcher') || role.includes('inquirer')) {
+          navigate('/worker/dashboard', { replace: true });
         } else {
-          navigate('/login', { replace: true });
+          setError('Role not recognized for redirection.');
         }
       }, 600);
     } catch {
