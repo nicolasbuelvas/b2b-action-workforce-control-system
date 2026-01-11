@@ -77,7 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setUser(null);
-    // Redirección forzada para limpiar el rastro del 404 de Vercel
     window.location.replace('/login');
   };
 
