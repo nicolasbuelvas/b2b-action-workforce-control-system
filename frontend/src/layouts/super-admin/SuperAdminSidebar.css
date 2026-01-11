@@ -1,0 +1,70 @@
+.sa-sidebar {
+  width: 260px;
+  background: #064e3b;
+  color: #ecfdf5;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* Logo */
+.sa-logo {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-box {
+  width: 36px;
+  height: 36px;
+  background: #10b981;
+  border-radius: 8px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.sa-logo span {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+/* Nav */
+.sa-nav {
+  flex: 1;
+  padding: 0 14px 14px;
+  overflow-y: auto;
+}
+
+.sa-section {
+  margin: 20px 0 6px 10px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #6ee7b7;
+  font-weight: 700;
+}
+
+.sa-link {
+  display: block;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  color: #d1fae5;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.sa-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sa-link.active {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
