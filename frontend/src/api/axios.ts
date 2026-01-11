@@ -18,4 +18,7 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
+
+console.log("Mi API URL actual es:", import.meta.env.VITE_API_URL);
+
 export default instance;
