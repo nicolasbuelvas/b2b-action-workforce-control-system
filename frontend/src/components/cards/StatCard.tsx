@@ -1,7 +1,7 @@
 interface Props {
   title: string;
   value: number | string;
-  variant?: 'default' | 'highlight';
+  variant?: 'default' | 'highlight' | 'success' | 'danger';
 }
 
 export default function StatCard({ title, value, variant = 'default' }: Props) {

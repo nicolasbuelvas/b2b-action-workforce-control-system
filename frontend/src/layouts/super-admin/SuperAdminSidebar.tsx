@@ -4,56 +4,129 @@ import './SuperAdminSidebar.css';
 
 export default function AppSidebar() {
   const { user } = useAuthContext();
-  const role = user?.role;
+  const role = user?.role ?? '';
+
+  const isSuperAdmin = role === 'super_admin';
+  const isSubAdmin = role === 'sub_admin';
+  const isAdminGroup = isSuperAdmin || isSubAdmin;
+
+  const isResearcher = role.includes('researcher');
+  const isInquirer = role.includes('inquirer');
+  const isAuditor = role.includes('auditor');
+
+  const isWeb = role.includes('website');
+  const isLinkedIn = role.includes('linkedin');
 
   const getBase = () => {
-    if (role === 'super_admin' || role === 'sub_admin') return '/super-admin';
-    if (role?.includes('auditor')) return '/auditor';
+    if (isAdminGroup) return '/super-admin';
+    if (isAuditor) return '/auditor';
     return '/worker';
   };
 
   const base = getBase();
 
+  // Genera el label y las iniciales para el logo dinámico
+  const roleLabel = role.replace(/_/g, ' ').toUpperCase();
+  const roleInitials = role
+    .split('_')
+    .map(w => w[0])
+    .join('')
+    .toUpperCase();
+
   return (
     <aside className="sa-sidebar">
+      {/* LOGO DINÁMICO SEGÚN ROL */}
       <div className="sa-logo">
-        <div className="logo-box">
-          {role?.split('_').map((w: string) => w[0]).join('').toUpperCase()}
-        </div>
-        <span>{role?.replace('_', ' ').toUpperCase()}</span>
+        <div className="logo-box">{isAdminGroup ? 'SA' : roleInitials}</div>
+        <span>{roleLabel}</span>
       </div>
 
       <nav className="sa-nav">
-        <NavLink to={`${base}/dashboard`} className="sa-link">Dashboard</NavLink>
+        {/* DASHBOARD ACCESIBLE PARA TODOS */}
+        <NavLink to={`${base}/dashboard`} className="sa-link">
+          Dashboard
+        </NavLink>
 
-        {(role === 'super_admin' || role === 'sub_admin') && (
+        {/* ========== SECCIÓN EXCLUSIVA: SUPER / SUB ADMIN ========== */}
+        {isAdminGroup && (
           <>
-            <div className="sa-section">Users</div>
-            <NavLink to="/super-admin/users" className="sa-link">All Users</NavLink>
-            <NavLink to="/super-admin/users/create" className="sa-link">Create User</NavLink>
+            <div className="sa-section">USERS</div>
+            <NavLink to="/super-admin/users" className="sa-link">
+              All Users
+            </NavLink>
+            <NavLink to="/super-admin/users/create" className="sa-link">
+              Create User
+            </NavLink>
 
-            <div className="sa-section">Categories</div>
-            <NavLink to="/super-admin/categories" className="sa-link">Categories</NavLink>
-            <NavLink to="/super-admin/category-rules" className="sa-link">Rules</NavLink>
+            <div className="sa-section">CATEGORIES</div>
+            <NavLink to="/super-admin/categories" className="sa-link">
+              Categories
+            </NavLink>
+            <NavLink to="/super-admin/category-rules" className="sa-link">
+              Rules
+            </NavLink>
 
-            <div className="sa-section">System</div>
-            <NavLink to="/super-admin/action-config" className="sa-link">Config</NavLink>
-            <NavLink to="/super-admin/pricing" className="sa-link">Pricing</NavLink>
-            <NavLink to="/super-admin/logs" className="sa-link">Logs</NavLink>
+            <div className="sa-section">SYSTEM</div>
+            <NavLink to="/super-admin/action-config" className="sa-link">
+              Config
+            </NavLink>
+            <NavLink to="/super-admin/pricing" className="sa-link">
+              Pricing
+            </NavLink>
+            <NavLink to="/super-admin/logs" className="sa-link">
+              Logs
+            </NavLink>
           </>
         )}
 
-        {(role?.includes('researcher') || role?.includes('inquirer')) && (
+        {/* ========== SECCIÓN: RESEARCHER Tools ========== */}
+        {isResearcher && (
           <>
-            <div className="sa-section">My Tasks</div>
-            <NavLink to="/worker/dashboard" className="sa-link">View Tasks</NavLink>
+            <div className="sa-section">RESEARCHER TOOLS</div>
+            <NavLink to="/worker/research/tasks" className="sa-link">
+              Available Tasks
+            </NavLink>
+            <NavLink to="/worker/research/duplicates" className="sa-link">
+              Check Duplicates
+            </NavLink>
+            <NavLink to="/worker/history" className="sa-link">
+              My Submissions
+            </NavLink>
+            <NavLink to="/worker/ranking" className="sa-link">
+              Top 3 Ranking 
+            </NavLink>
           </>
         )}
 
-        {role?.includes('auditor') && (
+        {/* ========== SECCIÓN: INQUIRY Pipeline ========== */}
+        {isInquirer && (
           <>
-            <div className="sa-section">Audits</div>
-            <NavLink to="/auditor/dashboard" className="sa-link">Pending Reviews</NavLink>
+            <div className="sa-section">INQUIRY PIPELINE</div>
+            <NavLink to="/worker/inquiry/tasks" className="sa-link">
+              Active Outreach
+            </NavLink>
+            <NavLink to="/worker/uploads" className="sa-link">
+              Evidence (Screenshots)
+            </NavLink>
+            <NavLink to="/worker/ranking" className="sa-link">
+              Top 3 Ranking 
+            </NavLink>
+          </>
+        )}
+
+        {/* ========== SECCIÓN: VERIFICATION (Auditors) ========== */}
+        {isAuditor && (
+          <>
+            <div className="sa-section">VERIFICATION</div>
+            <NavLink to="/auditor/pending" className="sa-link">
+              Review Queue
+            </NavLink>
+            <NavLink to="/auditor/flags" className="sa-link">
+              Fraud Detection
+            </NavLink>
+            <NavLink to="/auditor/history" className="sa-link">
+              Audit History
+            </NavLink>
           </>
         )}
       </nav>

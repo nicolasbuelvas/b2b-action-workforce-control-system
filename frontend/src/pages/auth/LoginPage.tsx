@@ -1,7 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
+import type { UserRole } from '../../types/roles';
 import './auth.css';
+
+const ROLE_REDIRECT_MAP: Record<UserRole, string> = {
+  super_admin: '/super-admin/dashboard',
+  sub_admin: '/sub-admin/dashboard',
+
+  website_researcher: '/researcher/website/dashboard',
+  linkedin_researcher: '/researcher/linkedin/dashboard',
+
+  website_inquirer: '/inquirer/website/dashboard',
+  linkedin_inquirer: '/inquirer/linkedin/dashboard',
+
+  website_auditor: '/auditor/website/dashboard',
+  linkedin_auditor: '/auditor/linkedin/dashboard',
+};
 
 export default function LoginPage() {
   const { login, loading } = useAuthContext();
@@ -21,17 +36,16 @@ export default function LoginPage() {
       const role = await login(email, password);
       setSuccess('Authentication successful. Redirecting…');
 
+      const redirectPath = ROLE_REDIRECT_MAP[role];
+
+      if (!redirectPath) {
+        setError(`No redirect configured for role: ${role}`);
+        return;
+      }
+
       setTimeout(() => {
-        if (role === 'super_admin' || role === 'sub_admin') {
-          navigate('/super-admin/dashboard', { replace: true });
-        } else if (role.includes('auditor')) {
-          navigate('/auditor/dashboard', { replace: true });
-        } else if (role.includes('researcher') || role.includes('inquirer')) {
-          navigate('/worker/dashboard', { replace: true });
-        } else {
-          setError('Role not recognized for redirection.');
-        }
-      }, 600);
+        navigate(redirectPath, { replace: true });
+      }, 300);
     } catch {
       setError('Invalid credentials. Please check and try again.');
     }

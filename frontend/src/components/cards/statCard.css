@@ -5,9 +5,9 @@
   border: 1px solid #e2e8f0;
 }
 
-.stat-card.highlight {
-  border-left: 4px solid #10b981;
-}
+.stat-card.highlight { border-left: 4px solid #3b82f6; } /* Blue */
+.stat-card.success { border-left: 4px solid #10b981; }   /* Green */
+.stat-card.danger { border-left: 4px solid #ef4444; }    /* Red */
 
 .stat-card-title {
   font-size: 13px;

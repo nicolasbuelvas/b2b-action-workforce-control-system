@@ -1,0 +1,74 @@
+.forbidden-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+  text-align: center;
+  padding: 20px;
+}
+
+.forbidden-content {
+  max-width: 500px;
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.forbidden-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.forbidden-title {
+  font-size: 28px;
+  color: #0f172a;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.forbidden-text {
+  font-size: 16px;
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.forbidden-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-back {
+  background-color: #0f172a;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-back:hover {
+  background-color: #1e293b;
+}
+
+.btn-home-link {
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-home-link:hover {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
