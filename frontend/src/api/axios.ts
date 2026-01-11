@@ -1,7 +1,13 @@
 import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const instance = axios.create({
-  baseURL: 'http://localhost:3000',
+  baseURL: baseURL,
+  headers: {
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+  },
 });
 
 instance.interceptors.request.use((config) => {
