@@ -20,7 +20,8 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function decodeJwt(token: string): any {
   try {
     const payload = token.split('.')[1];
-    return JSON.parse(atob(payload));
+    // Usamos window.atob para compatibilidad en navegador
+    return JSON.parse(window.atob(payload));
   } catch {
     return null;
   }
@@ -29,13 +30,14 @@ function decodeJwt(token: string): any {
 function buildUserFromToken(token: string): User {
   const decoded = decodeJwt(token);
 
-  if (!decoded?.sub || !decoded?.roles || decoded.roles.length !== 1) {
+  // Verificamos que el payload tenga la estructura esperada por tu Backend
+  if (!decoded?.sub || !decoded?.roles || !Array.isArray(decoded.roles)) {
     throw new Error('Invalid token payload');
   }
 
   return {
     id: decoded.sub,
-    role: decoded.roles[0],
+    role: decoded.roles[0], // Tomamos el primer rol del array
   };
 }
 
@@ -81,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     localStorage.clear();
     setUser(null);
+    window.location.href = '/login'; // Redirección limpia
   };
 
   return (

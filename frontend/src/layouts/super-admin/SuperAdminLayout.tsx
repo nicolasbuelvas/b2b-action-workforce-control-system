@@ -1,18 +1,24 @@
 import { Outlet } from 'react-router-dom';
-import SuperAdminSidebar from './SuperAdminSidebar';
+import { useAuthContext } from '../../context/AuthContext'; 
+import AppSidebar from './SuperAdminSidebar';
 import './superAdminLayout.css';
 
-export default function SuperAdminLayout() {
+export default function AppLayout() {
+  const { user, logout } = useAuthContext();
+
   return (
     <div className="sa-shell">
-      <SuperAdminSidebar />
+      <AppSidebar />
 
       <div className="sa-main">
         <header className="sa-topbar">
-          <span className="sa-topbar-title">Super Admin Panel</span>
+          <span className="sa-topbar-title">
+            {user?.role.replace('_', ' ').toUpperCase()} PANEL
+          </span>
 
           <div className="sa-topbar-actions">
-            <button className="sa-logout-btn">Logout</button>
+            <span className="user-email-topbar">{user?.id}</span>
+            <button className="sa-logout-btn" onClick={logout}>Logout</button>
           </div>
         </header>
 
