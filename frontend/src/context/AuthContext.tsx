@@ -20,7 +20,6 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function decodeJwt(token: string): any {
   try {
     const payload = token.split('.')[1];
-    // Usamos window.atob para compatibilidad en navegador
     return JSON.parse(window.atob(payload));
   } catch {
     return null;
@@ -29,15 +28,12 @@ function decodeJwt(token: string): any {
 
 function buildUserFromToken(token: string): User {
   const decoded = decodeJwt(token);
-
-  // Verificamos que el payload tenga la estructura esperada por tu Backend
   if (!decoded?.sub || !decoded?.roles || !Array.isArray(decoded.roles)) {
     throw new Error('Invalid token payload');
   }
-
   return {
     id: decoded.sub,
-    role: decoded.roles[0], // Tomamos el primer rol del array
+    role: decoded.roles[0] as UserRole,
   };
 }
 
@@ -49,8 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem('accessToken');
     if (token) {
       try {
-        const user = buildUserFromToken(token);
-        setUser(user);
+        const userData = buildUserFromToken(token);
+        setUser(userData);
       } catch {
         localStorage.clear();
         setUser(null);
@@ -63,14 +59,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const data = await loginApi(email, password);
-
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
-
-      const user = buildUserFromToken(data.accessToken);
-      setUser(user);
-
-      return user.role;
+      const userData = buildUserFromToken(data.accessToken);
+      setUser(userData);
+      return userData.role;
     } catch (err) {
       localStorage.clear();
       setUser(null);
@@ -81,21 +74,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.clear();
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     setUser(null);
-    window.location.href = '/login'; // Redirección limpia
+    // Redirección forzada para limpiar el rastro del 404 de Vercel
+    window.location.replace('/login');
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAuthenticated: !!user,
-        login,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -103,8 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuthContext() {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuthContext must be used inside AuthProvider');
-  }
+  if (!ctx) throw new Error('useAuthContext must be used inside AuthProvider');
   return ctx;
 }

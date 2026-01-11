@@ -19,7 +19,7 @@ export default function AppRouter() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forbidden" element={<ForbiddenPage />} />
 
-      {/* Bloque Admin */}
+      {/* Admin & Sub Admin */}
       <Route element={<ProtectedRoute allowedRoles={['super_admin', 'sub_admin']} />}>
         <Route path="/super-admin" element={<SuperAdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -35,7 +35,7 @@ export default function AppRouter() {
         </Route>
       </Route>
 
-      {/* Bloque Worker */}
+      {/* Workers */}
       <Route element={<ProtectedRoute allowedRoles={['website_researcher', 'linkedin_researcher', 'website_inquirer', 'linkedin_inquirer']} />}>
         <Route path="/worker" element={<SuperAdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
@@ -43,7 +43,7 @@ export default function AppRouter() {
         </Route>
       </Route>
 
-      {/* Bloque Auditor */}
+      {/* Auditors */}
       <Route element={<ProtectedRoute allowedRoles={['website_auditor', 'linkedin_auditor']} />}>
         <Route path="/auditor" element={<SuperAdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
