@@ -76,7 +76,7 @@ export default function LinkedinInquirerDashboard() {
             <div className="notif-item rejected">
               <div className="n-icon">✖</div>
               <div className="n-text">
-                <p>Task <strong>SUB-710</strong> rejected: Blurry Image.</p>
+                <p>Task <strong>SUB-710</strong> rejected: Records exist for this LinkedIn URL. (System)</p>
                 <span>2 hours ago</span>
               </div>
             </div>

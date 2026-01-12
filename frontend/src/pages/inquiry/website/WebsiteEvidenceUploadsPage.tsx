@@ -3,8 +3,8 @@ import './WebsiteEvidenceUploadsPage.css';
 
 export default function WebsiteEvidenceUploadsPage() {
   const [uploads, setUploads] = useState([
-    { id: 1, file: 'screenshot_homepage.png', size: '2.4 MB', status: 'ready', type: 'Main' },
-    { id: 2, file: 'contact_page_capture.png', size: '1.8 MB', status: 'uploading', progress: 65, type: 'Evidence' },
+    { id: 1, file: 'screenshot_homepage.png', size: '204 KB', status: 'ready', type: 'Main' },
+    { id: 2, file: 'contact_page_capture.png', size: '108 KB', status: 'uploading', progress: 65, type: 'Evidence' },
   ]);
 
   return (
