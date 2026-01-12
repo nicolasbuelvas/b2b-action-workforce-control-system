@@ -3,8 +3,8 @@ import './LinkedinEvidenceUploadsPage.css';
 
 export default function LinkedinEvidenceUploadsPage() {
   const [files, setFiles] = useState([
-    { id: 1, name: 'screenshot_conv_miles.png', type: 'Conversation', size: '1.2 MB', status: 'verified' },
-    { id: 2, name: 'profile_check_dyson.jpg', type: 'Profile Proof', size: '2.5 MB', status: 'pending' },
+    { id: 1, name: 'screenshot_conv_miles.png', type: 'Conversation', size: '322 KB', status: 'verified' },
+    { id: 2, name: 'profile_check_dyson.jpg', type: 'Profile Proof', size: '450 KB', status: 'pending' },
   ]);
 
   return (
@@ -27,7 +27,7 @@ export default function LinkedinEvidenceUploadsPage() {
           <div className="li-dropzone">
             <span className="dz-icon">📸</span>
             <h3>Upload New Proof</h3>
-            <p>Drag and drop PNG, JPG or PDF. Maximum file size: 10MB.</p>
+            <p>Drag and drop PNG, JPG or PDF. Maximum file size: 500 KB.</p>
             <button className="btn-dz">Browse Files</button>
           </div>
 
