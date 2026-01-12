@@ -1,0 +1,31 @@
+.wb-inq-dash { padding: 40px; background: #f0f4f8; min-height: 100vh; font-family: 'Inter', sans-serif; }
+.welcome-banner { display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: white; padding: 32px; border-radius: 24px; margin-bottom: 32px; }
+.banner-info h1 { font-size: 28px; font-weight: 800; margin: 0; }
+.banner-info p { opacity: 0.8; margin-top: 8px; }
+
+.performance-chip { background: rgba(255,255,255,0.1); padding: 12px 24px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2); }
+.chip-label { font-size: 11px; text-transform: uppercase; font-weight: 700; display: block; }
+.chip-value { font-size: 24px; font-weight: 900; color: #10b981; }
+
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.main-stats-panel { grid-column: span 2; display: flex; gap: 24px; }
+.stat-box { flex: 1; background: white; padding: 24px; border-radius: 20px; display: flex; align-items: center; gap: 20px; border: 1px solid #e2e8f0; }
+.stat-box.highlight { background: #eff6ff; border-color: #3b82f6; }
+.stat-icon { font-size: 32px; background: #f8fafc; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 16px; }
+.stat-content h3 { font-size: 32px; font-weight: 800; color: #0f172a; margin: 0; }
+.stat-content p { color: #64748b; font-size: 14px; margin: 4px 0 0; }
+
+.chart-card, .recent-feedback { background: white; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; }
+.simple-bar-chart { height: 200px; display: flex; align-items: flex-end; justify-content: space-around; padding-top: 40px; }
+.chart-column { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 40px; }
+.column-bar { width: 100%; background: #6366f1; border-radius: 8px; position: relative; }
+.tooltip { position: absolute; top: -30px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 800; opacity: 0; transition: 0.3s; }
+.column-bar:hover .tooltip { opacity: 1; }
+.column-label { font-size: 12px; color: #94a3b8; font-weight: 700; }
+
+.feedback-list { display: flex; flex-direction: column; gap: 16px; }
+.feedback-item { padding: 16px; border-radius: 16px; position: relative; }
+.feedback-item.success { background: #f0fdf4; }
+.feedback-item.warning { background: #fffbeb; }
+.feedback-item p { font-size: 13px; color: #1e293b; margin: 0 0 8px; line-height: 1.5; }
+.feedback-item span { font-size: 11px; color: #94a3b8; }
