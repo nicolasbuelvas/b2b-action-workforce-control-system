@@ -20,7 +20,7 @@ export declare class AdminController {
         totalActions: number;
         approvedActions: number;
         rejectedActions: number;
-        cooldownDays: number;
+        cooldownRules: Record<string, import("../categories/entities/category-config.entity").CooldownRule>;
         dailyLimits: {};
     }[]>;
     getTopWorkers(): Promise<{

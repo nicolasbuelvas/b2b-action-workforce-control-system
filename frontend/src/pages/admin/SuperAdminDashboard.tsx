@@ -21,7 +21,7 @@ interface CategoryData {
   totalActions: number;
   approvedActions: number;
   rejectedActions: number;
-  cooldownDays: number;
+  cooldownRules: Record<string, number>;
   dailyLimits: any;
 }
 
@@ -59,7 +59,19 @@ export default function SuperAdminDashboard() {
 
   if (loading) return <div className="page-loader">Loading System...</div>;
 
-  if (loading) return <div className="page-loader">Loading System...</div>;
+  const formatCooldownRules = (rules: Record<string, number>) => {
+    if (!rules || Object.keys(rules).length === 0) return 'No cooldowns';
+    
+    const humanReadable: Record<string, string> = {
+      website_inquiry: 'Website Inquiry',
+      linkedin_inquiry: 'LinkedIn Inquiry',
+      // Add more mappings as needed
+    };
+    
+    return Object.entries(rules)
+      .map(([key, days]) => `${humanReadable[key] || key}: ${days}d`)
+      .join(', ');
+  };
 
   return (
     <div className="sa-container">
@@ -113,7 +125,7 @@ export default function SuperAdminDashboard() {
                     <th>Total Actions</th>
                     <th>Approved</th>
                     <th>Rejected</th>
-                    <th>Cooldown (Days)</th>
+                    <th>Cooldown Rules</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -123,7 +135,7 @@ export default function SuperAdminDashboard() {
                       <td>{cat.totalActions}</td>
                       <td>{cat.approvedActions}</td>
                       <td>{cat.rejectedActions}</td>
-                      <td>{cat.cooldownDays}</td>
+                      <td>{formatCooldownRules(cat.cooldownRules)}</td>
                     </tr>
                   )) : (
                     <tr>

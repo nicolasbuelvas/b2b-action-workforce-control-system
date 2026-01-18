@@ -149,7 +149,7 @@ let AdminService = class AdminService {
                 totalActions,
                 approvedActions,
                 rejectedActions,
-                cooldownDays: 30,
+                cooldownRules: cat.config?.cooldownRules || {},
                 dailyLimits: {},
             };
         }));

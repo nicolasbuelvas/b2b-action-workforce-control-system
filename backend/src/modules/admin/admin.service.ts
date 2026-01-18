@@ -180,7 +180,7 @@ export class AdminService {
           totalActions,
           approvedActions,
           rejectedActions,
-          cooldownDays: 30, // Default value since not in entity
+          cooldownRules: cat.config?.cooldownRules || {},
           dailyLimits: {}, // Default value since not in entity
         };
       })
