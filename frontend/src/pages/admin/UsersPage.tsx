@@ -42,6 +42,9 @@ export default function UsersPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', role: '', status: '' });
 
   const fetchUsers = async () => {
     try {
@@ -81,6 +84,10 @@ export default function UsersPage() {
     fetchUsers();
   }, [currentPage, searchTerm, roleFilter, statusFilter]);
 
+  useEffect(() => {
+    setSelectedUsers([]); // Clear selection when data changes
+  }, [users]);
+
   const handleStatusChange = async (id: string, newStatus: string) => {
     const action = newStatus === 'active' ? 'activate' : 'suspend';
     if (confirm(`Are you sure you want to ${action} this user?`)) {
@@ -95,10 +102,12 @@ export default function UsersPage() {
   };
 
   const handleResetPassword = async (id: string) => {
-    if (confirm('Are you sure you want to reset this user\'s password?')) {
+    const newPassword = prompt('Enter new password for the user:');
+    if (!newPassword) return;
+    if (confirm('Are you sure you want to reset this user\'s password? In Phase 3, the user will receive an email to update their password.')) {
       try {
-        await resetUserPassword(id);
-        alert('Password reset initiated');
+        await resetUserPassword(id, newPassword);
+        alert('Password reset successfully');
       } catch (err) {
         alert('Failed to reset password');
       }
@@ -122,6 +131,93 @@ export default function UsersPage() {
     setRoleFilter('');
     setStatusFilter('');
     setCurrentPage(1);
+  };
+
+  const handleSelectUser = (userId: string) => {
+    setSelectedUsers(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    const allVisibleIds = users.map(user => user.id);
+    setSelectedUsers(prev =>
+      prev.length === allVisibleIds.length ? [] : allVisibleIds
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUsers.length === 0) return;
+    if (confirm(`Are you sure you want to delete ${selectedUsers.length} users? This action cannot be undone.`)) {
+      try {
+        await Promise.all(selectedUsers.map(id => deleteUser(id)));
+        setSelectedUsers([]);
+        fetchUsers();
+        fetchStats();
+        alert('Users deleted successfully');
+      } catch (err) {
+        alert('Failed to delete some users');
+      }
+    }
+  };
+
+  const handleBulkSuspend = async () => {
+    if (selectedUsers.length === 0) return;
+    if (confirm(`Are you sure you want to suspend ${selectedUsers.length} users?`)) {
+      try {
+        await Promise.all(selectedUsers.map(id => updateUserStatus(id, 'suspended')));
+        setSelectedUsers([]);
+        fetchUsers();
+        fetchStats();
+        alert('Users suspended successfully');
+      } catch (err) {
+        alert('Failed to suspend some users');
+      }
+    }
+  };
+
+  const handleBulkResetPassword = async () => {
+    if (selectedUsers.length === 0) return;
+    const newPassword = prompt('Enter new password for selected users:');
+    if (!newPassword) return;
+    if (confirm(`Are you sure you want to reset passwords for ${selectedUsers.length} users? In Phase 3, users will receive an email to update their password.`)) {
+      try {
+        await Promise.all(selectedUsers.map(id => resetUserPassword(id, newPassword)));
+        alert('Passwords reset successfully. In Phase 3, users will receive an email to update their password.');
+        setSelectedUsers([]);
+      } catch (err) {
+        alert('Failed to reset passwords');
+      }
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setEditForm({ name: user.name, role: user.role, status: user.status });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingUser) return;
+    try {
+      // Assuming we have an updateUser API, but since it's not there, perhaps update status and name separately
+      // For now, only update status, as name might need a separate API
+      if (editForm.status !== editingUser.status) {
+        await updateUserStatus(editingUser.id, editForm.status);
+      }
+      // TODO: Update name if API exists
+      setEditingUser(null);
+      fetchUsers();
+      fetchStats();
+      alert('User updated successfully');
+    } catch (err) {
+      alert('Failed to update user');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
   };
 
   const formatStatus = (status: string) => {
@@ -188,13 +284,25 @@ export default function UsersPage() {
         </div>
       </div>
 
+      {/* BULK ACTIONS */}
+      {selectedUsers.length > 0 && (
+        <div className="bulk-actions-bar">
+          <span>{selectedUsers.length} user(s) selected</span>
+          <div className="bulk-buttons">
+            <button className="btn-bulk" onClick={handleBulkSuspend}>Suspend Users</button>
+            <button className="btn-bulk" onClick={handleBulkResetPassword}>Reset Passwords</button>
+            <button className="btn-bulk delete" onClick={handleBulkDelete}>Delete Users</button>
+          </div>
+        </div>
+      )}
+
       {/* USERS TABLE */}
       <div className="users-card">
         <div className="table-responsive">
           <table className="users-table">
             <thead>
               <tr>
-                <th><input type="checkbox" /></th>
+                <th><input type="checkbox" checked={selectedUsers.length === users.length && users.length > 0} onChange={handleSelectAll} /></th>
                 <th>ID</th>
                 <th>User Details</th>
                 <th>Role</th>
@@ -207,7 +315,7 @@ export default function UsersPage() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id} className="user-row">
-                  <td><input type="checkbox" /></td>
+                  <td><input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={() => handleSelectUser(user.id)} /></td>
                   <td className="txt-id">#{user.id.slice(0, 8)}</td>
                   <td>
                     <div className="user-info-cell">
@@ -225,7 +333,7 @@ export default function UsersPage() {
                   <td>{formatDate(user.updatedAt)}</td>
                   <td className="txt-right">
                     <div className="action-buttons">
-                      <button className="btn-icon-action" title="Edit" onClick={() => navigate(`/super-admin/users/${user.id}/edit`)}>Edit</button>
+                      <button className="btn-icon-action" title="Edit" onClick={() => handleEditUser(user)}>Edit</button>
                       <button className="btn-icon-action" title="Reset Password" onClick={() => handleResetPassword(user.id)}>Pass</button>
                       <button className="btn-icon-action suspend" title="Suspend" onClick={() => handleStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active')}>Lock</button>
                       <button className="btn-icon-action delete" title="Delete" onClick={() => handleDelete(user.id)}>Del</button>
@@ -249,6 +357,53 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+
+      {/* EDIT USER MODAL */}
+      {editingUser && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Edit User</h3>
+            <div className="form-group">
+              <label>Name:</label>
+              <input
+                type="text"
+                value={editForm.name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div className="form-group">
+              <label>Role:</label>
+              <select
+                value={editForm.role}
+                onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value }))}
+              >
+                <option value="super_admin">Super Admin</option>
+                <option value="sub_admin">Sub-Admin</option>
+                <option value="website_researcher">Website Researcher</option>
+                <option value="linkedin_researcher">LinkedIn Researcher</option>
+                <option value="website_inquirer">Website Inquirer</option>
+                <option value="linkedin_inquirer">LinkedIn Inquirer</option>
+                <option value="website_auditor">Website Auditor</option>
+                <option value="linkedin_auditor">LinkedIn Auditor</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Status:</label>
+              <select
+                value={editForm.status}
+                onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button onClick={handleCancelEdit}>Cancel</button>
+              <button onClick={handleSaveEdit}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

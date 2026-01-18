@@ -35,8 +35,8 @@ export async function updateUserStatus(id: string, status: string) {
   return res.data;
 }
 
-export async function resetUserPassword(id: string) {
-  const res = await axios.post(`/admin/users/${id}/reset-password`);
+export async function resetUserPassword(id: string, password?: string) {
+  const res = await axios.post(`/admin/users/${id}/reset-password`, password ? { password } : {});
   return res.data;
 }
 

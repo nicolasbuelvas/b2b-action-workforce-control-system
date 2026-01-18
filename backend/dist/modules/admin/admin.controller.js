@@ -51,8 +51,8 @@ let AdminController = class AdminController {
     updateUserStatus(id, body) {
         return this.adminService.updateUserStatus(id, body.status);
     }
-    resetUserPassword(id) {
-        return this.adminService.resetUserPassword(id);
+    resetUserPassword(id, body) {
+        return this.adminService.resetUserPassword(id, body?.password);
     }
     deleteUser(id) {
         return this.adminService.deleteUser(id);
@@ -120,8 +120,9 @@ __decorate([
 __decorate([
     (0, common_1.Post)('users/:id/reset-password'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "resetUserPassword", null);
 __decorate([

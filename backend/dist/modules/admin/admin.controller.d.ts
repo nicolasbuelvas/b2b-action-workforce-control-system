@@ -72,7 +72,9 @@ export declare class AdminController {
     }): Promise<{
         success: boolean;
     }>;
-    resetUserPassword(id: string): Promise<{
+    resetUserPassword(id: string, body?: {
+        password?: string;
+    }): Promise<{
         success: boolean;
         message: string;
     }>;

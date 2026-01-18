@@ -57,6 +57,9 @@ let AuthService = class AuthService {
         if (!user) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        if (user.status === 'suspended') {
+            throw new common_1.UnauthorizedException('Account is suspended');
+        }
         const valid = await bcrypt.compare(password, user.password_hash);
         if (!valid) {
             throw new common_1.UnauthorizedException('Invalid credentials');

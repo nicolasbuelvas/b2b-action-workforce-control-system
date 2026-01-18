@@ -20,6 +20,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (user.status === 'suspended') {
+      throw new UnauthorizedException('Account is suspended');
+    }
+
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       throw new UnauthorizedException('Invalid credentials');
