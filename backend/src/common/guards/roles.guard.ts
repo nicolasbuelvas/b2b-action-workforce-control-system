@@ -28,8 +28,10 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('No roles assigned');
     }
 
+    const normalizedRequiredRoles = requiredRoles.map(role => role.toUpperCase());
+
     const hasRole = user.roles.some(role =>
-      requiredRoles.includes(role),
+      normalizedRequiredRoles.includes(role.toUpperCase()),
     );
 
     if (!hasRole) {

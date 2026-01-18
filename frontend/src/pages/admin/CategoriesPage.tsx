@@ -1,50 +1,131 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import StatCard from '../../components/cards/StatCard';
+import { getAdminCategories, createCategory, updateCategory, deleteCategory } from '../../api/admin.api';
 import './categoriesPage.css';
 
 interface Category {
   id: string;
   name: string;
-  description: string;
-  assignedSubAdmins: string[];
-  websitesCount: number;
-  linkedInLinksCount: number;
-  dailyLimit: number;
-  cooldown: number;
-  status: 'Active' | 'Inactive';
+  isActive: boolean;
+  config: {
+    cooldownRules: {
+      cooldownDays: number;
+      dailyLimits: {
+        researcher: number;
+        inquirer: number;
+        auditor: number;
+      };
+    };
+  };
+  subAdminCategories: Array<{
+    user: {
+      id: string;
+      name: string;
+      email: string;
+    };
+  }>;
+  metrics?: {
+    totalResearchers: number;
+    totalInquirers: number;
+    totalAuditors: number;
+    approvalRate: number;
+    totalApprovedActions: number;
+  };
 }
 
 export default function CategoriesPage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  // Mock Data basada en requerimientos
-  const [categories] = useState<Category[]>([
-    { 
-      id: 'CAT-001', name: 'Product A', description: 'Main hardware vertical', 
-      assignedSubAdmins: ['Jane Smith', 'Mike Ross'], websitesCount: 12, 
-      linkedInLinksCount: 45, dailyLimit: 150, cooldown: 3, status: 'Active' 
-    },
-    { 
-      id: 'CAT-002', name: 'Product B', description: 'Software SaaS solutions', 
-      assignedSubAdmins: ['Harvey Specter'], websitesCount: 8, 
-      linkedInLinksCount: 30, dailyLimit: 100, cooldown: 5, status: 'Active' 
-    },
-    { 
-      id: 'CAT-003', name: 'Product C', description: 'Consulting services', 
-      assignedSubAdmins: [], websitesCount: 5, 
-      linkedInLinksCount: 10, dailyLimit: 50, cooldown: 7, status: 'Inactive' 
-    },
-  ]);
+  useEffect(() => {
+    loadCategories();
+  }, []);
 
-  const totalSubAdmins = categories.reduce((acc, cat) => acc + cat.assignedSubAdmins.length, 0);
+  const loadCategories = async () => {
+    try {
+      const data = await getAdminCategories();
+      setCategories(data);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateCategory = async (data: { name: string; config: { cooldownRules: { cooldownDays: number; dailyLimits: { researcher: number; inquirer: number; auditor: number } } } }) => {
+    try {
+      await createCategory(data);
+      await loadCategories();
+      setShowCreateModal(false);
+    } catch (error) {
+      console.error('Failed to create category:', error);
+    }
+  };
+
+  const handleEditCategory = async (category: Category) => {
+    try {
+      await updateCategory(category.id, category);
+      await loadCategories();
+      setEditingCategory(null);
+    } catch (error) {
+      console.error('Failed to update category:', error);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+    try {
+      await deleteCategory(id);
+      await loadCategories();
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+    }
+  };
+
+  const handleBulkActivate = async () => {
+    // TODO: implement
+  };
+
+  const handleBulkDeactivate = async () => {
+    // TODO: implement
+  };
+
+  const handleBulkDelete = async () => {
+    // TODO: implement
+  };
+
+  const filteredCategories = categories.filter(cat =>
+    cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cat.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalSubAdmins = categories.reduce((acc, cat) => acc + cat.subAdminCategories.length, 0);
+  const activeCategories = categories.filter(cat => cat.isActive).length;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCategories(filteredCategories.map(cat => cat.id));
+    } else {
+      setSelectedCategories([]);
+    }
+  };
+
+  const handleSelectCategory = (categoryId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCategories(prev => [...prev, categoryId]);
+    } else {
+      setSelectedCategories(prev => prev.filter(id => id !== categoryId));
+    }
+  };
+
+  if (loading) return <div className="page-loader">Loading Categories...</div>;
 
   return (
     <div className="categories-container">
-      {/* WORK IN PROGRESS BANNER */}
-      <div className="wip-banner">
-        <span>SYSTEM MODULE: WORK IN PROGRESS (W.I.P)</span>
-      </div>
-
       {/* HEADER */}
       <header className="categories-header">
         <div className="header-left">
@@ -53,33 +134,39 @@ export default function CategoriesPage() {
         </div>
         <div className="header-actions">
           <button className="btn-export">Export List</button>
-          <button className="btn-add-category">+ Add Category</button>
+          <button className="btn-add-category" onClick={() => setShowCreateModal(true)}>+ Add Category</button>
         </div>
       </header>
 
       {/* STATS SUMMARY */}
       <section className="categories-stats-grid">
         <StatCard title="Total Categories" value={categories.length} />
+        <StatCard title="Active Categories" value={activeCategories} />
         <StatCard title="Sub-Admin Assigned" value={totalSubAdmins} />
-        <StatCard title="Active Tasks" value={85} />
-        <StatCard title="Global Cooldowns" value={12} />
+        <StatCard title="Total Approved Actions" value={categories.reduce((acc, cat) => acc + (cat.metrics?.totalApprovedActions || 0), 0)} />
       </section>
 
       {/* MANAGEMENT BAR */}
       <div className="management-bar">
         <div className="search-box">
-          <input 
-            type="text" 
-            placeholder="Search by category name, ID or Sub-Admin..." 
+          <input
+            type="text"
+            placeholder="Search by category name or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="filter-group">
-          <select><option>All Sub-Admins</option></select>
           <select><option>Status: All</option></select>
           <button className="btn-clear">Clear</button>
         </div>
+        {selectedCategories.length > 0 && (
+          <div className="bulk-actions">
+            <button className="btn-bulk" onClick={handleBulkActivate}>Activate Selected</button>
+            <button className="btn-bulk" onClick={handleBulkDeactivate}>Deactivate Selected</button>
+            <button className="btn-bulk delete" onClick={handleBulkDelete}>Delete Selected</button>
+          </div>
+        )}
       </div>
 
       {/* CATEGORIES TABLE */}
@@ -88,54 +175,85 @@ export default function CategoriesPage() {
           <table className="categories-table">
             <thead>
               <tr>
-                <th style={{ width: '40px' }}><input type="checkbox" /></th>
+                <th style={{ width: '40px' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.length === filteredCategories.length && filteredCategories.length > 0}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                  />
+                </th>
                 <th>ID & Name</th>
-                <th>Description</th>
+                <th>Status</th>
                 <th>Assigned Sub-Admins</th>
-                <th className="txt-center">Websites</th>
-                <th className="txt-center">LinkedIn</th>
+                <th className="txt-center">Researchers</th>
+                <th className="txt-center">Inquirers</th>
+                <th className="txt-center">Auditors</th>
+                <th>Approval Rate</th>
                 <th>Limits / Cooldown</th>
                 <th className="txt-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {categories.map((cat) => (
+              {filteredCategories.map((cat) => (
                 <tr key={cat.id} className="cat-row">
-                  <td><input type="checkbox" /></td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(cat.id)}
+                      onChange={(e) => handleSelectCategory(cat.id, e.target.checked)}
+                    />
+                  </td>
                   <td>
                     <div className="cat-info-cell">
-                      <span className="cat-id">{cat.id}</span>
+                      <span className="cat-id">{cat.id.slice(0, 8)}</span>
                       <strong className="cat-name">{cat.name}</strong>
                     </div>
                   </td>
-                  <td><p className="cat-desc">{cat.description}</p></td>
+                  <td>
+                    <span className={`status-pill ${cat.isActive ? 'active' : 'inactive'}`}>
+                      {cat.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
                   <td>
                     <div className="subadmin-tags">
-                      {cat.assignedSubAdmins.length > 0 ? (
-                        cat.assignedSubAdmins.map(admin => (
-                          <span key={admin} className="admin-tag">{admin}</span>
+                      {cat.subAdminCategories.length > 0 ? (
+                        cat.subAdminCategories.slice(0, 2).map(sac => (
+                          <span key={sac.user.id} className="admin-tag" title={sac.user.email}>
+                            {sac.user.name}
+                          </span>
                         ))
                       ) : (
                         <span className="no-admins">Unassigned</span>
                       )}
+                      {cat.subAdminCategories.length > 2 && (
+                        <span className="admin-tag">+{cat.subAdminCategories.length - 2}</span>
+                      )}
                     </div>
                   </td>
                   <td className="txt-center">
-                    <span className="count-badge">{cat.websitesCount}</span>
+                    <span className="count-badge">{cat.metrics?.totalResearchers || 0}</span>
                   </td>
                   <td className="txt-center">
-                    <span className="count-badge">{cat.linkedInLinksCount}</span>
+                    <span className="count-badge">{cat.metrics?.totalInquirers || 0}</span>
+                  </td>
+                  <td className="txt-center">
+                    <span className="count-badge">{cat.metrics?.totalAuditors || 0}</span>
+                  </td>
+                  <td>
+                    <span className="approval-rate">{cat.metrics?.approvalRate || 0}%</span>
                   </td>
                   <td>
                     <div className="limit-info">
-                      <span className="limit-val" title="Daily Limit">Max: <strong>{cat.dailyLimit}</strong></span>
-                      <span className="cooldown-val" title="Cooldown Days">{cat.cooldown}d Cooldown</span>
+                      <span className="limit-val" title="Daily Limits">
+                        R: {cat.config.cooldownRules?.dailyLimits?.researcher || 0} | I: {cat.config.cooldownRules?.dailyLimits?.inquirer || 0} | A: {cat.config.cooldownRules?.dailyLimits?.auditor || 0}
+                      </span>
+                      <span className="cooldown-val" title="Cooldown Days">{cat.config.cooldownRules?.cooldownDays || 30}d Cooldown</span>
                     </div>
                   </td>
                   <td className="txt-right">
                     <div className="action-buttons">
-                      <button className="btn-icon-act edit">Edit</button>
-                      <button className="btn-icon-act delete">Delete</button>
+                      <button className="btn-icon-act edit" onClick={() => setEditingCategory(cat)}>Edit</button>
+                      <button className="btn-icon-act delete" onClick={() => handleDeleteCategory(cat.id)}>Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -144,6 +262,123 @@ export default function CategoriesPage() {
           </table>
         </div>
       </div>
+
+      {/* CREATE MODAL */}
+      {showCreateModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Create New Category</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              const data = {
+                name: formData.get('name') as string,
+                config: {
+                  cooldownRules: {
+                    cooldownDays: Number(formData.get('cooldownDays')),
+                    dailyLimits: {
+                      researcher: Number(formData.get('researcherLimit')),
+                      inquirer: Number(formData.get('inquirerLimit')),
+                      auditor: Number(formData.get('auditorLimit')),
+                    },
+                  },
+                },
+              };
+              handleCreateCategory(data);
+            }}>
+              <div className="form-group">
+                <label>Category Name</label>
+                <input type="text" name="name" required />
+              </div>
+              <div className="form-group">
+                <label>Cooldown (Days before same company can be contacted again)</label>
+                <input type="number" name="cooldownDays" defaultValue={30} required />
+              </div>
+              <div className="form-group">
+                <label>Daily Limit (Max approved actions per day)</label>
+                <div className="limits-grid">
+                  <div className="limit-input">
+                    <label>Researcher</label>
+                    <input type="number" name="researcherLimit" defaultValue={200} required />
+                  </div>
+                  <div className="limit-input">
+                    <label>Inquirer</label>
+                    <input type="number" name="inquirerLimit" defaultValue={50} required />
+                  </div>
+                  <div className="limit-input">
+                    <label>Auditor</label>
+                    <input type="number" name="auditorLimit" defaultValue={300} required />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="button" onClick={() => setShowCreateModal(false)}>Cancel</button>
+                <button type="submit">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT MODAL */}
+      {editingCategory && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Edit Category</h2>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              const updatedCategory = {
+                ...editingCategory,
+                name: formData.get('name') as string,
+                config: {
+                  ...editingCategory.config,
+                  cooldownRules: {
+                    ...editingCategory.config.cooldownRules,
+                    cooldownDays: Number(formData.get('cooldownDays')),
+                    dailyLimits: {
+                      researcher: Number(formData.get('researcherLimit')),
+                      inquirer: Number(formData.get('inquirerLimit')),
+                      auditor: Number(formData.get('auditorLimit')),
+                    },
+                  },
+                },
+              };
+              handleEditCategory(updatedCategory);
+            }}>
+              <div className="form-group">
+                <label>Category Name</label>
+                <input type="text" name="name" defaultValue={editingCategory.name} required />
+              </div>
+              <div className="form-group">
+                <label>Cooldown (Days before same company can be contacted again)</label>
+                <input type="number" name="cooldownDays" defaultValue={editingCategory.config.cooldownRules?.cooldownDays || 30} required />
+              </div>
+              <div className="form-group">
+                <label>Daily Limit (Max approved actions per day)</label>
+                <div className="limits-grid">
+                  <div className="limit-input">
+                    <label>Researcher</label>
+                    <input type="number" name="researcherLimit" defaultValue={editingCategory.config.cooldownRules?.dailyLimits?.researcher || 200} required />
+                  </div>
+                  <div className="limit-input">
+                    <label>Inquirer</label>
+                    <input type="number" name="inquirerLimit" defaultValue={editingCategory.config.cooldownRules?.dailyLimits?.inquirer || 50} required />
+                  </div>
+                  <div className="limit-input">
+                    <label>Auditor</label>
+                    <input type="number" name="auditorLimit" defaultValue={editingCategory.config.cooldownRules?.dailyLimits?.auditor || 300} required />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="button" onClick={() => setEditingCategory(null)}>Cancel</button>
+                <button type="submit">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { InquiryAction, InquiryActionStatus } from '../inquiry/entities/inquiry-
 import { ResearchTask } from '../research/entities/research-task.entity';
 import { ResearchAudit } from '../audit/entities/research-audit.entity';
 import { Category } from '../categories/entities/category.entity';
+import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignCategoryDto } from './dto/assign-category.dto';
 export declare class AdminService {
@@ -16,7 +17,8 @@ export declare class AdminService {
     private readonly researchTaskRepo;
     private readonly researchAuditRepo;
     private readonly categoryRepo;
-    constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>, inquiryActionRepo: Repository<InquiryAction>, researchTaskRepo: Repository<ResearchTask>, researchAuditRepo: Repository<ResearchAudit>, categoryRepo: Repository<Category>);
+    private readonly subAdminCategoryRepo;
+    constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>, inquiryActionRepo: Repository<InquiryAction>, researchTaskRepo: Repository<ResearchTask>, researchAuditRepo: Repository<ResearchAudit>, categoryRepo: Repository<Category>, subAdminCategoryRepo: Repository<SubAdminCategory>);
     getDashboard(): Promise<{
         totalUsers: number;
         totalResearchers: number;
@@ -57,11 +59,18 @@ export declare class AdminService {
     getCategories(): Promise<{
         id: string;
         name: string;
-        totalActions: number;
-        approvedActions: number;
-        rejectedActions: number;
-        cooldownRules: Record<string, import("../categories/entities/category-config.entity").CooldownRule>;
-        dailyLimits: {};
+        isActive: boolean;
+        config: {
+            cooldownRules: import("../categories/entities/category-config.entity").CooldownRules;
+        };
+        subAdminCategories: SubAdminCategory[];
+        metrics: {
+            totalResearchers: number;
+            totalInquirers: number;
+            totalAuditors: number;
+            approvalRate: number;
+            totalApprovedActions: number;
+        };
     }[]>;
     getTopWorkers(): Promise<{
         researchers: any[];

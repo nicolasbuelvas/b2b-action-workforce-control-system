@@ -11,10 +11,11 @@ import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
 import { ResearchTask } from '../research/entities/research-task.entity';
 import { ResearchAudit } from '../audit/entities/research-audit.entity';
 import { Category } from '../categories/entities/category.entity';
+import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role, UserRole, InquiryAction, ResearchTask, ResearchAudit, Category]),
+    TypeOrmModule.forFeature([User, Role, UserRole, InquiryAction, ResearchTask, ResearchAudit, Category, SubAdminCategory]),
   ],
   controllers: [AdminController],
   providers: [AdminService],

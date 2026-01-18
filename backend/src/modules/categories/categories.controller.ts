@@ -1,6 +1,9 @@
 import {
   Controller,
+  Get,
+  Post,
   Patch,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -18,15 +21,36 @@ export class CategoriesController {
     private readonly categoriesService: CategoriesService,
   ) {}
 
-  @Patch(':id/config')
+  @Get()
+  @Roles('SUPER_ADMIN', 'SUB_ADMIN')
+  findAll() {
+    return this.categoriesService.findAll();
+  }
+
+  @Post()
   @Roles('SUPER_ADMIN')
-  updateConfig(
+  create(@Body() data: { name: string; config?: any }) {
+    return this.categoriesService.create(data.name, data.config);
+  }
+
+  @Patch(':id')
+  @Roles('SUPER_ADMIN')
+  update(@Param('id') id: string, @Body() data: any) {
+    return this.categoriesService.update(id, data);
+  }
+
+  @Post(':id/sub-admins')
+  @Roles('SUPER_ADMIN')
+  assignSubAdmins(
     @Param('id') categoryId: string,
-    @Body('cooldownRules') cooldownRules: Record<string, any>,
+    @Body('userIds') userIds: string[],
   ) {
-    return this.categoriesService.updateConfig(
-      categoryId,
-      cooldownRules,
-    );
+    return this.categoriesService.assignSubAdmins(categoryId, userIds);
+  }
+
+  @Delete(':id')
+  @Roles('SUPER_ADMIN')
+  delete(@Param('id') id: string) {
+    return this.categoriesService.delete(id);
   }
 }

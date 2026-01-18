@@ -54,3 +54,18 @@ export async function deleteUser(id: string) {
   const res = await axios.delete(`/admin/users/${id}`);
   return res.data;
 }
+
+export async function createCategory(data: { name: string; config: { cooldownRules: { cooldownDays: number; dailyLimits: { researcher: number; inquirer: number; auditor: number } } } }) {
+  const res = await axios.post('/categories', data);
+  return res.data;
+}
+
+export async function updateCategory(id: string, data: any) {
+  const res = await axios.patch(`/categories/${id}`, data);
+  return res.data;
+}
+
+export async function deleteCategory(id: string) {
+  const res = await axios.delete(`/categories/${id}`);
+  return res.data;
+}

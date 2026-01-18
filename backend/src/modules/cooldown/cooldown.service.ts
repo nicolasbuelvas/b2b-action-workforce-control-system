@@ -22,38 +22,33 @@ export class CooldownService {
     categoryId: string;
     actionType: string;
   }) {
-    const { userId, targetId, categoryId, actionType } = params;
+    const { userId, targetId, categoryId } = params;
 
     const category = await this.categoriesService.getById(categoryId);
 
-    const rule = category.config?.cooldownRules?.[actionType];
-    if (!rule) return; // acción sin cooldown
+    const cooldownRules = category.config?.cooldownRules || {};
+    const cooldownDays = Math.min(...Object.values(cooldownRules).filter(v => typeof v === 'number')) || 30;
+    if (cooldownDays <= 0) return; // no cooldown
 
-    const { actionsRequired, cooldownMs } = rule;
+    const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
 
     let record = await this.cooldownRepo.findOne({
-      where: { userId, targetId, categoryId, actionType },
+      where: { userId, targetId, categoryId },
     });
 
     if (!record) return;
 
-    if (record.actionCount < actionsRequired) return;
-
     if (!record.cooldownStartedAt) return;
 
-    const elapsed =
-      Date.now() - record.cooldownStartedAt.getTime();
+    const elapsed = Date.now() - record.cooldownStartedAt.getTime();
 
     if (elapsed >= cooldownMs) {
-      record.actionCount = 0;
       record.cooldownStartedAt = null;
       await this.cooldownRepo.save(record);
       return;
     }
 
-    const remainingMinutes = Math.ceil(
-      (cooldownMs - elapsed) / 1000 / 60,
-    );
+    const remainingMinutes = Math.ceil((cooldownMs - elapsed) / 1000 / 60);
 
     throw new ForbiddenException({
       code: 'COOLDOWN_ACTIVE',
@@ -67,17 +62,16 @@ export class CooldownService {
     categoryId: string;
     actionType: string;
   }) {
-    const { userId, targetId, categoryId, actionType } = params;
+    const { userId, targetId, categoryId } = params;
 
     const category = await this.categoriesService.getById(categoryId);
-    const rule = category.config?.cooldownRules?.[actionType];
+    const cooldownRules = category.config?.cooldownRules || {};
+    const cooldownDays = Math.min(...Object.values(cooldownRules).filter(v => typeof v === 'number')) || 30;
 
-    if (!rule) return;
-
-    const { actionsRequired } = rule;
+    if (cooldownDays <= 0) return;
 
     let record = await this.cooldownRepo.findOne({
-      where: { userId, targetId, categoryId, actionType },
+      where: { userId, targetId, categoryId },
     });
 
     if (!record) {
@@ -85,17 +79,9 @@ export class CooldownService {
         userId,
         targetId,
         categoryId,
-        actionType,
-        actionCount: 1,
+        cooldownStartedAt: new Date(),
       });
     } else {
-      record.actionCount += 1;
-    }
-
-    if (
-      record.actionCount >= actionsRequired &&
-      !record.cooldownStartedAt
-    ) {
       record.cooldownStartedAt = new Date();
     }
 

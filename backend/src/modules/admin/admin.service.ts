@@ -10,6 +10,7 @@ import { InquiryAction, InquiryActionStatus } from '../inquiry/entities/inquiry-
 import { ResearchTask } from '../research/entities/research-task.entity';
 import { ResearchAudit } from '../audit/entities/research-audit.entity';
 import { Category } from '../categories/entities/category.entity';
+import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
 
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignCategoryDto } from './dto/assign-category.dto';
@@ -37,6 +38,9 @@ export class AdminService {
 
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
+
+    @InjectRepository(SubAdminCategory)
+    private readonly subAdminCategoryRepo: Repository<SubAdminCategory>,
   ) {}
 
   async getDashboard() {
@@ -124,6 +128,17 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
 
+    // Remove existing assignments for this user
+    await this.subAdminCategoryRepo.delete({ userId: dto.userId });
+
+    // Create new assignments
+    const assignments = dto.categoryIds.map(categoryId => ({
+      userId: dto.userId,
+      categoryId,
+    }));
+
+    await this.subAdminCategoryRepo.save(assignments);
+
     return {
       userId: user.id,
       categories: dto.categoryIds,
@@ -157,7 +172,9 @@ export class AdminService {
   }
 
   async getCategories() {
-    const categories = await this.categoryRepo.find({ relations: ['config'] });
+    const categories = await this.categoryRepo.find({
+      relations: ['config', 'subAdminCategories', 'subAdminCategories.user']
+    });
     const result = await Promise.all(
       categories.map(async (cat) => {
         const totalActions = await this.inquiryActionRepo
@@ -175,14 +192,49 @@ export class AdminService {
           .innerJoin('inquiry_tasks', 'it', 'ia.taskid = it.id')
           .where('it.categoryId = :catId AND ia.status = :status', { catId: cat.id, status: InquiryActionStatus.REJECTED })
           .getCount();
+
+        // Calculate metrics
+        const totalResearchers = await this.userRoleRepo
+          .createQueryBuilder('ur')
+          .innerJoin('ur.role', 'role')
+          .innerJoin('category_sub_admins', 'sac', 'sac.user_id = ur.userId')
+          .where('role.name LIKE :researcher AND sac.category_id = :catId', { researcher: '%researcher%', catId: cat.id })
+          .getCount();
+
+        const totalInquirers = await this.userRoleRepo
+          .createQueryBuilder('ur')
+          .innerJoin('ur.role', 'role')
+          .innerJoin('category_sub_admins', 'sac', 'sac.user_id = ur.userId')
+          .where('role.name LIKE :inquirer AND sac.category_id = :catId', { inquirer: '%inquirer%', catId: cat.id })
+          .getCount();
+
+        const totalAuditors = await this.userRoleRepo
+          .createQueryBuilder('ur')
+          .innerJoin('ur.role', 'role')
+          .innerJoin('category_sub_admins', 'sac', 'sac.user_id = ur.userId')
+          .where('role.name LIKE :auditor AND sac.category_id = :catId', { auditor: '%auditor%', catId: cat.id })
+          .getCount();
+
+        const approvalRate = totalActions > 0 ? (approvedActions / totalActions) * 100 : 0;
+
         return {
           id: cat.id,
           name: cat.name,
-          totalActions,
-          approvedActions,
-          rejectedActions,
-          cooldownRules: cat.config?.cooldownRules || {},
-          dailyLimits: {}, // Default value since not in entity
+          isActive: cat.isActive,
+          config: {
+            cooldownRules: cat.config ? cat.config.cooldownRules : {
+              cooldownDays: 30,
+              dailyLimits: { researcher: 200, inquirer: 50, auditor: 300 },
+            },
+          },
+          subAdminCategories: cat.subAdminCategories,
+          metrics: {
+            totalResearchers,
+            totalInquirers,
+            totalAuditors,
+            approvalRate: Math.round(approvalRate * 100) / 100,
+            totalApprovedActions: approvedActions,
+          },
         };
       })
     );

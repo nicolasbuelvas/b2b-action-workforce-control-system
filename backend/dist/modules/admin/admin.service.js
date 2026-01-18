@@ -57,8 +57,9 @@ const inquiry_action_entity_1 = require("../inquiry/entities/inquiry-action.enti
 const research_task_entity_1 = require("../research/entities/research-task.entity");
 const research_audit_entity_1 = require("../audit/entities/research-audit.entity");
 const category_entity_1 = require("../categories/entities/category.entity");
+const sub_admin_category_entity_1 = require("../categories/entities/sub-admin-category.entity");
 let AdminService = class AdminService {
-    constructor(userRepo, roleRepo, userRoleRepo, inquiryActionRepo, researchTaskRepo, researchAuditRepo, categoryRepo) {
+    constructor(userRepo, roleRepo, userRoleRepo, inquiryActionRepo, researchTaskRepo, researchAuditRepo, categoryRepo, subAdminCategoryRepo) {
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.userRoleRepo = userRoleRepo;
@@ -66,6 +67,7 @@ let AdminService = class AdminService {
         this.researchTaskRepo = researchTaskRepo;
         this.researchAuditRepo = researchAuditRepo;
         this.categoryRepo = categoryRepo;
+        this.subAdminCategoryRepo = subAdminCategoryRepo;
     }
     async getDashboard() {
         const totalUsers = await this.userRepo.count();
@@ -135,6 +137,12 @@ let AdminService = class AdminService {
         if (!user) {
             throw new common_1.NotFoundException('User not found');
         }
+        await this.subAdminCategoryRepo.delete({ userId: dto.userId });
+        const assignments = dto.categoryIds.map(categoryId => ({
+            userId: dto.userId,
+            categoryId,
+        }));
+        await this.subAdminCategoryRepo.save(assignments);
         return {
             userId: user.id,
             categories: dto.categoryIds,
@@ -160,7 +168,9 @@ let AdminService = class AdminService {
         return logs;
     }
     async getCategories() {
-        const categories = await this.categoryRepo.find({ relations: ['config'] });
+        const categories = await this.categoryRepo.find({
+            relations: ['config', 'subAdminCategories', 'subAdminCategories.user']
+        });
         const result = await Promise.all(categories.map(async (cat) => {
             const totalActions = await this.inquiryActionRepo
                 .createQueryBuilder('ia')
@@ -177,14 +187,43 @@ let AdminService = class AdminService {
                 .innerJoin('inquiry_tasks', 'it', 'ia.taskid = it.id')
                 .where('it.categoryId = :catId AND ia.status = :status', { catId: cat.id, status: inquiry_action_entity_1.InquiryActionStatus.REJECTED })
                 .getCount();
+            const totalResearchers = await this.userRoleRepo
+                .createQueryBuilder('ur')
+                .innerJoin('ur.role', 'role')
+                .innerJoin('category_sub_admins', 'sac', 'sac.user_id = ur.userId')
+                .where('role.name LIKE :researcher AND sac.category_id = :catId', { researcher: '%researcher%', catId: cat.id })
+                .getCount();
+            const totalInquirers = await this.userRoleRepo
+                .createQueryBuilder('ur')
+                .innerJoin('ur.role', 'role')
+                .innerJoin('category_sub_admins', 'sac', 'sac.user_id = ur.userId')
+                .where('role.name LIKE :inquirer AND sac.category_id = :catId', { inquirer: '%inquirer%', catId: cat.id })
+                .getCount();
+            const totalAuditors = await this.userRoleRepo
+                .createQueryBuilder('ur')
+                .innerJoin('ur.role', 'role')
+                .innerJoin('category_sub_admins', 'sac', 'sac.user_id = ur.userId')
+                .where('role.name LIKE :auditor AND sac.category_id = :catId', { auditor: '%auditor%', catId: cat.id })
+                .getCount();
+            const approvalRate = totalActions > 0 ? (approvedActions / totalActions) * 100 : 0;
             return {
                 id: cat.id,
                 name: cat.name,
-                totalActions,
-                approvedActions,
-                rejectedActions,
-                cooldownRules: cat.config?.cooldownRules || {},
-                dailyLimits: {},
+                isActive: cat.isActive,
+                config: {
+                    cooldownRules: cat.config ? cat.config.cooldownRules : {
+                        cooldownDays: 30,
+                        dailyLimits: { researcher: 200, inquirer: 50, auditor: 300 },
+                    },
+                },
+                subAdminCategories: cat.subAdminCategories,
+                metrics: {
+                    totalResearchers,
+                    totalInquirers,
+                    totalAuditors,
+                    approvalRate: Math.round(approvalRate * 100) / 100,
+                    totalApprovedActions: approvedActions,
+                },
             };
         }));
         return result;
@@ -322,7 +361,9 @@ exports.AdminService = AdminService = __decorate([
     __param(4, (0, typeorm_1.InjectRepository)(research_task_entity_1.ResearchTask)),
     __param(5, (0, typeorm_1.InjectRepository)(research_audit_entity_1.ResearchAudit)),
     __param(6, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
+    __param(7, (0, typeorm_1.InjectRepository)(sub_admin_category_entity_1.SubAdminCategory)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

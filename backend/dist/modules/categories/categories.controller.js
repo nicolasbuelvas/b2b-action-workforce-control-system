@@ -22,20 +22,64 @@ let CategoriesController = class CategoriesController {
     constructor(categoriesService) {
         this.categoriesService = categoriesService;
     }
-    updateConfig(categoryId, cooldownRules) {
-        return this.categoriesService.updateConfig(categoryId, cooldownRules);
+    findAll() {
+        return this.categoriesService.findAll();
+    }
+    create(data) {
+        return this.categoriesService.create(data.name, data.config);
+    }
+    update(id, data) {
+        return this.categoriesService.update(id, data);
+    }
+    assignSubAdmins(categoryId, userIds) {
+        return this.categoriesService.assignSubAdmins(categoryId, userIds);
+    }
+    delete(id) {
+        return this.categoriesService.delete(id);
     }
 };
 exports.CategoriesController = CategoriesController;
 __decorate([
-    (0, common_1.Patch)(':id/config'),
+    (0, common_1.Get)(),
+    (0, roles_decorator_1.Roles)('SUPER_ADMIN', 'SUB_ADMIN'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], CategoriesController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Post)(),
+    (0, roles_decorator_1.Roles)('SUPER_ADMIN'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], CategoriesController.prototype, "create", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
     (0, roles_decorator_1.Roles)('SUPER_ADMIN'),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)('cooldownRules')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
-], CategoriesController.prototype, "updateConfig", null);
+], CategoriesController.prototype, "update", null);
+__decorate([
+    (0, common_1.Post)(':id/sub-admins'),
+    (0, roles_decorator_1.Roles)('SUPER_ADMIN'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('userIds')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Array]),
+    __metadata("design:returntype", void 0)
+], CategoriesController.prototype, "assignSubAdmins", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, roles_decorator_1.Roles)('SUPER_ADMIN'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], CategoriesController.prototype, "delete", null);
 exports.CategoriesController = CategoriesController = __decorate([
     (0, common_1.Controller)('categories'),
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),

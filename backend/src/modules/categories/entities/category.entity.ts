@@ -4,8 +4,10 @@ import {
   Column,
   CreateDateColumn,
   OneToOne,
+  OneToMany,
 } from 'typeorm';
 import { CategoryConfig } from './category-config.entity';
+import { SubAdminCategory } from './sub-admin-category.entity';
 
 @Entity('categories')
 export class Category {
@@ -23,6 +25,9 @@ export class Category {
     eager: true,
   })
   config: CategoryConfig;
+
+  @OneToMany(() => SubAdminCategory, sac => sac.category, { eager: true })
+  subAdminCategories: SubAdminCategory[];
 
   @CreateDateColumn()
   createdAt: Date;

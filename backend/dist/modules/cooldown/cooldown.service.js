@@ -24,24 +24,22 @@ let CooldownService = class CooldownService {
         this.categoriesService = categoriesService;
     }
     async enforceCooldown(params) {
-        const { userId, targetId, categoryId, actionType } = params;
+        const { userId, targetId, categoryId } = params;
         const category = await this.categoriesService.getById(categoryId);
-        const rule = category.config?.cooldownRules?.[actionType];
-        if (!rule)
+        const cooldownRules = category.config?.cooldownRules || {};
+        const cooldownDays = Math.min(...Object.values(cooldownRules).filter(v => typeof v === 'number')) || 30;
+        if (cooldownDays <= 0)
             return;
-        const { actionsRequired, cooldownMs } = rule;
+        const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
         let record = await this.cooldownRepo.findOne({
-            where: { userId, targetId, categoryId, actionType },
+            where: { userId, targetId, categoryId },
         });
         if (!record)
-            return;
-        if (record.actionCount < actionsRequired)
             return;
         if (!record.cooldownStartedAt)
             return;
         const elapsed = Date.now() - record.cooldownStartedAt.getTime();
         if (elapsed >= cooldownMs) {
-            record.actionCount = 0;
             record.cooldownStartedAt = null;
             await this.cooldownRepo.save(record);
             return;
@@ -53,29 +51,24 @@ let CooldownService = class CooldownService {
         });
     }
     async recordAction(params) {
-        const { userId, targetId, categoryId, actionType } = params;
+        const { userId, targetId, categoryId } = params;
         const category = await this.categoriesService.getById(categoryId);
-        const rule = category.config?.cooldownRules?.[actionType];
-        if (!rule)
+        const cooldownRules = category.config?.cooldownRules || {};
+        const cooldownDays = Math.min(...Object.values(cooldownRules).filter(v => typeof v === 'number')) || 30;
+        if (cooldownDays <= 0)
             return;
-        const { actionsRequired } = rule;
         let record = await this.cooldownRepo.findOne({
-            where: { userId, targetId, categoryId, actionType },
+            where: { userId, targetId, categoryId },
         });
         if (!record) {
             record = this.cooldownRepo.create({
                 userId,
                 targetId,
                 categoryId,
-                actionType,
-                actionCount: 1,
+                cooldownStartedAt: new Date(),
             });
         }
         else {
-            record.actionCount += 1;
-        }
-        if (record.actionCount >= actionsRequired &&
-            !record.cooldownStartedAt) {
             record.cooldownStartedAt = new Date();
         }
         await this.cooldownRepo.save(record);

@@ -4,10 +4,11 @@ import { CategoriesService } from './categories.service';
 import { CategoriesController } from './categories.controller';
 import { Category } from './entities/category.entity';
 import { CategoryConfig } from './entities/category-config.entity';
+import { SubAdminCategory } from './entities/sub-admin-category.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Category, CategoryConfig]),
+    TypeOrmModule.forFeature([Category, CategoryConfig, SubAdminCategory]),
   ],
   controllers: [CategoriesController],
   providers: [CategoriesService],

@@ -88,14 +88,14 @@ WHERE NOT EXISTS (
 -- ============================================================
 -- CATEGORY CONFIGS
 -- ============================================================
-INSERT INTO category_configs (id, "categoryId", "cooldownRules")
+INSERT INTO category_configs (id, "categoryId", "cooldownDays", "dailyLimits", "allowedInquiryTypes", "defaultActionCount")
 SELECT
   gen_random_uuid(),
   c.id,
-  jsonb_build_object(
-    'website_inquiry', 30,
-    'linkedin_inquiry', 60
-  )
+  30,
+  '{"researcher": 200, "inquirer": 50, "auditor": 300}',
+  ARRAY['website', 'linkedin'],
+  CASE WHEN c.name = 'Product A' THEN 1 ELSE 3 END
 FROM categories c
 WHERE NOT EXISTS (
   SELECT 1 FROM category_configs cc

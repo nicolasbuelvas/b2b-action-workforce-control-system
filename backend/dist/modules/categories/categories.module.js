@@ -13,13 +13,14 @@ const categories_service_1 = require("./categories.service");
 const categories_controller_1 = require("./categories.controller");
 const category_entity_1 = require("./entities/category.entity");
 const category_config_entity_1 = require("./entities/category-config.entity");
+const sub_admin_category_entity_1 = require("./entities/sub-admin-category.entity");
 let CategoriesModule = class CategoriesModule {
 };
 exports.CategoriesModule = CategoriesModule;
 exports.CategoriesModule = CategoriesModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([category_entity_1.Category, category_config_entity_1.CategoryConfig]),
+            typeorm_1.TypeOrmModule.forFeature([category_entity_1.Category, category_config_entity_1.CategoryConfig, sub_admin_category_entity_1.SubAdminCategory]),
         ],
         controllers: [categories_controller_1.CategoriesController],
         providers: [categories_service_1.CategoriesService],

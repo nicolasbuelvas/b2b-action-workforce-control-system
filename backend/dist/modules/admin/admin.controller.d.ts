@@ -17,11 +17,18 @@ export declare class AdminController {
     getCategories(): Promise<{
         id: string;
         name: string;
-        totalActions: number;
-        approvedActions: number;
-        rejectedActions: number;
-        cooldownRules: Record<string, import("../categories/entities/category-config.entity").CooldownRule>;
-        dailyLimits: {};
+        isActive: boolean;
+        config: {
+            cooldownRules: import("../categories/entities/category-config.entity").CooldownRules;
+        };
+        subAdminCategories: import("../categories/entities/sub-admin-category.entity").SubAdminCategory[];
+        metrics: {
+            totalResearchers: number;
+            totalInquirers: number;
+            totalAuditors: number;
+            approvalRate: number;
+            totalApprovedActions: number;
+        };
     }[]>;
     getTopWorkers(): Promise<{
         researchers: any[];

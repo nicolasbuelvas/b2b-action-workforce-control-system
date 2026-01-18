@@ -21,9 +21,13 @@ __decorate([
 ], CategoryConfig.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.OneToOne)(() => category_entity_1.Category, category => category.config),
-    (0, typeorm_1.JoinColumn)(),
+    (0, typeorm_1.JoinColumn)({ name: 'categoryId' }),
     __metadata("design:type", category_entity_1.Category)
 ], CategoryConfig.prototype, "category", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'categoryId' }),
+    __metadata("design:type", String)
+], CategoryConfig.prototype, "categoryId", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'jsonb', default: {} }),
     __metadata("design:type", Object)

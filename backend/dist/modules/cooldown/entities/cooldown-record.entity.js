@@ -31,14 +31,6 @@ __decorate([
     __metadata("design:type", String)
 ], CooldownRecord.prototype, "categoryId", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
-    __metadata("design:type", String)
-], CooldownRecord.prototype, "actionType", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ default: 0 }),
-    __metadata("design:type", Number)
-], CooldownRecord.prototype, "actionCount", void 0);
-__decorate([
     (0, typeorm_1.Column)({ type: 'timestamptz', nullable: true }),
     __metadata("design:type", Date)
 ], CooldownRecord.prototype, "cooldownStartedAt", void 0);
@@ -52,6 +44,6 @@ __decorate([
 ], CooldownRecord.prototype, "updatedAt", void 0);
 exports.CooldownRecord = CooldownRecord = __decorate([
     (0, typeorm_1.Entity)('cooldown_records'),
-    (0, typeorm_1.Index)(['userId', 'targetId', 'actionType', 'categoryId'], { unique: true })
+    (0, typeorm_1.Index)(['userId', 'targetId', 'categoryId'], { unique: true })
 ], CooldownRecord);
 //# sourceMappingURL=cooldown-record.entity.js.map

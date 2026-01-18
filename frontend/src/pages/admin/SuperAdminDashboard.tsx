@@ -21,8 +21,11 @@ interface CategoryData {
   totalActions: number;
   approvedActions: number;
   rejectedActions: number;
-  cooldownRules: Record<string, number>;
-  dailyLimits: any;
+  config: {
+    cooldownRules: {
+      cooldownDays: number;
+    };
+  };
 }
 
 interface TopWorkersData {
@@ -59,18 +62,9 @@ export default function SuperAdminDashboard() {
 
   if (loading) return <div className="page-loader">Loading System...</div>;
 
-  const formatCooldownRules = (rules: Record<string, number>) => {
-    if (!rules || Object.keys(rules).length === 0) return 'No cooldowns';
-    
-    const humanReadable: Record<string, string> = {
-      website_inquiry: 'Website Inquiry',
-      linkedin_inquiry: 'LinkedIn Inquiry',
-      // Add more mappings as needed
-    };
-    
-    return Object.entries(rules)
-      .map(([key, days]) => `${humanReadable[key] || key}: ${days}d`)
-      .join(', ');
+  const formatCooldownRules = (config: { cooldownRules: { cooldownDays: number } }) => {
+    if (!config || !config.cooldownRules?.cooldownDays) return 'No cooldowns';
+    return `${config.cooldownRules.cooldownDays} days`;
   };
 
   return (
@@ -135,7 +129,7 @@ export default function SuperAdminDashboard() {
                       <td>{cat.totalActions}</td>
                       <td>{cat.approvedActions}</td>
                       <td>{cat.rejectedActions}</td>
-                      <td>{formatCooldownRules(cat.cooldownRules)}</td>
+                      <td>{formatCooldownRules(cat.config)}</td>
                     </tr>
                   )) : (
                     <tr>

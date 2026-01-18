@@ -27,7 +27,8 @@ let RolesGuard = class RolesGuard {
         if (!user || !Array.isArray(user.roles)) {
             throw new common_1.ForbiddenException('No roles assigned');
         }
-        const hasRole = user.roles.some(role => requiredRoles.includes(role));
+        const normalizedRequiredRoles = requiredRoles.map(role => role.toUpperCase());
+        const hasRole = user.roles.some(role => normalizedRequiredRoles.includes(role.toUpperCase()));
         if (!hasRole) {
             throw new common_1.ForbiddenException('Your role does not allow user creation');
         }
