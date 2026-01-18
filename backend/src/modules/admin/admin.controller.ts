@@ -4,6 +4,10 @@ import {
   Body,
   Get,
   UseGuards,
+  Query,
+  Param,
+  Patch,
+  Delete,
 } from '@nestjs/common';
 
 import { AdminService } from './admin.service';
@@ -38,6 +42,43 @@ export class AdminController {
   @Get('system-logs')
   getSystemLogs() {
     return this.adminService.getSystemLogs();
+  }
+
+  @Get('users')
+  getUsers(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search: string = '',
+    @Query('role') role: string = '',
+    @Query('status') status: string = '',
+  ) {
+    return this.adminService.getUsers({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      search,
+      role,
+      status,
+    });
+  }
+
+  @Get('users/stats')
+  getUsersStats() {
+    return this.adminService.getUsersStats();
+  }
+
+  @Patch('users/:id/status')
+  updateUserStatus(@Param('id') id: string, @Body() body: { status: string }) {
+    return this.adminService.updateUserStatus(id, body.status);
+  }
+
+  @Post('users/:id/reset-password')
+  resetUserPassword(@Param('id') id: string) {
+    return this.adminService.resetUserPassword(id);
+  }
+
+  @Delete('users/:id')
+  deleteUser(@Param('id') id: string) {
+    return this.adminService.deleteUser(id);
   }
 
   @Post('sub-admin')

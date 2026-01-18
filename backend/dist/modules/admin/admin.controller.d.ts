@@ -46,6 +46,39 @@ export declare class AdminController {
         createdAt: Date;
         type: string;
     })[]>;
+    getUsers(page?: string, limit?: string, search?: string, role?: string, status?: string): Promise<{
+        users: {
+            id: string;
+            name: string;
+            email: string;
+            role: string;
+            status: "active" | "suspended";
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    getUsersStats(): Promise<{
+        totalUsers: number;
+        activeUsers: number;
+        suspendedUsers: number;
+        subAdmins: number;
+    }>;
+    updateUserStatus(id: string, body: {
+        status: string;
+    }): Promise<{
+        success: boolean;
+    }>;
+    resetUserPassword(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    deleteUser(id: string): Promise<{
+        success: boolean;
+    }>;
     createSubAdmin(dto: CreateSubAdminDto): Promise<{
         userId: string;
         role: string;

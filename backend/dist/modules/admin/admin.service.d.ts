@@ -69,4 +69,41 @@ export declare class AdminService {
         auditors: any[];
     }>;
     getSubAdmins(): Promise<UserRole[]>;
+    getUsers(options: {
+        page: number;
+        limit: number;
+        search: string;
+        role: string;
+        status: string;
+    }): Promise<{
+        users: {
+            id: string;
+            name: string;
+            email: string;
+            role: string;
+            status: "active" | "suspended";
+            createdAt: Date;
+            updatedAt: Date;
+        }[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    getUsersStats(): Promise<{
+        totalUsers: number;
+        activeUsers: number;
+        suspendedUsers: number;
+        subAdmins: number;
+    }>;
+    updateUserStatus(id: string, status: string): Promise<{
+        success: boolean;
+    }>;
+    resetUserPassword(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    deleteUser(id: string): Promise<{
+        success: boolean;
+    }>;
 }

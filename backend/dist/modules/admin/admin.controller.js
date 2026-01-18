@@ -36,6 +36,27 @@ let AdminController = class AdminController {
     getSystemLogs() {
         return this.adminService.getSystemLogs();
     }
+    getUsers(page = '1', limit = '10', search = '', role = '', status = '') {
+        return this.adminService.getUsers({
+            page: parseInt(page),
+            limit: parseInt(limit),
+            search,
+            role,
+            status,
+        });
+    }
+    getUsersStats() {
+        return this.adminService.getUsersStats();
+    }
+    updateUserStatus(id, body) {
+        return this.adminService.updateUserStatus(id, body.status);
+    }
+    resetUserPassword(id) {
+        return this.adminService.resetUserPassword(id);
+    }
+    deleteUser(id) {
+        return this.adminService.deleteUser(id);
+    }
     createSubAdmin(dto) {
         return this.adminService.createSubAdmin(dto);
     }
@@ -71,6 +92,45 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getSystemLogs", null);
+__decorate([
+    (0, common_1.Get)('users'),
+    __param(0, (0, common_1.Query)('page')),
+    __param(1, (0, common_1.Query)('limit')),
+    __param(2, (0, common_1.Query)('search')),
+    __param(3, (0, common_1.Query)('role')),
+    __param(4, (0, common_1.Query)('status')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getUsers", null);
+__decorate([
+    (0, common_1.Get)('users/stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getUsersStats", null);
+__decorate([
+    (0, common_1.Patch)('users/:id/status'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateUserStatus", null);
+__decorate([
+    (0, common_1.Post)('users/:id/reset-password'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "resetUserPassword", null);
+__decorate([
+    (0, common_1.Delete)('users/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteUser", null);
 __decorate([
     (0, common_1.Post)('sub-admin'),
     __param(0, (0, common_1.Body)()),

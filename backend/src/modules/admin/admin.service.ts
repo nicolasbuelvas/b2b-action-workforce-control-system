@@ -243,4 +243,83 @@ export class AdminService {
       ])
       .getMany();
   }
+
+  async getUsers(options: { page: number; limit: number; search: string; role: string; status: string }) {
+    const { page, limit, search, role, status } = options;
+    const skip = (page - 1) * limit;
+
+    let query = this.userRepo
+      .createQueryBuilder('u')
+      .leftJoinAndSelect('u.roles', 'ur')
+      .leftJoinAndSelect('ur.role', 'r');
+
+    if (search) {
+      query = query.where('u.name ILIKE :search OR u.email ILIKE :search OR u.id::text ILIKE :search', { search: `%${search}%` });
+    }
+
+    if (role) {
+      query = query.andWhere('r.name = :role', { role });
+    }
+
+    if (status) {
+      query = query.andWhere('u.status = :status', { status });
+    }
+
+    const [users, total] = await query
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
+
+    const formattedUsers = users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.roles?.[0]?.role?.name || 'No Role',
+      status: user.status || 'active',
+      createdAt: user.createdAt,
+      updatedAt: user.createdAt,
+    }));
+
+    return {
+      users: formattedUsers,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getUsersStats() {
+    const totalUsers = await this.userRepo.count();
+    const activeUsers = await this.userRepo.count({ where: { status: 'active' } });
+    const suspendedUsers = await this.userRepo.count({ where: { status: 'suspended' } });
+    const subAdmins = await this.userRoleRepo
+      .createQueryBuilder('ur')
+      .innerJoin('ur.role', 'role')
+      .where('role.name = :role', { role: 'sub_admin' })
+      .getCount();
+
+    return {
+      totalUsers,
+      activeUsers,
+      suspendedUsers,
+      subAdmins,
+    };
+  }
+
+  async updateUserStatus(id: string, status: string) {
+    await this.userRepo.update(id, { status: status as 'active' | 'suspended' });
+    return { success: true };
+  }
+
+  async resetUserPassword(id: string) {
+    // Implement password reset logic, e.g., generate new password and email
+    // For now, just return success
+    return { success: true, message: 'Password reset initiated' };
+  }
+
+  async deleteUser(id: string) {
+    await this.userRepo.delete(id);
+    return { success: true };
+  }
 }

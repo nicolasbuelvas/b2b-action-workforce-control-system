@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getUsers, getUsersStats, updateUserStatus, resetUserPassword, deleteUser } from '../../api/admin.api';
 import StatCard from '../../components/cards/StatCard';
 import './userPage.css';
 
@@ -7,31 +9,134 @@ interface User {
   name: string;
   email: string;
   role: string;
-  status: 'Active' | 'Inactive' | 'Suspended';
-  createdDate: string;
-  lastLogin: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UsersResponse {
+  users: User[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+interface StatsResponse {
+  totalUsers: number;
+  activeUsers: number;
+  suspendedUsers: number;
+  subAdmins: number;
 }
 
 export default function UsersPage() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('All Roles');
-  const [statusFilter, setStatusFilter] = useState('All Status');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit] = useState(10);
+  const [users, setUsers] = useState<User[]>([]);
+  const [stats, setStats] = useState<StatsResponse | null>(null);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Datos de ejemplo (Mock Data)
-  const [users] = useState<User[]>([
-    { id: '101', name: 'John Doe', email: 'john@company.com', role: 'Website Researcher', status: 'Active', createdDate: '2025-12-01', lastLogin: '2026-01-08' },
-    { id: '102', name: 'Jane Smith', email: 'jane@network.com', role: 'Sub-Admin', status: 'Active', createdDate: '2025-11-15', lastLogin: '2026-01-09' },
-    { id: '103', name: 'Robert Fox', email: 'robert@tasks.com', role: 'LinkedIn Inquirer', status: 'Suspended', createdDate: '2025-10-20', lastLogin: '2025-12-20' },
-    { id: '104', name: 'Alice Wong', email: 'alice@audit.com', role: 'Website Auditor', status: 'Inactive', createdDate: '2025-09-05', lastLogin: '2026-01-02' },
-  ]);
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        page: currentPage,
+        limit,
+        search: searchTerm,
+        role: roleFilter,
+        status: statusFilter,
+      };
+      const data: UsersResponse = await getUsers(params);
+      setUsers(data.users);
+      setTotal(data.total);
+      setTotalPages(data.totalPages);
+    } catch (err) {
+      setError('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const data: StatsResponse = await getUsersStats();
+      setStats(data);
+    } catch (err) {
+      // Ignore stats error
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [currentPage, searchTerm, roleFilter, statusFilter]);
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    const action = newStatus === 'active' ? 'activate' : 'suspend';
+    if (confirm(`Are you sure you want to ${action} this user?`)) {
+      try {
+        await updateUserStatus(id, newStatus);
+        fetchUsers();
+        fetchStats();
+      } catch (err) {
+        alert(`Failed to ${action} user`);
+      }
+    }
+  };
+
+  const handleResetPassword = async (id: string) => {
+    if (confirm('Are you sure you want to reset this user\'s password?')) {
+      try {
+        await resetUserPassword(id);
+        alert('Password reset initiated');
+      } catch (err) {
+        alert('Failed to reset password');
+      }
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      try {
+        await deleteUser(id);
+        fetchUsers();
+        fetchStats();
+      } catch (err) {
+        alert('Failed to delete user');
+      }
+    }
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setRoleFilter('');
+    setStatusFilter('');
+    setCurrentPage(1);
+  };
+
+  const formatStatus = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (loading && !users.length) return <div className="page-loader">Loading Users...</div>;
+  if (error) return <div className="error-message">{error}</div>;
 
   return (
     <div className="users-container">
-      {/* WORK IN PROGRESS BADGE */}
-      <div className="wip-banner">
-        <span>SYSTEM MODULE: WORK IN PROGRESS (W.I.P)</span>
-      </div>
-
       {/* HEADER SECTION */}
       <header className="users-header">
         <div className="header-left">
@@ -40,16 +145,16 @@ export default function UsersPage() {
         </div>
         <div className="header-actions">
           <button className="btn-export">Export Users</button>
-          <button className="btn-add-user">Add User</button>
+          <button className="btn-add-user" onClick={() => navigate('/super-admin/users/create')}>Add User</button>
         </div>
       </header>
 
       {/* STATS SUMMARY */}
       <section className="users-stats-grid">
-        <StatCard title="Total Users" value={324} />
-        <StatCard title="Active" value={310} />
-        <StatCard title="Suspended" value={14} />
-        <StatCard title="Sub-Admins" value={5} />
+        <StatCard title="Total Users" value={stats?.totalUsers ?? 0} />
+        <StatCard title="Active" value={stats?.activeUsers ?? 0} />
+        <StatCard title="Suspended" value={stats?.suspendedUsers ?? 0} />
+        <StatCard title="Sub-Admins" value={stats?.subAdmins ?? 0} />
       </section>
 
       {/* FILTERS AND SEARCH */}
@@ -64,23 +169,22 @@ export default function UsersPage() {
         </div>
         <div className="filter-group">
           <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-            <option>All Roles</option>
-            <option>Super Admin</option>
-            <option>Sub-Admin</option>
-            <option>Website Researcher</option>
-            <option>LinkedIn Researcher</option>
-            <option>Website Inquirer</option>
-            <option>LinkedIn Inquirer</option>
-            <option>Website Auditor</option>
-            <option>LinkedIn Auditor</option>
+            <option value="">All Roles</option>
+            <option value="super_admin">Super Admin</option>
+            <option value="sub_admin">Sub-Admin</option>
+            <option value="website_researcher">Website Researcher</option>
+            <option value="linkedin_researcher">LinkedIn Researcher</option>
+            <option value="website_inquirer">Website Inquirer</option>
+            <option value="linkedin_inquirer">LinkedIn Inquirer</option>
+            <option value="website_auditor">Website Auditor</option>
+            <option value="linkedin_auditor">LinkedIn Auditor</option>
           </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option>All Status</option>
-            <option>Active</option>
-            <option>Inactive</option>
-            <option>Suspended</option>
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
           </select>
-          <button className="btn-clear">Clear Filters</button>
+          <button className="btn-clear" onClick={clearFilters}>Clear Filters</button>
         </div>
       </div>
 
@@ -104,7 +208,7 @@ export default function UsersPage() {
               {users.map((user) => (
                 <tr key={user.id} className="user-row">
                   <td><input type="checkbox" /></td>
-                  <td className="txt-id">#{user.id}</td>
+                  <td className="txt-id">#{user.id.slice(0, 8)}</td>
                   <td>
                     <div className="user-info-cell">
                       <strong>{user.name}</strong>
@@ -113,18 +217,18 @@ export default function UsersPage() {
                   </td>
                   <td><span className="role-tag">{user.role}</span></td>
                   <td>
-                    <span className={`badge-status ${user.status.toLowerCase()}`}>
-                      {user.status}
+                    <span className={`badge-status ${user.status}`}>
+                      {formatStatus(user.status)}
                     </span>
                   </td>
-                  <td>{user.createdDate}</td>
-                  <td>{user.lastLogin}</td>
+                  <td>{formatDate(user.createdAt)}</td>
+                  <td>{formatDate(user.updatedAt)}</td>
                   <td className="txt-right">
                     <div className="action-buttons">
-                      <button className="btn-icon-action" title="Edit">Edit</button>
-                      <button className="btn-icon-action" title="Reset Password">Pass</button>
-                      <button className="btn-icon-action suspend" title="Suspend">Lock</button>
-                      <button className="btn-icon-action delete" title="Delete">Del</button>
+                      <button className="btn-icon-action" title="Edit" onClick={() => navigate(`/super-admin/users/${user.id}/edit`)}>Edit</button>
+                      <button className="btn-icon-action" title="Reset Password" onClick={() => handleResetPassword(user.id)}>Pass</button>
+                      <button className="btn-icon-action suspend" title="Suspend" onClick={() => handleStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active')}>Lock</button>
+                      <button className="btn-icon-action delete" title="Delete" onClick={() => handleDelete(user.id)}>Del</button>
                     </div>
                   </td>
                 </tr>
@@ -135,13 +239,13 @@ export default function UsersPage() {
 
         {/* PAGINATION */}
         <div className="pagination-area">
-          <span>Showing 1 to 10 of 324 users</span>
+          <span>Showing {(currentPage - 1) * limit + 1} to {Math.min(currentPage * limit, total)} of {total} users</span>
           <div className="pagination-controls">
-            <button className="btn-page" disabled>Previous</button>
-            <button className="btn-page active">1</button>
-            <button className="btn-page">2</button>
-            <button className="btn-page">3</button>
-            <button className="btn-page">Next</button>
+            <button className="btn-page" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Previous</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button key={page} className={`btn-page ${page === currentPage ? 'active' : ''}`} onClick={() => setCurrentPage(page)}>{page}</button>
+            ))}
+            <button className="btn-page" disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)}>Next</button>
           </div>
         </div>
       </div>

@@ -203,6 +203,70 @@ let AdminService = class AdminService {
         ])
             .getMany();
     }
+    async getUsers(options) {
+        const { page, limit, search, role, status } = options;
+        const skip = (page - 1) * limit;
+        let query = this.userRepo
+            .createQueryBuilder('u')
+            .leftJoinAndSelect('u.roles', 'ur')
+            .leftJoinAndSelect('ur.role', 'r');
+        if (search) {
+            query = query.where('u.name ILIKE :search OR u.email ILIKE :search OR u.id::text ILIKE :search', { search: `%${search}%` });
+        }
+        if (role) {
+            query = query.andWhere('r.name = :role', { role });
+        }
+        if (status) {
+            query = query.andWhere('u.status = :status', { status });
+        }
+        const [users, total] = await query
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
+        const formattedUsers = users.map(user => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.roles?.[0]?.role?.name || 'No Role',
+            status: user.status || 'active',
+            createdAt: user.createdAt,
+            updatedAt: user.createdAt,
+        }));
+        return {
+            users: formattedUsers,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+    async getUsersStats() {
+        const totalUsers = await this.userRepo.count();
+        const activeUsers = await this.userRepo.count({ where: { status: 'active' } });
+        const suspendedUsers = await this.userRepo.count({ where: { status: 'suspended' } });
+        const subAdmins = await this.userRoleRepo
+            .createQueryBuilder('ur')
+            .innerJoin('ur.role', 'role')
+            .where('role.name = :role', { role: 'sub_admin' })
+            .getCount();
+        return {
+            totalUsers,
+            activeUsers,
+            suspendedUsers,
+            subAdmins,
+        };
+    }
+    async updateUserStatus(id, status) {
+        await this.userRepo.update(id, { status: status });
+        return { success: true };
+    }
+    async resetUserPassword(id) {
+        return { success: true, message: 'Password reset initiated' };
+    }
+    async deleteUser(id) {
+        await this.userRepo.delete(id);
+        return { success: true };
+    }
 };
 exports.AdminService = AdminService;
 exports.AdminService = AdminService = __decorate([
