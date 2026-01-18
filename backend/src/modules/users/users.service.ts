@@ -9,12 +9,14 @@ import * as bcrypt from 'bcrypt';
 
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { RolesService } from '../roles/roles.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly rolesService: RolesService,
   ) {}
 
   async create(dto: CreateUserDto): Promise<User> {
@@ -35,7 +37,23 @@ export class UsersService {
       country: dto.country,
     });
 
-    return this.userRepo.save(user);
+    const savedUser = await this.userRepo.save(user);
+
+    // Assign role
+    if (dto.role) {
+      await this.rolesService.assignRoleToUser(savedUser.id, dto.role);
+    }
+
+    // Assign categories for Sub-Admin role
+    if (dto.role === 'sub_admin' && dto.categoryIds && dto.categoryIds.length > 0) {
+      // This would need additional logic to assign categories to sub-admins
+      // For now, we'll handle this in the admin service
+    }
+
+    return this.userRepo.findOne({
+      where: { id: savedUser.id },
+      relations: ['roles'],
+    });
   }
 
   async findById(id: string): Promise<User> {

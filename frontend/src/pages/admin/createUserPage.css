@@ -15,21 +15,13 @@
   min-height: 100vh;
 }
 
-/* WIP BANNER */
-.wip-banner {
-  background: var(--warning-bg);
-  border: 1px solid #fef3c7;
-  padding: 10px;
+.error-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px;
   border-radius: 8px;
-  margin-bottom: 24px;
-  text-align: center;
-}
-
-.wip-banner span {
-  color: var(--warning-text);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 1px;
+  margin-bottom: 16px;
 }
 
 .cu-header {

@@ -33,7 +33,7 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!hasRole) {
-      throw new ForbiddenException('Insufficient role permissions');
+      throw new ForbiddenException('Your role does not allow user creation');
     }
 
     return true;

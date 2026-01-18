@@ -3,4 +3,6 @@ export declare class CreateUserDto {
     email: string;
     password: string;
     country?: string;
+    role: string;
+    categoryIds?: string[];
 }

@@ -30,6 +30,16 @@ export async function getUsersStats() {
   return res.data;
 }
 
+export async function createUser(data: { name: string; email: string; password: string; country?: string; role: string; categoryIds?: string[] }) {
+  const res = await axios.post('/users', data);
+  return res.data;
+}
+
+export async function createSubAdmin(data: { userId: string; categoryIds: string[] }) {
+  const res = await axios.post('/admin/sub-admin', data);
+  return res.data;
+}
+
 export async function updateUserStatus(id: string, status: string) {
   const res = await axios.patch(`/admin/users/${id}/status`, { status });
   return res.data;

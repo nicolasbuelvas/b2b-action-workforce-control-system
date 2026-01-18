@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  IsArray,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -21,4 +23,13 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   country?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  role: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('all', { each: true })
+  categoryIds?: string[];
 }

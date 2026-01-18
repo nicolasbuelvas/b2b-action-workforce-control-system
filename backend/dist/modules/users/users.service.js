@@ -51,9 +51,11 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const bcrypt = __importStar(require("bcrypt"));
 const user_entity_1 = require("./entities/user.entity");
+const roles_service_1 = require("../roles/roles.service");
 let UsersService = class UsersService {
-    constructor(userRepo) {
+    constructor(userRepo, rolesService) {
         this.userRepo = userRepo;
+        this.rolesService = rolesService;
     }
     async create(dto) {
         const existing = await this.userRepo.findOne({
@@ -69,7 +71,16 @@ let UsersService = class UsersService {
             password_hash,
             country: dto.country,
         });
-        return this.userRepo.save(user);
+        const savedUser = await this.userRepo.save(user);
+        if (dto.role) {
+            await this.rolesService.assignRoleToUser(savedUser.id, dto.role);
+        }
+        if (dto.role === 'sub_admin' && dto.categoryIds && dto.categoryIds.length > 0) {
+        }
+        return this.userRepo.findOne({
+            where: { id: savedUser.id },
+            relations: ['roles'],
+        });
     }
     async findById(id) {
         const user = await this.userRepo.findOne({
@@ -103,6 +114,7 @@ exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        roles_service_1.RolesService])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

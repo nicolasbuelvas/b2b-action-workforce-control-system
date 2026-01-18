@@ -29,7 +29,7 @@ let RolesGuard = class RolesGuard {
         }
         const hasRole = user.roles.some(role => requiredRoles.includes(role));
         if (!hasRole) {
-            throw new common_1.ForbiddenException('Insufficient role permissions');
+            throw new common_1.ForbiddenException('Your role does not allow user creation');
         }
         return true;
     }
