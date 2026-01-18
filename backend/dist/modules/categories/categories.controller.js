@@ -31,8 +31,16 @@ let CategoriesController = class CategoriesController {
     update(id, data) {
         return this.categoriesService.update(id, data);
     }
-    assignSubAdmins(categoryId, userIds) {
-        return this.categoriesService.assignSubAdmins(categoryId, userIds);
+    assignSubAdmins(categoryId, body) {
+        const ids = Array.isArray(body.userIds)
+            ? body.userIds
+            : Array.isArray(body.subAdminIds)
+                ? body.subAdminIds
+                : null;
+        if (!ids) {
+            throw new common_1.BadRequestException('userIds or subAdminIds must be an array');
+        }
+        return this.categoriesService.assignSubAdmins(categoryId, ids);
     }
     delete(id) {
         return this.categoriesService.delete(id);
@@ -67,9 +75,9 @@ __decorate([
     (0, common_1.Post)(':id/sub-admins'),
     (0, roles_decorator_1.Roles)('SUPER_ADMIN'),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)('userIds')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Array]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], CategoriesController.prototype, "assignSubAdmins", null);
 __decorate([

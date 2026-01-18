@@ -58,6 +58,9 @@ let CategoriesService = class CategoriesService {
             }
         }
         if (data.subAdminIds !== undefined) {
+            if (!Array.isArray(data.subAdminIds)) {
+                throw new Error('subAdminIds must be an array');
+            }
             await this.assignSubAdmins(id, data.subAdminIds);
         }
         const { config, subAdminIds, ...otherData } = data;
@@ -70,7 +73,13 @@ let CategoriesService = class CategoriesService {
         return this.categoryRepo.save(category);
     }
     async assignSubAdmins(categoryId, userIds) {
+        if (!Array.isArray(userIds)) {
+            throw new Error('userIds must be an array');
+        }
         await this.subAdminCategoryRepo.delete({ categoryId });
+        if (userIds.length === 0) {
+            return this.getById(categoryId);
+        }
         const assignments = userIds.map(userId => ({
             userId,
             categoryId,

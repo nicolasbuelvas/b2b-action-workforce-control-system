@@ -24,15 +24,11 @@ let RolesGuard = class RolesGuard {
         }
         const request = context.switchToHttp().getRequest();
         const user = request.user;
-        if (!user || !Array.isArray(user.roles)) {
-            throw new common_1.ForbiddenException('No roles assigned');
+        if (!user || !user.roles) {
+            return false;
         }
-        const normalizedRequiredRoles = requiredRoles.map(role => role.toUpperCase());
-        const hasRole = user.roles.some(role => normalizedRequiredRoles.includes(role.toUpperCase()));
-        if (!hasRole) {
-            throw new common_1.ForbiddenException('Your role does not allow user creation');
-        }
-        return true;
+        const userRoles = user.roles.map((r) => r.toLowerCase());
+        return requiredRoles.some(role => userRoles.includes(role.toLowerCase()));
     }
 };
 exports.RolesGuard = RolesGuard;

@@ -8,6 +8,6 @@ export declare class CategoriesController {
         config?: any;
     }): Promise<import("./entities/category.entity").Category>;
     update(id: string, data: any): Promise<import("./entities/category.entity").Category>;
-    assignSubAdmins(categoryId: string, userIds: string[]): Promise<import("./entities/category.entity").Category>;
+    assignSubAdmins(categoryId: string, body: any): Promise<import("./entities/category.entity").Category>;
     delete(id: string): Promise<void>;
 }

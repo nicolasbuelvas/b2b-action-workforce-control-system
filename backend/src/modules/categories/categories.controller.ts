@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 
 import { CategoriesService } from './categories.service';
@@ -39,13 +40,26 @@ export class CategoriesController {
     return this.categoriesService.update(id, data);
   }
 
+  /**
+   * Asigna sub-admins a una categoría.
+   * Validación estricta: el body debe tener un array de userIds o subAdminIds.
+   */
   @Post(':id/sub-admins')
   @Roles('SUPER_ADMIN')
   assignSubAdmins(
     @Param('id') categoryId: string,
-    @Body('userIds') userIds: string[],
+    @Body() body: any,
   ) {
-    return this.categoriesService.assignSubAdmins(categoryId, userIds);
+    // Accept both userIds and subAdminIds for compatibility
+    const ids = Array.isArray(body.userIds)
+      ? body.userIds
+      : Array.isArray(body.subAdminIds)
+        ? body.subAdminIds
+        : null;
+    if (!ids) {
+      throw new BadRequestException('userIds or subAdminIds must be an array');
+    }
+    return this.categoriesService.assignSubAdmins(categoryId, ids);
   }
 
   @Delete(':id')

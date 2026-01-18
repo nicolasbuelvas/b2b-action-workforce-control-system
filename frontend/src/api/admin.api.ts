@@ -1,5 +1,9 @@
 import axios from './axios';
 
+/* =========================
+   DASHBOARD
+========================= */
+
 export async function getAdminDashboard() {
   const res = await axios.get('/admin/dashboard');
   return res.data;
@@ -20,7 +24,17 @@ export async function getSystemLogs() {
   return res.data;
 }
 
-export async function getUsers(params: { page?: number; limit?: number; search?: string; role?: string; status?: string }) {
+/* =========================
+   USERS
+========================= */
+
+export async function getUsers(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+}) {
   const res = await axios.get('/admin/users', { params });
   return res.data;
 }
@@ -30,12 +44,22 @@ export async function getUsersStats() {
   return res.data;
 }
 
-export async function createUser(data: { name: string; email: string; password: string; country?: string; role: string; categoryIds?: string[] }) {
+export async function createUser(data: {
+  name: string;
+  email: string;
+  password: string;
+  country?: string;
+  role: string;
+  categoryIds?: string[];
+}) {
   const res = await axios.post('/users', data);
   return res.data;
 }
 
-export async function createSubAdmin(data: { userId: string; categoryIds: string[] }) {
+export async function createSubAdmin(data: {
+  userId: string;
+  categoryIds: string[];
+}) {
   const res = await axios.post('/admin/sub-admin', data);
   return res.data;
 }
@@ -46,7 +70,10 @@ export async function updateUserStatus(id: string, status: string) {
 }
 
 export async function resetUserPassword(id: string, password?: string) {
-  const res = await axios.post(`/admin/users/${id}/reset-password`, password ? { password } : {});
+  const res = await axios.post(
+    `/admin/users/${id}/reset-password`,
+    password ? { password } : {},
+  );
   return res.data;
 }
 
@@ -55,12 +82,29 @@ export async function deleteUser(id: string) {
   return res.data;
 }
 
-export async function createCategory(data: { name: string; config: { cooldownRules: { cooldownDays: number; dailyLimits: { researcher: number; inquirer: number; auditor: number } } } }) {
+/* =========================
+   CATEGORIES
+========================= */
+
+export async function createCategory(data: {
+  name: string;
+  config: {
+    cooldownRules: {
+      cooldownDays: number;
+      dailyLimits: {
+        researcher: number;
+        inquirer: number;
+        auditor: number;
+      };
+    };
+  };
+}) {
   const res = await axios.post('/categories', data);
   return res.data;
 }
 
 export async function updateCategory(id: string, data: any) {
+  // ⚠️ IMPORTANT: NEVER send subAdminIds here
   const res = await axios.patch(`/categories/${id}`, data);
   return res.data;
 }
@@ -69,6 +113,37 @@ export async function deleteCategory(id: string) {
   const res = await axios.delete(`/categories/${id}`);
   return res.data;
 }
+
+/**
+ * ✅ Assign sub-admins to a category
+ * ✅ Uses SAME axios instance (proxy-safe)
+ * ✅ Hits POST /categories/:id/sub-admins
+ * ✅ Fully replaces assignments
+ */
+export async function assignCategorySubAdmins(
+  categoryId: string,
+  subAdminIds: string[],
+) {
+  if (!categoryId) {
+    throw new Error('categoryId is required');
+  }
+
+  console.debug('[API] POST /categories/:id/sub-admins', {
+    categoryId,
+    subAdminIds,
+  });
+
+  const res = await axios.post(
+    `/categories/${categoryId}/sub-admins`,
+    { subAdminIds },
+  );
+
+  return res.data;
+}
+
+/* =========================
+   CATEGORY RULES
+========================= */
 
 export async function getCategoryRules() {
   const res = await axios.get('/admin/category-rules');
@@ -96,7 +171,9 @@ export async function updateCategoryRule(id: string, data: any) {
 }
 
 export async function toggleCategoryRuleStatus(id: string) {
-  const res = await axios.patch(`/admin/category-rules/${id}/toggle-status`);
+  const res = await axios.patch(
+    `/admin/category-rules/${id}/toggle-status`,
+  );
   return res.data;
 }
 

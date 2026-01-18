@@ -64,8 +64,11 @@ export class CategoriesService {
       }
     }
 
-    // Handle sub-admin assignments
+    // Handle sub-admin assignments safely
     if (data.subAdminIds !== undefined) {
+      if (!Array.isArray(data.subAdminIds)) {
+        throw new Error('subAdminIds must be an array');
+      }
       await this.assignSubAdmins(id, data.subAdminIds);
     }
 
@@ -88,10 +91,19 @@ export class CategoriesService {
   }
 
   async assignSubAdmins(categoryId: string, userIds: string[]) {
-    // Remove existing
+    if (!Array.isArray(userIds)) {
+      throw new Error('userIds must be an array');
+    }
+
+    // Remove existing assignments
     await this.subAdminCategoryRepo.delete({ categoryId });
 
-    // Add new
+    if (userIds.length === 0) {
+      // No sub-admins to add, return the category
+      return this.getById(categoryId);
+    }
+
+    // Add new assignments
     const assignments = userIds.map(userId => ({
       userId,
       categoryId,
