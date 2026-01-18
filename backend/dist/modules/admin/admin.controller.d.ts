@@ -5,10 +5,47 @@ export declare class AdminController {
     private readonly adminService;
     constructor(adminService: AdminService);
     getDashboard(): Promise<{
-        usersCount: number;
-        subAdminsCount: number;
-        status: string;
+        totalUsers: number;
+        totalResearchers: number;
+        totalInquirers: number;
+        totalAuditors: number;
+        totalActionsSubmitted: number;
+        totalActionsApproved: number;
+        totalActionsRejected: number;
+        approvalRate: number;
     }>;
+    getCategories(): Promise<{
+        id: string;
+        name: string;
+        totalActions: number;
+        approvedActions: number;
+        rejectedActions: number;
+        cooldownDays: number;
+        dailyLimits: {};
+    }[]>;
+    getTopWorkers(): Promise<{
+        researchers: any[];
+        inquirers: any[];
+        auditors: any[];
+    }>;
+    getSystemLogs(): Promise<({
+        id: string;
+        taskId: string;
+        actionIndex: number;
+        performedByUserId: string;
+        status: import("../inquiry/entities/inquiry-action.entity").InquiryActionStatus;
+        createdAt: Date;
+        reviewedAt: Date | null;
+        type: string;
+    } | {
+        id: string;
+        researchTaskId: string;
+        auditorUserId: string;
+        decision: "APPROVED" | "REJECTED";
+        rejectionReasonId?: string;
+        createdAt: Date;
+        type: string;
+    })[]>;
     createSubAdmin(dto: CreateSubAdminDto): Promise<{
         userId: string;
         role: string;

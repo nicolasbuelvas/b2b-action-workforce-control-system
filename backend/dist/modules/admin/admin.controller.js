@@ -27,6 +27,15 @@ let AdminController = class AdminController {
     getDashboard() {
         return this.adminService.getDashboard();
     }
+    getCategories() {
+        return this.adminService.getCategories();
+    }
+    getTopWorkers() {
+        return this.adminService.getTopWorkers();
+    }
+    getSystemLogs() {
+        return this.adminService.getSystemLogs();
+    }
     createSubAdmin(dto) {
         return this.adminService.createSubAdmin(dto);
     }
@@ -44,6 +53,24 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getDashboard", null);
+__decorate([
+    (0, common_1.Get)('categories'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getCategories", null);
+__decorate([
+    (0, common_1.Get)('top-workers'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getTopWorkers", null);
+__decorate([
+    (0, common_1.Get)('system-logs'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getSystemLogs", null);
 __decorate([
     (0, common_1.Post)('sub-admin'),
     __param(0, (0, common_1.Body)()),

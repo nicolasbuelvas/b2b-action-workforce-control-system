@@ -1,28 +1,63 @@
 import { useEffect, useState } from 'react';
-import { getAdminDashboard } from '../../api/admin.api';
+import { getAdminDashboard, getAdminCategories, getTopWorkers, getSystemLogs } from '../../api/admin.api';
 import StatCard from '../../components/cards/StatCard';
+import DataTable from '../../components/tables/DataTable';
 import './superAdminDashboard.css';
 
 interface DashboardData {
-  usersCount: number;
-  subAdminsCount: number;
+  totalUsers: number;
+  totalResearchers: number;
+  totalInquirers: number;
+  totalAuditors: number;
+  totalActionsSubmitted: number;
+  totalActionsApproved: number;
+  totalActionsRejected: number;
+  approvalRate: number;
 }
 
-type RankingCategory = 
-  | 'Website Researcher' | 'LinkedIn Researcher' 
-  | 'Website Inquirer' | 'LinkedIn Inquirer' 
-  | 'Website Auditor' | 'LinkedIn Auditor';
+interface CategoryData {
+  id: string;
+  name: string;
+  totalActions: number;
+  approvedActions: number;
+  rejectedActions: number;
+  cooldownDays: number;
+  dailyLimits: any;
+}
+
+interface TopWorkersData {
+  researchers: Array<{ userId: string; count: number }>;
+  inquirers: Array<{ userId: string; count: number }>;
+  auditors: Array<{ userId: string; count: number }>;
+}
+
+interface LogData {
+  id: string;
+  type: string;
+  status?: string;
+  decision?: string;
+  createdAt: string;
+  performedByUserId?: string;
+  auditorUserId?: string;
+}
 
 export default function SuperAdminDashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [topWorkers, setTopWorkers] = useState<TopWorkersData | null>(null);
+  const [logs, setLogs] = useState<LogData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRank, setSelectedRank] = useState<RankingCategory>('Website Researcher');
 
   useEffect(() => {
-    getAdminDashboard()
-      .then(setData)
-      .finally(() => setLoading(false));
+    Promise.all([
+      getAdminDashboard().then(setDashboardData),
+      getAdminCategories().then(setCategories),
+      getTopWorkers().then(setTopWorkers),
+      getSystemLogs().then(setLogs),
+    ]).finally(() => setLoading(false));
   }, []);
+
+  if (loading) return <div className="page-loader">Loading System...</div>;
 
   if (loading) return <div className="page-loader">Loading System...</div>;
 
@@ -39,12 +74,14 @@ export default function SuperAdminDashboard() {
 
       {/* STATS */}
       <section className="sa-stats-grid">
-        <StatCard title="Total Workforce" value={data?.usersCount ?? 0} />
-        <StatCard title="Sub-Admins" value={data?.subAdminsCount ?? 0} />
-        <StatCard title="Categories" value={3} />
-        <StatCard title="Pending Audits" value={24} variant="highlight" />
-        <StatCard title="Approvals Today" value={142} />
-        <StatCard title="Monthly Payout" value="$1,240" />
+        <StatCard title="Total Users" value={dashboardData?.totalUsers ?? 0} />
+        <StatCard title="Total Researchers" value={dashboardData?.totalResearchers ?? 0} />
+        <StatCard title="Total Inquirers" value={dashboardData?.totalInquirers ?? 0} />
+        <StatCard title="Total Auditors" value={dashboardData?.totalAuditors ?? 0} />
+        <StatCard title="Actions Submitted" value={dashboardData?.totalActionsSubmitted ?? 0} />
+        <StatCard title="Actions Approved" value={dashboardData?.totalActionsApproved ?? 0} />
+        <StatCard title="Actions Rejected" value={dashboardData?.totalActionsRejected ?? 0} />
+        <StatCard title="Approval Rate %" value={`${dashboardData?.approvalRate ?? 0}%`} />
       </section>
 
       <div className="sa-main-layout">
@@ -63,7 +100,40 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
 
-          {/* ACTIVE RULES */}
+          {/* CATEGORIES OVERVIEW */}
+          <div className="sa-card">
+            <div className="sa-card-header">
+              <h3>Categories Overview</h3>
+            </div>
+            <div className="ranking-table-wrapper">
+              <table className="sa-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Total Actions</th>
+                    <th>Approved</th>
+                    <th>Rejected</th>
+                    <th>Cooldown (Days)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.length ? categories.map((cat) => (
+                    <tr key={cat.id}>
+                      <td>{cat.name}</td>
+                      <td>{cat.totalActions}</td>
+                      <td>{cat.approvedActions}</td>
+                      <td>{cat.rejectedActions}</td>
+                      <td>{cat.cooldownDays}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={5}>No categories yet</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
           <div className="sa-card">
             <div className="sa-card-header">
               <h3>Active Rules</h3>
@@ -97,45 +167,76 @@ export default function SuperAdminDashboard() {
           {/* TOP PERFORMANCE */}
           <div className="sa-card">
             <div className="sa-card-header">
-              <h3>Top Performance (Monthly)</h3>
-              <select 
-                className="sa-select"
-                value={selectedRank} 
-                onChange={(e) => setSelectedRank(e.target.value as RankingCategory)}
-              >
-                <option value="Website Researcher">Website Researcher</option>
-                <option value="LinkedIn Researcher">LinkedIn Researcher</option>
-                <option value="Website Inquirer">Website Inquirer</option>
-                <option value="LinkedIn Inquirer">LinkedIn Inquirer</option>
-                <option value="Website Auditor">Website Auditor</option>
-                <option value="LinkedIn Auditor">LinkedIn Auditor</option>
-              </select>
+              <h3>Top Workers by Approved Count</h3>
             </div>
             <div className="ranking-table-wrapper">
+              <h4>Researchers</h4>
               <table className="sa-table">
                 <thead>
                   <tr>
                     <th>Rank</th>
-                    <th>Worker</th>
-                    <th>Approved %</th>
+                    <th>User ID</th>
+                    <th>Count</th>
                   </tr>
                 </thead>
                 <tbody>
+                  {topWorkers?.researchers.length ? topWorkers.researchers.map((worker, index) => (
+                    <tr key={worker.userId}>
+                      <td>{index + 1}</td>
+                      <td>{worker.userId}</td>
+                      <td>{worker.count}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={3}>No ranking data yet</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <h4>Inquirers</h4>
+              <table className="sa-table">
+                <thead>
                   <tr>
-                    <td>1</td>
-                    <td>Worker #100</td>
-                    <td className="txt-emerald">96%</td>
+                    <th>Rank</th>
+                    <th>User ID</th>
+                    <th>Count</th>
                   </tr>
+                </thead>
+                <tbody>
+                  {topWorkers?.inquirers.length ? topWorkers.inquirers.map((worker, index) => (
+                    <tr key={worker.userId}>
+                      <td>{index + 1}</td>
+                      <td>{worker.userId}</td>
+                      <td>{worker.count}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={3}>No ranking data yet</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              <h4>Auditors</h4>
+              <table className="sa-table">
+                <thead>
                   <tr>
-                    <td>2</td>
-                    <td>Worker #106</td>
-                    <td className="txt-emerald">94%</td>
+                    <th>Rank</th>
+                    <th>User ID</th>
+                    <th>Count</th>
                   </tr>
-                  <tr>
-                    <td>3</td>
-                    <td>Worker #107</td>
-                    <td className="txt-emerald">91%</td>
-                  </tr>
+                </thead>
+                <tbody>
+                  {topWorkers?.auditors.length ? topWorkers.auditors.map((worker, index) => (
+                    <tr key={worker.userId}>
+                      <td>{index + 1}</td>
+                      <td>{worker.userId}</td>
+                      <td>{worker.count}</td>
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={3}>No ranking data yet</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -151,32 +252,33 @@ export default function SuperAdminDashboard() {
             </div>
             
             <div className="activity-feed">
-              {[
-                { event: 'Website Research Submitted', worker: 'Worker #442', target: 'Company: TechCorp', status: 'pending', action: 'Process' },
-                { event: 'LinkedIn Inquiry Uploaded', worker: 'Worker #891', target: 'LinkedIn: John Doe', status: 'pending', action: 'Take Action' },
-                { event: 'Duplicate Screenshot Flagged', worker: 'Worker #102', target: 'Task ID: 5590', status: 'flagged', action: 'Audit' },
-                { event: 'New Category Created', worker: 'Admin', target: 'Product C', status: 'approved', action: 'Details' }
-              ].map((item, i) => (
-                <div className="activity-item" key={i}>
-                  <div className={`status-indicator ${item.status}`} />
+              {logs.length ? logs.map((log) => (
+                <div className="activity-item" key={log.id}>
+                  <div className={`status-indicator ${log.status || log.decision?.toLowerCase() || 'pending'}`} />
                   <div className="activity-content">
                     <div className="activity-main">
-                      <strong>{item.event}</strong>
-                      <span className={`badge-status ${item.status}`}>{item.status.toUpperCase()}</span>
+                      <strong>{log.type === 'action' ? `Action ${log.status}` : `Audit ${log.decision}`}</strong>
+                      <span className={`badge-status ${log.status || log.decision?.toLowerCase() || 'pending'}`}>{(log.status || log.decision || 'pending').toUpperCase()}</span>
                     </div>
                     <div className="activity-sub">
-                      <span>{item.worker}</span>
+                      <span>User: {log.performedByUserId || log.auditorUserId}</span>
                       <span className="separator">|</span>
-                      <span>{item.target}</span>
-                      <span className="separator">|</span>
-                      <span>2 mins ago</span>
+                      <span>{new Date(log.createdAt).toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="activity-actions">
-                    <button className="btn-process">{item.action}</button>
+                    <button className="btn-process">View</button>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="activity-item">
+                  <div className="activity-content">
+                    <div className="activity-main">
+                      <strong>No activity yet</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

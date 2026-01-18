@@ -5,6 +5,10 @@ import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { UserRole } from '../roles/entities/user-role.entity';
+import { InquiryAction, InquiryActionStatus } from '../inquiry/entities/inquiry-action.entity';
+import { ResearchTask } from '../research/entities/research-task.entity';
+import { ResearchAudit } from '../audit/entities/research-audit.entity';
+import { Category } from '../categories/entities/category.entity';
 
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignCategoryDto } from './dto/assign-category.dto';
@@ -20,21 +24,64 @@ export class AdminService {
 
     @InjectRepository(UserRole)
     private readonly userRoleRepo: Repository<UserRole>,
+
+    @InjectRepository(InquiryAction)
+    private readonly inquiryActionRepo: Repository<InquiryAction>,
+
+    @InjectRepository(ResearchTask)
+    private readonly researchTaskRepo: Repository<ResearchTask>,
+
+    @InjectRepository(ResearchAudit)
+    private readonly researchAuditRepo: Repository<ResearchAudit>,
+
+    @InjectRepository(Category)
+    private readonly categoryRepo: Repository<Category>,
   ) {}
 
   async getDashboard() {
-    const usersCount = await this.userRepo.count();
+    const totalUsers = await this.userRepo.count();
 
-    const subAdminsCount = await this.userRoleRepo
+    const totalResearchers = await this.userRoleRepo
       .createQueryBuilder('ur')
       .innerJoin('ur.role', 'role')
-      .where('role.name = :role', { role: 'sub_admin' })
+      .where('role.name LIKE :researcher', { researcher: '%researcher%' })
       .getCount();
 
+    const totalInquirers = await this.userRoleRepo
+      .createQueryBuilder('ur')
+      .innerJoin('ur.role', 'role')
+      .where('role.name LIKE :inquirer', { inquirer: '%inquirer%' })
+      .getCount();
+
+    const totalAuditors = await this.userRoleRepo
+      .createQueryBuilder('ur')
+      .innerJoin('ur.role', 'role')
+      .where('role.name LIKE :auditor', { auditor: '%auditor%' })
+      .getCount();
+
+    const totalActionsSubmitted = await this.inquiryActionRepo.count({
+      where: { status: InquiryActionStatus.SUBMITTED },
+    });
+
+    const totalActionsApproved = await this.inquiryActionRepo.count({
+      where: { status: InquiryActionStatus.APPROVED },
+    });
+
+    const totalActionsRejected = await this.inquiryActionRepo.count({
+      where: { status: InquiryActionStatus.REJECTED },
+    });
+
+    const approvalRate = totalActionsSubmitted > 0 ? (totalActionsApproved / totalActionsSubmitted) * 100 : 0;
+
     return {
-      usersCount,
-      subAdminsCount,
-      status: 'ok',
+      totalUsers,
+      totalResearchers,
+      totalInquirers,
+      totalAuditors,
+      totalActionsSubmitted,
+      totalActionsApproved,
+      totalActionsRejected,
+      approvalRate: Math.round(approvalRate * 100) / 100, // round to 2 decimals
     };
   }
 
@@ -79,6 +126,106 @@ export class AdminService {
     return {
       userId: user.id,
       categories: dto.categoryIds,
+    };
+  }
+
+  async getSystemLogs() {
+    // Recent inquiry actions
+    const recentActions = await this.inquiryActionRepo
+      .createQueryBuilder('ia')
+      .select(['ia.id', 'ia.status', 'ia.createdat', 'ia.performedbyuserid'])
+      .orderBy('ia.createdat', 'DESC')
+      .limit(10)
+      .getMany();
+
+    // Recent audits
+    const recentAudits = await this.researchAuditRepo
+      .createQueryBuilder('ra')
+      .select(['ra.id', 'ra.decision', 'ra.createdAt', 'ra.auditorUserId'])
+      .orderBy('ra.createdAt', 'DESC')
+      .limit(10)
+      .getMany();
+
+    // Combine and sort by createdAt
+    const logs = [
+      ...recentActions.map(a => ({ type: 'action', ...a })),
+      ...recentAudits.map(a => ({ type: 'audit', ...a })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 20);
+
+    return logs;
+  }
+
+  async getCategories() {
+    const categories = await this.categoryRepo.find({ relations: ['config'] });
+    const result = await Promise.all(
+      categories.map(async (cat) => {
+        const totalActions = await this.inquiryActionRepo
+          .createQueryBuilder('ia')
+          .innerJoin('inquiry_tasks', 'it', 'ia.taskid = it.id')
+          .where('it.categoryId = :catId', { catId: cat.id })
+          .getCount();
+        const approvedActions = await this.inquiryActionRepo
+          .createQueryBuilder('ia')
+          .innerJoin('inquiry_tasks', 'it', 'ia.taskid = it.id')
+          .where('it.categoryId = :catId AND ia.status = :status', { catId: cat.id, status: InquiryActionStatus.APPROVED })
+          .getCount();
+        const rejectedActions = await this.inquiryActionRepo
+          .createQueryBuilder('ia')
+          .innerJoin('inquiry_tasks', 'it', 'ia.taskid = it.id')
+          .where('it.categoryId = :catId AND ia.status = :status', { catId: cat.id, status: InquiryActionStatus.REJECTED })
+          .getCount();
+        return {
+          id: cat.id,
+          name: cat.name,
+          totalActions,
+          approvedActions,
+          rejectedActions,
+          cooldownDays: 30, // Default value since not in entity
+          dailyLimits: {}, // Default value since not in entity
+        };
+      })
+    );
+    return result;
+  }
+
+  async getTopWorkers() {
+    // For researchers: count completed research tasks
+    const topResearchers = await this.researchTaskRepo
+      .createQueryBuilder('rt')
+      .select('rt.assignedToUserId', 'userId')
+      .addSelect('COUNT(*)', 'count')
+      .where('rt.status = :status', { status: 'COMPLETED' })
+      .groupBy('rt.assignedToUserId')
+      .orderBy('count', 'DESC')
+      .limit(3)
+      .getRawMany();
+
+    // For inquirers: count approved inquiry actions
+    const topInquirers = await this.inquiryActionRepo
+      .createQueryBuilder('ia')
+      .select('ia.performedbyuserid', 'userId')
+      .addSelect('COUNT(*)', 'count')
+      .where('ia.status = :status', { status: InquiryActionStatus.APPROVED })
+      .groupBy('ia.performedbyuserid')
+      .orderBy('count', 'DESC')
+      .limit(3)
+      .getRawMany();
+
+    // For auditors: count approved audits
+    const topAuditors = await this.researchAuditRepo
+      .createQueryBuilder('ra')
+      .select('ra.auditorUserId', 'userId')
+      .addSelect('COUNT(*)', 'count')
+      .where('ra.decision = :decision', { decision: 'APPROVED' })
+      .groupBy('ra.auditorUserId')
+      .orderBy('count', 'DESC')
+      .limit(3)
+      .getRawMany();
+
+    return {
+      researchers: topResearchers,
+      inquirers: topInquirers,
+      auditors: topAuditors,
     };
   }
 

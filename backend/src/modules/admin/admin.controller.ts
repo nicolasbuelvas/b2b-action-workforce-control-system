@@ -25,6 +25,21 @@ export class AdminController {
     return this.adminService.getDashboard();
   }
 
+  @Get('categories')
+  getCategories() {
+    return this.adminService.getCategories();
+  }
+
+  @Get('top-workers')
+  getTopWorkers() {
+    return this.adminService.getTopWorkers();
+  }
+
+  @Get('system-logs')
+  getSystemLogs() {
+    return this.adminService.getSystemLogs();
+  }
+
   @Post('sub-admin')
   createSubAdmin(@Body() dto: CreateSubAdminDto) {
     return this.adminService.createSubAdmin(dto);
