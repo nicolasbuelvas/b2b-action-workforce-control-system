@@ -24,6 +24,7 @@ const screenshots_module_1 = require("./modules/screenshots/screenshots.module")
 const metrics_module_1 = require("./modules/metrics/metrics.module");
 const payments_module_1 = require("./modules/payments/payments.module");
 const admin_module_1 = require("./modules/admin/admin.module");
+const category_rules_module_1 = require("./modules/category-rules/category-rules.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -53,6 +54,7 @@ exports.AppModule = AppModule = __decorate([
             metrics_module_1.MetricsModule,
             payments_module_1.PaymentsModule,
             admin_module_1.AdminModule,
+            category_rules_module_1.CategoryRulesModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

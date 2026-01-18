@@ -69,3 +69,38 @@ export async function deleteCategory(id: string) {
   const res = await axios.delete(`/categories/${id}`);
   return res.data;
 }
+
+export async function getCategoryRules() {
+  const res = await axios.get('/admin/category-rules');
+  return res.data;
+}
+
+export async function createCategoryRule(data: {
+  categoryId: string;
+  actionType: string;
+  role: string;
+  dailyLimitOverride?: number;
+  cooldownDaysOverride?: number;
+  requiredActions?: number;
+  screenshotRequired?: boolean;
+  status?: string;
+  priority?: number;
+}) {
+  const res = await axios.post('/admin/category-rules', data);
+  return res.data;
+}
+
+export async function updateCategoryRule(id: string, data: any) {
+  const res = await axios.patch(`/admin/category-rules/${id}`, data);
+  return res.data;
+}
+
+export async function toggleCategoryRuleStatus(id: string) {
+  const res = await axios.patch(`/admin/category-rules/${id}/toggle-status`);
+  return res.data;
+}
+
+export async function deleteCategoryRule(id: string) {
+  const res = await axios.delete(`/admin/category-rules/${id}`);
+  return res.data;
+}

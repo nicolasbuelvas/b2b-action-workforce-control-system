@@ -64,8 +64,13 @@ export class CategoriesService {
       }
     }
 
+    // Handle sub-admin assignments
+    if (data.subAdminIds !== undefined) {
+      await this.assignSubAdmins(id, data.subAdminIds);
+    }
+
     // Update other fields
-    const { config, ...otherData } = data;
+    const { config, subAdminIds, ...otherData } = data;
     Object.assign(category, otherData);
 
     return this.categoryRepo.save(category);

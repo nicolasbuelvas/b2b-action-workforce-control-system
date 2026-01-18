@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import StatCard from '../../components/cards/StatCard';
-import { getAdminCategories, createCategory, updateCategory, deleteCategory } from '../../api/admin.api';
+import { getAdminCategories, createCategory, updateCategory, deleteCategory, getUsers } from '../../api/admin.api';
 import './categoriesPage.css';
 
 interface Category {
@@ -33,16 +33,25 @@ interface Category {
   };
 }
 
+interface SubAdmin {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [selectedSubAdmins, setSelectedSubAdmins] = useState<string[]>([]);
 
   useEffect(() => {
     loadCategories();
+    loadSubAdmins();
   }, []);
 
   const loadCategories = async () => {
@@ -53,6 +62,15 @@ export default function CategoriesPage() {
       console.error('Failed to load categories:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSubAdmins = async () => {
+    try {
+      const data = await getUsers({ role: 'SUB_ADMIN' });
+      setSubAdmins(data.users || []);
+    } catch (error) {
+      console.error('Failed to load sub-admins:', error);
     }
   };
 
@@ -252,7 +270,10 @@ export default function CategoriesPage() {
                   </td>
                   <td className="txt-right">
                     <div className="action-buttons">
-                      <button className="btn-icon-act edit" onClick={() => setEditingCategory(cat)}>Edit</button>
+                      <button className="btn-icon-act edit" onClick={() => {
+                        setEditingCategory(cat);
+                        setSelectedSubAdmins(cat.subAdminCategories.map(sac => sac.user.id));
+                      }}>Edit</button>
                       <button className="btn-icon-act delete" onClick={() => handleDeleteCategory(cat.id)}>Delete</button>
                     </div>
                   </td>
@@ -343,6 +364,7 @@ export default function CategoriesPage() {
                     },
                   },
                 },
+                subAdminIds: selectedSubAdmins,
               };
               handleEditCategory(updatedCategory);
             }}>
@@ -371,8 +393,45 @@ export default function CategoriesPage() {
                   </div>
                 </div>
               </div>
+              <div className="form-group">
+                <label>Permissions & Scope</label>
+                <p className="form-help">Assign Sub-Admins to restrict category access. Leave empty for global access.</p>
+                <div className="subadmin-selector">
+                  <input
+                    type="text"
+                    placeholder="Search Sub-Admins..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const value = (e.target as HTMLInputElement).value.trim();
+                        if (value) {
+                          const admin = subAdmins.find(sa => sa.name.toLowerCase().includes(value.toLowerCase()) || sa.email.toLowerCase().includes(value.toLowerCase()));
+                          if (admin && !selectedSubAdmins.includes(admin.id)) {
+                            setSelectedSubAdmins([...selectedSubAdmins, admin.id]);
+                          }
+                          (e.target as HTMLInputElement).value = '';
+                        }
+                      }
+                    }}
+                  />
+                  <div className="selected-admins">
+                    {selectedSubAdmins.map(id => {
+                      const admin = subAdmins.find(sa => sa.id === id);
+                      return admin ? (
+                        <span key={id} className="admin-tag">
+                          {admin.name}
+                          <button type="button" onClick={() => setSelectedSubAdmins(selectedSubAdmins.filter(sid => sid !== id))}>×</button>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              </div>
               <div className="modal-actions">
-                <button type="button" onClick={() => setEditingCategory(null)}>Cancel</button>
+                <button type="button" onClick={() => {
+                  setEditingCategory(null);
+                  setSelectedSubAdmins([]);
+                }}>Cancel</button>
                 <button type="submit">Save</button>
               </div>
             </form>

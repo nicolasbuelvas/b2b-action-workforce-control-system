@@ -57,7 +57,10 @@ let CategoriesService = class CategoriesService {
                 category.config = this.categoryConfigRepo.create({ cooldownRules: data.config.cooldownRules || data.config });
             }
         }
-        const { config, ...otherData } = data;
+        if (data.subAdminIds !== undefined) {
+            await this.assignSubAdmins(id, data.subAdminIds);
+        }
+        const { config, subAdminIds, ...otherData } = data;
         Object.assign(category, otherData);
         return this.categoryRepo.save(category);
     }
