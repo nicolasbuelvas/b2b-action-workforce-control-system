@@ -1,0 +1,59 @@
+.sa-performance-page {
+  padding: 28px;
+  background: #f7fafc;
+  min-height: 100vh;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.card {
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid #e6edf3;
+}
+
+.card label {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.card h2 {
+  margin: 6px 0;
+  font-size: 24px;
+}
+
+.card small {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.notes {
+  margin-top: 24px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e6edf3;
+  padding: 16px;
+}
+
+.notes h3 {
+  margin: 0 0 10px 0;
+}
+
+.notes ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.notes li {
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 6px;
+}

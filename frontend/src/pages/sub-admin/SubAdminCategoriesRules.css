@@ -1,0 +1,146 @@
+.categories-page {
+  padding: 26px;
+  background: #f7fafc;
+  min-height: 100vh;
+  color: #0f172a;
+}
+
+/* Header */
+.hdr {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.hdr h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+.muted {
+  color: #64748b;
+  font-size: 13px;
+}
+.refresh {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Layout */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 18px;
+}
+
+/* Category list */
+.category-list {
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #e6edf3;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cat-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #f8fafc;
+  text-align: left;
+  cursor: pointer;
+}
+.cat-item.active {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+.cat-name {
+  font-weight: 800;
+}
+.cat-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748b;
+}
+.cat-meta .on {
+  color: #047857;
+  font-weight: 700;
+}
+.cat-meta .off {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+/* Rules panel */
+.rules-panel {
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #e6edf3;
+  padding: 16px;
+}
+
+.rules-hdr {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+/* Rules table */
+.rules-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.rules-table th,
+.rules-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e6edf3;
+  text-align: left;
+  font-size: 14px;
+}
+.rules-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+/* Actions */
+.action {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+.action.approve {
+  background: #ecfdf5;
+  color: #047857;
+}
+.action.reject {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.action.flag {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+/* Helpers */
+.loader,
+.empty,
+.error {
+  padding: 12px;
+  border-radius: 10px;
+  background: white;
+  border: 1px dashed #e6edf3;
+}
+.error {
+  background: #fff7f7;
+  border-color: #fecaca;
+  color: #b91c1c;
+}

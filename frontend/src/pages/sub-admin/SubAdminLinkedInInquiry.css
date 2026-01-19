@@ -1,0 +1,118 @@
+.li-inquiry-page {
+  padding: 26px;
+  background: #f7fafc;
+  min-height: 100vh;
+}
+
+.hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.hdr h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.muted {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.refresh {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inquiry-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e6edf3;
+}
+
+.inquiry-table th,
+.inquiry-table td {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.inquiry-table th {
+  background: #f1f5f9;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.inquiry-table tr:not(:last-child) td {
+  border-bottom: 1px solid #e6edf3;
+}
+
+.inquiry-table a {
+  color: #4f46e5;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.status.pending {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.status.approved {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.status.rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.status.flagged {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+button {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #e6edf3;
+  background: white;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.loader,
+.empty,
+.error {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: white;
+  border: 1px dashed #e6edf3;
+}
+
+.error {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #b91c1c;
+}

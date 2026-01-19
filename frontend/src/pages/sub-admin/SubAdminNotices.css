@@ -1,0 +1,127 @@
+.subadmin-notices {
+  padding: 28px;
+  min-height: 100vh;
+  background: #f7fafc;
+  color: #0f172a;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+
+/* Header */
+.hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 20px;
+}
+
+.hdr h1 {
+  margin: 0 0 6px 0;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.muted {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.refresh {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+/* Notices */
+.notice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.notice-item {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid #e6edf3;
+  box-shadow: 0 1px 4px rgba(16, 24, 40, 0.04);
+}
+
+.notice-item.high {
+  border-left: 4px solid #ef4444;
+}
+.notice-item.normal {
+  border-left: 4px solid #6366f1;
+}
+.notice-item.low {
+  border-left: 4px solid #60a5fa;
+}
+
+.notice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.notice-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: white;
+}
+
+.badge.high { background: #ef4444; }
+.badge.normal { background: #6366f1; }
+.badge.low { background: #60a5fa; }
+
+.notice-message {
+  margin: 6px 0 12px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notice-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Helpers */
+.loader {
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px dashed #e6edf3;
+  color: #475569;
+}
+
+.error {
+  color: #b91c1c;
+  background: #fff7f7;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #fee2e2;
+}
+
+.empty {
+  color: #475569;
+  padding: 14px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px dashed #e6edf3;
+}

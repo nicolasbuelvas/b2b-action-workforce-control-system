@@ -1,0 +1,127 @@
+.sa-templates-page {
+  padding: 28px;
+  background: #f7fafc;
+  min-height: 100vh;
+}
+
+.sa-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e6edf3;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.sa-table th,
+.sa-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  font-size: 14px;
+}
+
+.sa-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.truncate {
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor {
+  margin-top: 20px;
+  background: #fff;
+  border: 1px solid #e6edf3;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.editor label {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.editor input,
+.editor textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #e6edf3;
+  margin-top: 4px;
+}
+
+.editor textarea {
+  min-height: 140px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.editor-actions .primary {
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: #6366f1;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.switch input { opacity: 0; }
+.switch span {
+  position: absolute;
+  inset: 0;
+  background: #cbd5e1;
+  border-radius: 20px;
+  transition: 0.2s;
+}
+.switch span::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 3px;
+  left: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.switch input:checked + span {
+  background: #22c55e;
+}
+.switch input:checked + span::before {
+  transform: translateX(16px);
+}

@@ -1,0 +1,46 @@
+.sa-country-stats {
+  padding: 28px;
+  background: #f7fafc;
+  min-height: 100vh;
+}
+
+.country-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e6edf3;
+}
+
+.country-table th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+  padding: 14px;
+  background: #fbfdff;
+}
+
+.country-table td {
+  padding: 14px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+
+.rate {
+  font-weight: 800;
+}
+
+.rate.good {
+  color: #16a34a;
+}
+
+.rate.warn {
+  color: #f59e0b;
+}
+
+.rate.bad {
+  color: #dc2626;
+}
