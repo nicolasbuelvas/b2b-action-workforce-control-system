@@ -54,3 +54,25 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+.status-pill.info {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.status-pill.warning {
+  background: #fef9c3;
+  color: #b45309;
+}
+.status-pill.critical {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.category-tag {
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
