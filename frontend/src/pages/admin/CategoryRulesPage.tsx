@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import StatCard from '../../components/cards/StatCard';
-import { getCategoryRules, createCategoryRule, updateCategoryRule, toggleCategoryRuleStatus, deleteCategoryRule, getAdminCategories } from '../../api/admin.api';
+import { 
+  getCategoryRules, 
+  createCategoryRule, 
+  updateCategoryRule, 
+  toggleCategoryRuleStatus, 
+  deleteCategoryRule, 
+  getAdminCategories 
+} from '../../api/admin.api';
 import './categoryRulesPage.css';
 
 interface CategoryRule {
@@ -95,11 +102,11 @@ export default function CategoryRulesPage() {
   };
 
   const handleBulkToggleStatus = async (activate: boolean) => {
-    // TODO: implement bulk operations
+    // Logic remains for future implementation
   };
 
   const handleBulkDelete = async () => {
-    // TODO: implement bulk delete
+    // Logic remains for future implementation
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -124,6 +131,7 @@ export default function CategoryRulesPage() {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
+        <p>Loading rules...</p>
       </div>
     );
   }
@@ -131,158 +139,149 @@ export default function CategoryRulesPage() {
   return (
     <div className="category-rules-page">
       {/* HEADER SECTION */}
-      <div className="page-header">
-        <div className="header-left">
+      <header className="page-header">
+        <div className="header-content">
           <h1>Category Rules</h1>
-          <p className="subtitle">Manage automated restrictions and requirements per category.</p>
+          <p className="subtitle">Configure automated behavior and restrictions for task categories.</p>
         </div>
-        <div className="header-stats-row">
-            <div className="stat-item">
-                <span className="stat-label">Total Rules</span>
-                <span className="stat-value">{rules.length}</span>
-            </div>
-            <div className="stat-item">
-                <span className="stat-label">Active Rules</span>
-                <span className="stat-value">{activeRules}</span>
-            </div>
-            <div className="stat-item">
-                <span className="stat-label">Categories</span>
-                <span className="stat-value">{categories.length}</span>
-            </div>
+        <div className="header-actions">
+          <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
+            Add New Rule
+          </button>
         </div>
+      </header>
+
+      {/* STATS SECTION */}
+      <div className="stats-grid">
+        <StatCard title="Total Rules" value={rules.length} />
+        <StatCard title="Active Rules" value={activeRules} />
+        <StatCard title="Linked Categories" value={categories.length} />
       </div>
 
       {/* TOOLBAR */}
       <div className="management-bar">
         <div className="bar-left">
-          <div className="search-wrapper">
-            <span className="search-icon">🔍</span>
+          <div className="search-container">
             <input
               type="text"
-              placeholder="Search rules..."
+              className="search-input"
+              placeholder="Search by category, action or role..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="filter-wrapper">
-            <select className="select-filter"><option>Status: All</option></select>
-            <button className="btn-secondary">Reset</button>
+          <div className="filter-group">
+            <select className="select-input">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
           </div>
         </div>
 
         <div className="bar-right">
           {selectedRules.length > 0 && (
-            <div className="bulk-actions fade-in">
-              <span className="selection-count">{selectedRules.length} selected</span>
-              <button className="btn-secondary small" onClick={() => handleBulkToggleStatus(true)}>Enable</button>
-              <button className="btn-secondary small" onClick={() => handleBulkToggleStatus(false)}>Disable</button>
-              <button className="btn-danger small" onClick={handleBulkDelete}>Delete</button>
+            <div className="bulk-actions-area">
+              <span className="selection-label">{selectedRules.length} items selected</span>
+              <div className="button-group">
+                <button className="btn-secondary btn-sm" onClick={() => handleBulkToggleStatus(true)}>Enable</button>
+                <button className="btn-secondary btn-sm" onClick={() => handleBulkToggleStatus(false)}>Disable</button>
+                <button className="btn-danger btn-sm" onClick={handleBulkDelete}>Delete</button>
+              </div>
             </div>
           )}
-          <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
-            + New Rule
-          </button>
         </div>
       </div>
 
       {/* TABLE SECTION */}
-      <div className="table-container">
+      <div className="table-card">
+        <div className="table-responsive">
           <table className="rules-table">
-            {/* COLGROUP: Controls column widths strictly */}
-            <colgroup>
-                <col style={{ width: '40px' }} />  {/* Checkbox */}
-                <col style={{ width: '100px' }} /> {/* ID */}
-                <col style={{ width: '180px' }} /> {/* Category */}
-                <col style={{ width: '160px' }} /> {/* Action Type */}
-                <col style={{ width: '120px' }} /> {/* Role */}
-                <col style={{ width: '100px' }} /> {/* Limit */}
-                <col style={{ width: '100px' }} /> {/* Cooldown */}
-                <col style={{ width: '80px' }} />  {/* Req Actions */}
-                <col style={{ width: '100px' }} /> {/* Screenshot */}
-                <col style={{ width: '100px' }} /> {/* Status */}
-                <col style={{ width: '80px' }} />  {/* Priority */}
-                <col style={{ width: '220px' }} /> {/* Actions */}
-            </colgroup>
             <thead>
               <tr>
-                <th className="th-center">
+                <th className="col-check">
                   <input
                     type="checkbox"
                     checked={selectedRules.length === filteredRules.length && filteredRules.length > 0}
                     onChange={(e) => handleSelectAll(e.target.checked)}
                   />
                 </th>
-                <th>ID</th>
                 <th>Category</th>
                 <th>Action Type</th>
                 <th>Role</th>
-                <th className="th-center">Daily Limit</th>
-                <th className="th-center">Cooldown</th>
-                <th className="th-center">Req.</th>
-                <th className="th-center">Screenshot</th>
+                <th className="text-center">Daily Limit</th>
+                <th className="text-center">Cooldown</th>
+                <th className="text-center">Required</th>
+                <th className="text-center">Screenshot</th>
                 <th>Status</th>
-                <th className="th-center">Priority</th>
-                <th className="th-right">Actions</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredRules.map((rule) => (
-                <tr key={rule.id} className={selectedRules.includes(rule.id) ? 'selected-row' : ''}>
-                  <td className="td-center">
+                <tr key={rule.id} className={selectedRules.includes(rule.id) ? 'row-selected' : ''}>
+                  <td className="col-check">
                     <input
                       type="checkbox"
                       checked={selectedRules.includes(rule.id)}
                       onChange={(e) => handleSelectRule(rule.id, e.target.checked)}
                     />
                   </td>
-                  <td className="td-id" title={rule.id}>{rule.id.slice(0, 8)}...</td>
-                  <td className="td-strong">{rule.category.name}</td>
-                  <td><span className="badge-gray">{rule.actionType}</span></td>
-                  <td><span className="badge-gray">{rule.role}</span></td>
-                  
-                  <td className={`td-center ${rule.dailyLimitOverride ? 'text-dark' : 'text-light'}`}>
-                    {rule.dailyLimitOverride !== null ? rule.dailyLimitOverride : '-'}
+                  <td>
+                    <div className="td-category-info">
+                      <span className="category-name">{rule.category.name}</span>
+                      <span className="rule-id-tag">ID: {rule.id.slice(0, 6)}</span>
+                    </div>
                   </td>
-                  <td className={`td-center ${rule.cooldownDaysOverride ? 'text-dark' : 'text-light'}`}>
-                    {rule.cooldownDaysOverride !== null ? rule.cooldownDaysOverride + 'd' : '-'}
+                  <td><span className="tag-type">{rule.actionType}</span></td>
+                  <td><span className="tag-role">{rule.role}</span></td>
+                  <td className="text-center">
+                    {rule.dailyLimitOverride ?? <span className="default-label">Default</span>}
                   </td>
-                  
-                  <td className="td-center">{rule.requiredActions}</td>
-                  <td className="td-center">
-                    {rule.screenshotRequired && <span className="badge-blue">REQ</span>}
-                    {!rule.screenshotRequired && <span className="text-light">-</span>}
+                  <td className="text-center">
+                    {rule.cooldownDaysOverride !== null ? `${rule.cooldownDaysOverride}d` : <span className="default-label">Default</span>}
+                  </td>
+                  <td className="text-center font-medium">{rule.requiredActions}</td>
+                  <td className="text-center">
+                    <span className={`boolean-indicator ${rule.screenshotRequired ? 'is-true' : 'is-false'}`}>
+                      {rule.screenshotRequired ? 'Yes' : 'No'}
+                    </span>
                   </td>
                   <td>
-                    <span className={`status-pill ${rule.status}`}>
+                    <span className={`status-badge ${rule.status}`}>
                       {rule.status}
                     </span>
                   </td>
-                  <td className="td-center">{rule.priority}</td>
-                  <td className="td-actions">
-                      <button className="btn-icon" onClick={() => setEditingRule(rule)}>Edit</button>
-                      <button className="btn-icon" onClick={() => handleToggleStatus(rule.id)}>
+                  <td className="text-right">
+                    <div className="action-buttons">
+                      <button className="btn-table" onClick={() => setEditingRule(rule)}>Edit</button>
+                      <button className="btn-table" onClick={() => handleToggleStatus(rule.id)}>
                         {rule.status === 'active' ? 'Disable' : 'Enable'}
                       </button>
-                      <button className="btn-icon delete" onClick={() => handleDeleteRule(rule.id)}>Delete</button>
+                      <button className="btn-table btn-delete" onClick={() => handleDeleteRule(rule.id)}>Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}
-              {filteredRules.length === 0 && (
-                  <tr className="empty-row">
-                      <td colSpan={12}>No rules found.</td>
-                  </tr>
-              )}
             </tbody>
           </table>
+          
+          {filteredRules.length === 0 && (
+            <div className="empty-state">
+              <p>No category rules found matching your criteria.</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* MODALS REMAIN THE SAME - Logic Unchanged */}
+      {/* CREATE MODAL */}
       {showCreateModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-                <h2>Create New Rule</h2>
-            </div>
+          <div className="modal-container">
+            <header className="modal-header">
+              <h2>Create Category Rule</h2>
+              <button className="btn-close" onClick={() => setShowCreateModal(false)}>&times;</button>
+            </header>
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.target as HTMLFormElement);
@@ -293,78 +292,90 @@ export default function CategoryRulesPage() {
                 dailyLimitOverride: formData.get('dailyLimitOverride') ? Number(formData.get('dailyLimitOverride')) : null,
                 cooldownDaysOverride: formData.get('cooldownDaysOverride') ? Number(formData.get('cooldownDaysOverride')) : null,
                 requiredActions: Number(formData.get('requiredActions')) || 1,
-                screenshotRequired: (formData.get('screenshotRequired') as string) === 'true',
+                screenshotRequired: formData.get('screenshotRequired') === 'true',
                 status: 'active' as const,
                 priority: Number(formData.get('priority')) || 0,
               };
               handleCreateRule(data);
             }}>
-              <div className="form-grid">
-                <div className="form-group span-2">
-                    <label>Category</label>
-                    <select name="categoryId" required>
-                    <option value="">Select Category</option>
-                    {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>Action Type</label>
-                    <select name="actionType" required>
-                    <option value="Website Research">Website Research</option>
-                    <option value="LinkedIn Inquiry">LinkedIn Inquiry</option>
-                    <option value="Email Outreach">Email Outreach</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>Role</label>
-                    <select name="role" required>
-                    <option value="Researcher">Researcher</option>
-                    <option value="Inquirer">Inquirer</option>
-                    <option value="Auditor">Auditor</option>
-                    </select>
-                </div>
-                <div className="form-divider span-2">Overrides</div>
-                <div className="form-group">
-                    <label>Daily Limit</label>
-                    <input type="number" name="dailyLimitOverride" placeholder="Default" />
-                </div>
-                <div className="form-group">
-                    <label>Cooldown (Days)</label>
-                    <input type="number" name="cooldownDaysOverride" placeholder="Default" />
-                </div>
-                <div className="form-group">
-                    <label>Req. Actions</label>
-                    <input type="number" name="requiredActions" defaultValue={1} required />
-                </div>
-                <div className="form-group">
-                    <label>Screenshot?</label>
-                    <select name="screenshotRequired">
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>Priority</label>
-                    <input type="number" name="priority" defaultValue={0} />
+              <div className="modal-body">
+                <div className="form-section">
+                  <div className="form-row">
+                    <div className="form-group full-width">
+                      <label>Target Category</label>
+                      <select name="categoryId" required>
+                        <option value="">Select a category</option>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Action Type</label>
+                      <select name="actionType" required>
+                        <option value="Website Research">Website Research</option>
+                        <option value="LinkedIn Inquiry">LinkedIn Inquiry</option>
+                        <option value="Email Outreach">Email Outreach</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Assigned Role</label>
+                      <select name="role" required>
+                        <option value="Researcher">Researcher</option>
+                        <option value="Inquirer">Inquirer</option>
+                        <option value="Auditor">Auditor</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-separator">Rule Configuration Overrides</div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Daily Limit</label>
+                      <input type="number" name="dailyLimitOverride" placeholder="Use system default" />
+                    </div>
+                    <div className="form-group">
+                      <label>Cooldown (Days)</label>
+                      <input type="number" name="cooldownDaysOverride" placeholder="Use system default" />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Required Actions</label>
+                      <input type="number" name="requiredActions" defaultValue={1} min={1} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Screenshot Proof</label>
+                      <select name="screenshotRequired">
+                        <option value="false">Not Required</option>
+                        <option value="true">Mandatory</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="modal-footer">
+              <footer className="modal-footer">
                 <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>Cancel</button>
-                <button type="submit" className="btn-primary">Create</button>
-              </div>
+                <button type="submit" className="btn-primary">Create Rule</button>
+              </footer>
             </form>
           </div>
         </div>
       )}
 
+      {/* EDIT MODAL */}
       {editingRule && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-                <h2>Edit Rule</h2>
-            </div>
+          <div className="modal-container">
+            <header className="modal-header">
+              <h2>Edit Rule Configuration</h2>
+              <button className="btn-close" onClick={() => setEditingRule(null)}>&times;</button>
+            </header>
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.target as HTMLFormElement);
@@ -376,65 +387,75 @@ export default function CategoryRulesPage() {
                 dailyLimitOverride: formData.get('dailyLimitOverride') ? Number(formData.get('dailyLimitOverride')) : null,
                 cooldownDaysOverride: formData.get('cooldownDaysOverride') ? Number(formData.get('cooldownDaysOverride')) : null,
                 requiredActions: Number(formData.get('requiredActions')),
-                screenshotRequired: (formData.get('screenshotRequired') as string) === 'true',
+                screenshotRequired: formData.get('screenshotRequired') === 'true',
                 priority: Number(formData.get('priority')),
               };
               handleEditRule(updatedRule);
             }}>
-              <div className="form-grid">
-                <div className="form-group span-2">
-                    <label>Category</label>
-                    <select name="categoryId" defaultValue={editingRule.categoryId} required>
-                    {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>Action Type</label>
-                    <select name="actionType" defaultValue={editingRule.actionType} required>
-                    <option value="Website Research">Website Research</option>
-                    <option value="LinkedIn Inquiry">LinkedIn Inquiry</option>
-                    <option value="Email Outreach">Email Outreach</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>Role</label>
-                    <select name="role" defaultValue={editingRule.role} required>
-                    <option value="Researcher">Researcher</option>
-                    <option value="Inquirer">Inquirer</option>
-                    <option value="Auditor">Auditor</option>
-                    </select>
-                </div>
-                <div className="form-divider span-2">Overrides</div>
-                <div className="form-group">
-                    <label>Daily Limit</label>
-                    <input type="number" name="dailyLimitOverride" defaultValue={editingRule.dailyLimitOverride || ''} placeholder="Default" />
-                </div>
-                <div className="form-group">
-                    <label>Cooldown (Days)</label>
-                    <input type="number" name="cooldownDaysOverride" defaultValue={editingRule.cooldownDaysOverride || ''} placeholder="Default" />
-                </div>
-                <div className="form-group">
-                    <label>Req. Actions</label>
-                    <input type="number" name="requiredActions" defaultValue={editingRule.requiredActions} required />
-                </div>
-                <div className="form-group">
-                    <label>Screenshot?</label>
-                    <select name="screenshotRequired" defaultValue={editingRule.screenshotRequired.toString()}>
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>Priority</label>
-                    <input type="number" name="priority" defaultValue={editingRule.priority} />
+              <div className="modal-body">
+                <div className="form-section">
+                  <div className="form-row">
+                    <div className="form-group full-width">
+                      <label>Category</label>
+                      <select name="categoryId" defaultValue={editingRule.categoryId} required>
+                        {categories.map(cat => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Action Type</label>
+                      <select name="actionType" defaultValue={editingRule.actionType} required>
+                        <option value="Website Research">Website Research</option>
+                        <option value="LinkedIn Inquiry">LinkedIn Inquiry</option>
+                        <option value="Email Outreach">Email Outreach</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Role</label>
+                      <select name="role" defaultValue={editingRule.role} required>
+                        <option value="Researcher">Researcher</option>
+                        <option value="Inquirer">Inquirer</option>
+                        <option value="Auditor">Auditor</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-separator">Overrides & Requirements</div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Daily Limit</label>
+                      <input type="number" name="dailyLimitOverride" defaultValue={editingRule.dailyLimitOverride || ''} placeholder="System default" />
+                    </div>
+                    <div className="form-group">
+                      <label>Cooldown (Days)</label>
+                      <input type="number" name="cooldownDaysOverride" defaultValue={editingRule.cooldownDaysOverride || ''} placeholder="System default" />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Required Actions</label>
+                      <input type="number" name="requiredActions" defaultValue={editingRule.requiredActions} required />
+                    </div>
+                    <div className="form-group">
+                      <label>Screenshot?</label>
+                      <select name="screenshotRequired" defaultValue={editingRule.screenshotRequired.toString()}>
+                        <option value="false">No</option>
+                        <option value="true">Yes</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="modal-footer">
+              <footer className="modal-footer">
                 <button type="button" className="btn-secondary" onClick={() => setEditingRule(null)}>Cancel</button>
                 <button type="submit" className="btn-primary">Save Changes</button>
-              </div>
+              </footer>
             </form>
           </div>
         </div>
