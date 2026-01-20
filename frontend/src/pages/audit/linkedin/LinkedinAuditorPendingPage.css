@@ -5,6 +5,7 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* HEADER */
 .li-audit-header {
   display: flex;
   justify-content: space-between;
@@ -24,7 +25,9 @@
   color: #0f172a;
 }
 
-.text-id { color: #6366f1; }
+.text-id {
+  color: #6366f1;
+}
 
 .worker-badge {
   display: flex;
@@ -33,22 +36,35 @@
   background: white;
   padding: 8px 16px;
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
 }
 
-.w-name { font-weight: 700; color: #1e293b; font-size: 14px; margin: 0; }
-.w-rank { font-size: 12px; color: #10b981; font-weight: 600; margin: 0; }
+.worker-badge.empty {
+  opacity: 0.6;
+}
+
+.w-name {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 14px;
+  margin: 0;
+}
+
+.w-rank {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+}
 
 .audit-timer {
   background: #1e293b;
-  color: #fff;
+  color: white;
   padding: 10px 20px;
   border-radius: 30px;
   font-family: monospace;
   font-weight: 700;
-  letter-spacing: 1px;
 }
 
+/* CONTENT */
 .li-audit-content {
   display: grid;
   grid-template-columns: 420px 1fr;
@@ -60,94 +76,95 @@
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .li-data-card h3 {
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
   color: #64748b;
-  letter-spacing: 0.05em;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
-.data-grid { display: flex; flex-direction: column; gap: 12px; }
-.data-item label { display: block; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
-.data-item span { font-size: 15px; color: #1e293b; font-weight: 600; }
-
-.li-external-link {
-  display: block;
-  margin-top: 10px;
-  color: #2563eb;
+.data-grid.empty span,
+.li-timeline.empty,
+.verification-details.empty {
+  color: #94a3b8;
   font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
 }
 
-.li-timeline { display: flex; flex-direction: column; gap: 10px; }
+.li-external-link.disabled {
+  color: #cbd5f5;
+  font-size: 13px;
+}
 
-.timeline-item {
+.li-timeline.empty {
+  text-align: center;
+  padding: 20px;
+}
+
+/* VERIFICATION */
+.v-row {
   display: flex;
-  align-items: center;
-  gap: 15px;
+  justify-content: space-between;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.v-hash {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.v-badge.pending {
+  color: #f59e0b;
+  font-weight: 800;
+}
+
+/* DECISION */
+.li-audit-decision {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+}
+
+.decision-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn-approve,
+.btn-fraud,
+.btn-reject {
   padding: 12px;
-  border-radius: 12px;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.timeline-item.active { background: #f8fafc; border-color: #6366f1; }
-.timeline-item.approved { background: #f0fdf4; }
-.timeline-item.approved .t-status-icon { background: #16a34a; color: white; }
-
-.t-status-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 10px;
+  border: none;
   font-weight: 700;
-  font-size: 12px;
 }
-
-.t-type { font-weight: 700; color: #1e293b; font-size: 13px; margin: 0; }
-.t-time { font-size: 11px; color: #94a3b8; margin: 0; }
-
-.v-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
-.v-hash { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
-.v-badge.pending { color: #f59e0b; font-weight: 800; }
-.v-badge.approved { color: #16a34a; font-weight: 800; }
-
-.li-audit-decision { background: white; padding: 20px; border-radius: 16px; }
-
-.decision-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
 
 .btn-approve {
   background: #10b981;
   color: white;
-  border: none;
-  padding: 14px;
-  border-radius: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.1s;
 }
-
-.btn-approve:hover { background: #059669; transform: translateY(-1px); }
 
 .btn-fraud {
   background: #f1f5f9;
   color: #ef4444;
-  border: 1px solid #fee2e2;
-  padding: 14px;
-  border-radius: 10px;
-  font-weight: 700;
-  cursor: pointer;
+}
+
+.btn-reject {
+  background: #ef4444;
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .rejection-box textarea {
@@ -155,27 +172,11 @@
   height: 80px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
-  padding: 12px;
-  font-family: inherit;
-  font-size: 13px;
-  margin-bottom: 10px;
+  padding: 10px;
   resize: none;
 }
 
-.btn-reject {
-  width: 100%;
-  background: #ef4444;
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 10px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-reject:disabled { background: #fca5a5; cursor: not-allowed; }
-
-/* Evidence Panel */
+/* EVIDENCE */
 .li-evidence-view {
   background: #1e293b;
   border-radius: 20px;
@@ -188,7 +189,7 @@
   background: #0f172a;
   padding: 12px 20px;
   display: flex;
-  gap: 15px;
+  gap: 12px;
   align-items: center;
 }
 
@@ -199,28 +200,28 @@
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
 }
 
-.evidence-info { margin-left: auto; color: #94a3b8; font-size: 12px; font-family: monospace; }
+.evidence-info {
+  margin-left: auto;
+  color: #94a3b8;
+  font-size: 12px;
+  font-family: monospace;
+}
 
 .screenshot-container {
   flex: 1;
-  overflow: auto;
   display: flex;
+  align-items: center;
   justify-content: center;
-  align-items: flex-start;
+}
+
+.evidence-empty {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.screenshot-container.zoomed {
   padding: 20px;
-}
-
-.screenshot-container img {
-  max-width: 100%;
-  height: auto;
-  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-}
-
-.screenshot-container.zoomed img {
-  max-width: none;
-  width: 120%;
 }

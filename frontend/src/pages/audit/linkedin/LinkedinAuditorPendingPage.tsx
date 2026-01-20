@@ -1,125 +1,130 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './LinkedinAuditorPendingPage.css';
 
-interface ActionStep {
-  id: number;
-  type: string;
-  status: 'pending' | 'approved' | 'rejected';
-  timestamp: string;
-  screenshotUrl: string;
-  hash: string;
-  notes: string;
-}
-
-const MOCK_SUBMISSION = {
-  id: "SUB-8829",
-  worker: { id: "W-402", name: "Chen Wei", rank: "Top 5" },
-  target: { 
-    name: "Jonathan Harker", 
-    role: "Head of Procurement", 
-    company: "Transylvania Logistics",
-    linkedinUrl: "https://linkedin.com/in/jharker-proc"
-  },
-  steps: [
-    { id: 1, type: 'Connection Request', status: 'approved', timestamp: '2026-01-11 09:00', screenshotUrl: 'https://via.placeholder.com/1200x800/1e293b/ffffff?text=LinkedIn+Connection+Proof', hash: 'H-992188X', notes: 'Visible connection note included.' },
-    { id: 2, type: 'Direct Message A', status: 'pending', timestamp: '2026-01-11 10:15', screenshotUrl: 'https://via.placeholder.com/1200x800/334155/ffffff?text=Message+A+Proof', hash: 'H-773211Y', notes: 'First outreach message.' },
-    { id: 3, type: 'Direct Message B (Follow-up)', status: 'pending', timestamp: '2026-01-11 14:20', screenshotUrl: 'https://via.placeholder.com/1200x800/475569/ffffff?text=Message+B+Proof', hash: 'H-441092Z', notes: 'Catalogue shared.' }
-  ] as ActionStep[]
-};
-
 export default function LinkedinAuditorPendingPage() {
-  const [currentStepIdx, setCurrentStepIdx] = useState(1); // Muestra el paso 2 por defecto (index 1)
-  const [rejectionReason, setRejectionReason] = useState('');
   const [isZoomed, setIsZoomed] = useState(false);
-
-  const activeStep = MOCK_SUBMISSION.steps[currentStepIdx];
-
-  const handleApprove = () => {
-    console.log(`Step ${activeStep.id} approved`);
-    if (currentStepIdx < MOCK_SUBMISSION.steps.length - 1) setCurrentStepIdx(prev => prev + 1);
-  };
+  const [rejectionReason, setRejectionReason] = useState('');
 
   return (
     <div className="li-audit-container">
+      {/* HEADER */}
       <header className="li-audit-header">
         <div className="li-header-main">
-          <h1>Pending Review: <span className="text-id">{MOCK_SUBMISSION.id}</span></h1>
-          <div className="worker-badge">
+          <h1>
+            Pending Review: <span className="text-id">—</span>
+          </h1>
+
+          <div className="worker-badge empty">
             <span className="worker-icon">👤</span>
             <div>
-              <p className="w-name">{MOCK_SUBMISSION.worker.name}</p>
-              <p className="w-rank">{MOCK_SUBMISSION.worker.rank}</p>
+              <p className="w-name">Worker not loaded</p>
+              <p className="w-rank">—</p>
             </div>
           </div>
         </div>
-        <div className="audit-timer">Review Time: 02:45</div>
+
+        <div className="audit-timer">Waiting…</div>
       </header>
 
+      {/* CONTENT */}
       <div className="li-audit-content">
+        {/* SIDEBAR */}
         <aside className="li-sidebar-data">
-          <section className="li-data-card target-info">
+          <section className="li-data-card">
             <h3>Target Profile Details</h3>
-            <div className="data-grid">
-              <div className="data-item"><label>Full Name</label><span>{MOCK_SUBMISSION.target.name}</span></div>
-              <div className="data-item"><label>Role</label><span>{MOCK_SUBMISSION.target.role}</span></div>
-              <div className="data-item"><label>Company</label><span>{MOCK_SUBMISSION.target.company}</span></div>
-              <a href={MOCK_SUBMISSION.target.linkedinUrl} target="_blank" className="li-external-link">Verify Profile on LinkedIn</a>
+
+            <div className="data-grid empty">
+              <div className="data-item">
+                <label>Full Name</label>
+                <span>—</span>
+              </div>
+              <div className="data-item">
+                <label>Role</label>
+                <span>—</span>
+              </div>
+              <div className="data-item">
+                <label>Company</label>
+                <span>—</span>
+              </div>
+
+              <span className="li-external-link disabled">
+                LinkedIn profile unavailable
+              </span>
             </div>
           </section>
 
-          <section className="li-data-card timeline-info">
+          <section className="li-data-card">
             <h3>Multi-Action Progress</h3>
-            <div className="li-timeline">
-              {MOCK_SUBMISSION.steps.map((step, idx) => (
-                <div 
-                  key={step.id} 
-                  className={`timeline-item ${idx === currentStepIdx ? 'active' : ''} ${step.status}`}
-                  onClick={() => setCurrentStepIdx(idx)}
-                >
-                  <div className="t-status-icon">{step.status === 'approved' ? '✓' : idx + 1}</div>
-                  <div className="t-text">
-                    <p className="t-type">{step.type}</p>
-                    <p className="t-time">{step.timestamp}</p>
-                  </div>
-                </div>
-              ))}
+
+            <div className="li-timeline empty">
+              <p>No actions loaded for review.</p>
             </div>
           </section>
 
-          <section className="li-data-card step-details">
-            <h3>Step {activeStep.id} Verification</h3>
-            <div className="verification-details">
-              <div className="v-row"><span>Action Type:</span><strong>{activeStep.type}</strong></div>
-              <div className="v-row"><span>Image Hash:</span><code className="v-hash">{activeStep.hash}</code></div>
-              <div className="v-row"><span>Status:</span><span className={`v-badge ${activeStep.status}`}>{activeStep.status.toUpperCase()}</span></div>
-              <p className="v-notes"><strong>Note:</strong> {activeStep.notes}</p>
+          <section className="li-data-card">
+            <h3>Step Verification</h3>
+
+            <div className="verification-details empty">
+              <div className="v-row">
+                <span>Action Type:</span>
+                <strong>—</strong>
+              </div>
+              <div className="v-row">
+                <span>Image Hash:</span>
+                <code className="v-hash">—</code>
+              </div>
+              <div className="v-row">
+                <span>Status:</span>
+                <span className="v-badge pending">PENDING</span>
+              </div>
+              <p className="v-notes">
+                Evidence details will appear once loaded.
+              </p>
             </div>
           </section>
 
           <section className="li-audit-decision">
             <div className="decision-actions">
-              <button className="btn-approve" onClick={handleApprove}>Approve Step</button>
-              <button className="btn-fraud">Report Fraud</button>
+              <button className="btn-approve" disabled>
+                Approve Step
+              </button>
+              <button className="btn-fraud" disabled>
+                Report Fraud
+              </button>
             </div>
+
             <div className="rejection-box">
-              <textarea 
-                placeholder="Reason for rejection (mandatory if rejecting)..."
+              <textarea
+                placeholder="Reason for rejection…"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
+                disabled
               />
-              <button className="btn-reject" disabled={!rejectionReason}>Reject Item</button>
+              <button className="btn-reject" disabled>
+                Reject Item
+              </button>
             </div>
           </section>
         </aside>
 
+        {/* EVIDENCE */}
         <main className="li-evidence-view">
           <div className="evidence-toolbar">
-            <button onClick={() => setIsZoomed(!isZoomed)}>{isZoomed ? 'Actual Size' : 'Zoom In'}</button>
-            <button>Download Evidence</button>
-            <div className="evidence-info">Step {activeStep.id} Screenshot - {activeStep.hash}</div>
+            <button onClick={() => setIsZoomed(!isZoomed)}>
+              {isZoomed ? 'Actual Size' : 'Zoom In'}
+            </button>
+            <button disabled>Download Evidence</button>
+
+            <div className="evidence-info">
+              Screenshot unavailable
+            </div>
           </div>
+
           <div className={`screenshot-container ${isZoomed ? 'zoomed' : ''}`}>
-            <img src={activeStep.screenshotUrl} alt="Evidence proof" />
+            <div className="evidence-empty">
+              <p>No evidence loaded</p>
+              <span>Waiting for backend payload…</span>
+            </div>
           </div>
         </main>
       </div>

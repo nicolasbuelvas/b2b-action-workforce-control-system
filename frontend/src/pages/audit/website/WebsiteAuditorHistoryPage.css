@@ -1,36 +1,192 @@
-.wb-history-view { padding: 40px; background: #f8fafc; min-height: 100vh; font-family: 'Inter', sans-serif; }
-.wb-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
-.header-info h1 { font-size: 30px; font-weight: 900; color: #0f172a; margin: 0; }
-.header-info p { color: #64748b; margin-top: 8px; }
+.wb-history-view {
+  padding: 40px;
+  background: #f8fafc;
+  min-height: 100vh;
+  font-family: Inter, system-ui, sans-serif;
+}
 
-.filter-bar { display: flex; gap: 10px; }
-.filter-bar input { padding: 12px 20px; border-radius: 12px; border: 1px solid #e2e8f0; width: 300px; outline: none; }
-.btn-filter { background: white; border: 1px solid #e2e8f0; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+/* Header */
+.wb-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 36px;
+}
 
-.history-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; margin-bottom: 35px; }
-.h-stat-card { background: white; padding: 25px; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.h-stat-card span { font-size: 12px; text-transform: uppercase; color: #94a3b8; font-weight: 800; letter-spacing: 0.05em; }
-.h-stat-card h3 { font-size: 28px; font-weight: 900; color: #1e293b; margin: 10px 0 0; }
+.header-info h1 {
+  font-size: 28px;
+  font-weight: 900;
+  margin: 0;
+  color: #0f172a;
+}
 
-.wb-table-container { background: white; border-radius: 24px; border: 1px solid #e2e8f0; overflow: hidden; }
-.wb-history-table { width: 100%; border-collapse: collapse; text-align: left; }
-.wb-history-table th { background: #f8fafc; padding: 18px 25px; font-size: 12px; color: #94a3b8; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; }
-.wb-history-table td { padding: 20px 25px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #475569; }
+.header-info p {
+  margin-top: 6px;
+  color: #64748b;
+}
 
-.id-col { font-family: 'Fira Code', monospace; font-weight: 700; color: #6366f1; }
-.domain-col strong { color: #1e293b; font-size: 15px; }
+/* Filters */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+}
 
-.decision-pill { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-.decision-pill.paid { background: #dcfce7; color: #166534; }
-.decision-pill.rejected { background: #fee2e2; color: #991b1b; }
+.filter-bar input {
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  width: 280px;
+}
 
-.quality-meter { display: flex; align-items: center; gap: 10px; }
-.q-bar { width: 80px; height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden; }
-.q-fill { height: 100%; border-radius: 10px; }
+.btn-filter {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
 
-.btn-view-details { background: #f1f5f9; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; color: #475569; }
-.btn-view-details:hover { background: #1e293b; color: white; }
+/* Table */
+.wb-table-container {
+  background: white;
+  border-radius: 22px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
 
-.history-pagination { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 30px; }
-.p-btn { background: white; border: 1px solid #e2e8f0; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; color: #1e293b; }
-.p-info { color: #94a3b8; font-size: 14px; }
+.wb-history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wb-history-table th {
+  background: #f8fafc;
+  padding: 18px 24px;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.wb-history-table td {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  color: #475569;
+}
+
+.empty-row {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+/* Columns */
+.id-col {
+  font-family: "Fira Code", monospace;
+  font-weight: 700;
+  color: #6366f1;
+}
+
+.domain-col strong {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+/* Decision */
+.decision-pill {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.decision-pill.paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.decision-pill.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Quality */
+.quality-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.q-bar {
+  width: 80px;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.q-fill {
+  height: 100%;
+  background: #10b981;
+  border-radius: 10px;
+}
+
+/* Actions */
+.btn-view-details {
+  background: #f1f5f9;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-view-details:hover {
+  background: #1e293b;
+  color: white;
+}
+
+/* Pagination */
+.history-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin-top: 32px;
+}
+
+.p-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.p-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.p-info {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* States */
+.wb-state-screen {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #64748b;
+}
+
+.wb-state-screen.error {
+  color: #ef4444;
+}

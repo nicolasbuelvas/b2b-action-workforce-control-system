@@ -1,46 +1,209 @@
-.wb-pending-container { padding: 30px; background: #f1f5f9; min-height: 100vh; font-family: 'Inter', sans-serif; }
-.wb-pending-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.wb-pending-container {
+  padding: 32px;
+  min-height: 100vh;
+  background: #f1f5f9;
+  font-family: Inter, system-ui, sans-serif;
+}
 
-.header-left h1 { font-size: 24px; font-weight: 800; color: #1e293b; margin: 5px 0 0; }
-.type-badge { background: #334155; color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+/* Header */
+.wb-pending-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
 
-.worker-info { text-align: right; }
-.worker-info p { margin: 0; font-size: 14px; color: #1e293b; }
-.worker-info span { font-size: 12px; color: #64748b; }
+.type-badge {
+  background: #1e293b;
+  color: white;
+  padding: 5px 12px;
+  font-size: 11px;
+  border-radius: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
 
-.wb-audit-grid { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
+.worker-info {
+  text-align: right;
+}
 
-/* Browser Mockup */
-.browser-mockup { background: #fff; border-radius: 12px; border: 1px solid #cbd5e1; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-.browser-bar { background: #e2e8f0; padding: 10px 15px; display: flex; align-items: center; gap: 20px; }
-.circles { display: flex; gap: 6px; }
-.circles span { width: 10px; height: 10px; border-radius: 50%; background: #94a3b8; }
-.url-bar { background: white; flex: 1; border-radius: 6px; padding: 4px 12px; font-size: 12px; color: #64748b; }
+.worker-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #0f172a;
+}
 
-.evidence-scroll { height: 75vh; overflow-y: scroll; background: #0f172a; padding: 20px; }
-.evidence-scroll img { width: 100%; border-radius: 4px; }
+.worker-info span {
+  font-size: 12px;
+  color: #64748b;
+}
 
-/* Sidebar Panel */
-.val-section { background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
-.val-section h3 { font-size: 14px; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+/* Grid */
+.wb-audit-grid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 32px;
+}
 
-.info-row { margin-bottom: 12px; }
-.info-row label { display: block; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
-.info-row p { font-size: 14px; color: #1e293b; font-weight: 600; margin: 4px 0 0; }
+/* Browser */
+.browser-mockup {
+  background: white;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  overflow: hidden;
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.08);
+}
 
-.instruction { font-size: 12px; color: #64748b; margin-bottom: 20px; font-style: italic; }
+.browser-bar {
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 14px;
+}
 
-.check-item { display: flex; gap: 15px; padding: 12px; background: #f8fafc; border-radius: 10px; margin-bottom: 12px; border: 1px solid transparent; transition: 0.2s; }
-.check-item:has(input:checked) { background: #f0fdf4; border-color: #10b981; }
+.circles span {
+  width: 10px;
+  height: 10px;
+  background: #94a3b8;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
 
-.check-item label { flex: 1; font-size: 13px; color: #475569; cursor: pointer; }
-.check-item code { display: block; margin-top: 4px; font-family: monospace; color: #1e293b; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; }
+.url-bar {
+  background: white;
+  flex: 1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #475569;
+}
 
-.decision-card textarea { width: 100%; height: 80px; border-radius: 8px; border: 1px solid #cbd5e1; padding: 12px; font-size: 13px; margin: 10px 0; resize: none; }
-.btn-stack { display: flex; flex-direction: column; gap: 10px; }
+.evidence-scroll {
+  height: 78vh;
+  overflow-y: auto;
+  background: #020617;
+  padding: 18px;
+}
 
-.btn-approve { background: #10b981; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer; }
-.btn-approve:disabled { background: #d1d5db; cursor: not-allowed; }
+.evidence-scroll img {
+  width: 100%;
+  border-radius: 6px;
+}
 
-.btn-reject { background: white; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer; }
-.btn-reject:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Sidebar */
+.val-section {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+
+.val-section h3 {
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 14px;
+  color: #334155;
+  text-transform: uppercase;
+}
+
+.info-row label {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.info-row p {
+  margin: 4px 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.instruction {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+/* Checklist */
+.check-item {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  margin-bottom: 12px;
+  border: 1px solid transparent;
+}
+
+.check-item.checked {
+  background: #ecfdf5;
+  border-color: #10b981;
+}
+
+.check-item code {
+  display: block;
+  margin-top: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* Decision */
+.decision-card textarea {
+  width: 100%;
+  height: 90px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 12px;
+  margin: 10px 0 16px;
+  font-size: 13px;
+}
+
+.btn-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-approve {
+  background: #10b981;
+  color: white;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  border: none;
+}
+
+.btn-approve:disabled {
+  background: #d1d5db;
+}
+
+.btn-reject {
+  background: white;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.btn-reject:disabled {
+  opacity: 0.5;
+}
+
+/* States */
+.wb-state-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+}
+
+.wb-state-screen.error {
+  color: #ef4444;
+}

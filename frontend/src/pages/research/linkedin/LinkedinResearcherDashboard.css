@@ -1,0 +1,138 @@
+.lnk-dash-container {
+  padding: 40px;
+  background: #f1f5f9;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+}
+
+.lnk-welcome {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.lnk-welcome h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.lnk-welcome p {
+  color: #64748b;
+  font-size: 18px;
+  margin-top: 5px;
+}
+
+.wallet-card {
+  background: #1e293b;
+  color: white;
+  padding: 25px;
+  border-radius: 20px;
+  text-align: center;
+  width: 220px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.wallet-card label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+}
+
+.wallet-card h3 {
+  font-size: 32px;
+  margin: 10px 0;
+}
+
+.btn-withdraw {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: not-allowed;
+  width: 100%;
+  opacity: 0.6;
+}
+
+.lnk-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.l-stat-card {
+  background: white;
+  padding: 25px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.l-icon {
+  font-size: 28px;
+  width: 60px;
+  height: 60px;
+  background: #f8fafc;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.l-val {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.l-lab {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.lnk-content-row {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 30px;
+}
+
+.earnings-chart-card,
+.notifications-card {
+  background: white;
+  padding: 30px;
+  border-radius: 24px;
+  border: 1px solid #e2e8f0;
+}
+
+.earnings-chart-card h3,
+.notifications-card h3 {
+  margin-top: 0;
+  font-size: 16px;
+  color: #0f172a;
+  margin-bottom: 20px;
+}
+
+.chart-empty-state,
+.notif-empty-state {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 14px;
+  border: 2px dashed #e2e8f0;
+  border-radius: 16px;
+  text-align: center;
+  padding: 20px;
+}
