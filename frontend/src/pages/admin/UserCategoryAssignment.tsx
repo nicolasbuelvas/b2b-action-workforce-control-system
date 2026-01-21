@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getUsers, assignUserToCategories, getUserCategories, getAdminCategories } from '../../api/admin.api';
+import './UserCategoryAssignment.css';
 
 interface User {
   id: string;

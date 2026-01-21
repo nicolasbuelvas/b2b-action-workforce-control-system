@@ -25,15 +25,15 @@ __decorate([
     __metadata("design:type", String)
 ], ResearchTask.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ type: 'varchar' }),
     __metadata("design:type", String)
 ], ResearchTask.prototype, "targetId", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'targettype', type: 'varchar', nullable: true }),
     __metadata("design:type", String)
 ], ResearchTask.prototype, "targetType", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ type: 'varchar' }),
     __metadata("design:type", String)
 ], ResearchTask.prototype, "categoryId", void 0);
 __decorate([

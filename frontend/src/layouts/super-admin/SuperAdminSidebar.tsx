@@ -62,6 +62,9 @@ export default function AppSidebar() {
             <NavLink to="/super-admin/categories" className="sa-link">
               Categories
             </NavLink>
+            <NavLink to="/super-admin/user-categories" className="sa-link">
+              Assign Users
+            </NavLink>
             <NavLink to="/super-admin/category-rules" className="sa-link">
               Rules
             </NavLink>

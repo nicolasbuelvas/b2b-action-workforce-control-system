@@ -16,13 +16,13 @@ export class ResearchTask {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   targetId: string;
 
-  @Column()
+  @Column({ name: 'targettype', type: 'varchar', nullable: true })
   targetType: string; // 'COMPANY' or 'LINKEDIN'
 
-  @Column()
+  @Column({ type: 'varchar' })
   categoryId: string;
 
   @Column({
