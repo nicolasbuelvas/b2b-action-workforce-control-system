@@ -17,6 +17,8 @@ const common_1 = require("@nestjs/common");
 const admin_service_1 = require("./admin.service");
 const create_sub_admin_dto_1 = require("./dto/create-sub-admin.dto");
 const assign_category_dto_1 = require("./dto/assign-category.dto");
+const assign_user_categories_dto_1 = require("./dto/assign-user-categories.dto");
+const remove_user_category_dto_1 = require("./dto/remove-user-category.dto");
 const jwt_guard_1 = require("../../common/guards/jwt.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
@@ -62,6 +64,15 @@ let AdminController = class AdminController {
     }
     assignCategory(dto) {
         return this.adminService.assignCategories(dto);
+    }
+    assignUserToCategories(dto) {
+        return this.adminService.assignUserToCategories(dto);
+    }
+    removeUserFromCategory(dto) {
+        return this.adminService.removeUserFromCategory(dto);
+    }
+    getUserCategories(userId) {
+        return this.adminService.getUserCategories(userId);
     }
     getSubAdmins() {
         return this.adminService.getSubAdmins();
@@ -146,6 +157,27 @@ __decorate([
     __metadata("design:paramtypes", [assign_category_dto_1.AssignCategoryDto]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "assignCategory", null);
+__decorate([
+    (0, common_1.Post)('users/assign-categories'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [assign_user_categories_dto_1.AssignUserToCategoriesDto]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "assignUserToCategories", null);
+__decorate([
+    (0, common_1.Delete)('users/remove-from-category'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [remove_user_category_dto_1.RemoveUserFromCategoryDto]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "removeUserFromCategory", null);
+__decorate([
+    (0, common_1.Get)('users/:userId/categories'),
+    __param(0, (0, common_1.Param)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getUserCategories", null);
 __decorate([
     (0, common_1.Get)('sub-admins'),
     __metadata("design:type", Function),

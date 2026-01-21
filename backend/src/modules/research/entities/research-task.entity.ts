@@ -20,6 +20,9 @@ export class ResearchTask {
   targetId: string;
 
   @Column()
+  targetType: string; // 'COMPANY' or 'LINKEDIN'
+
+  @Column()
   categoryId: string;
 
   @Column({

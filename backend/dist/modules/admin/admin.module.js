@@ -19,13 +19,14 @@ const research_task_entity_1 = require("../research/entities/research-task.entit
 const research_audit_entity_1 = require("../audit/entities/research-audit.entity");
 const category_entity_1 = require("../categories/entities/category.entity");
 const sub_admin_category_entity_1 = require("../categories/entities/sub-admin-category.entity");
+const user_category_entity_1 = require("../categories/entities/user-category.entity");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
 exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, role_entity_1.Role, user_role_entity_1.UserRole, inquiry_action_entity_1.InquiryAction, research_task_entity_1.ResearchTask, research_audit_entity_1.ResearchAudit, category_entity_1.Category, sub_admin_category_entity_1.SubAdminCategory]),
+            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, role_entity_1.Role, user_role_entity_1.UserRole, inquiry_action_entity_1.InquiryAction, research_task_entity_1.ResearchTask, research_audit_entity_1.ResearchAudit, category_entity_1.Category, sub_admin_category_entity_1.SubAdminCategory, user_category_entity_1.UserCategory]),
         ],
         controllers: [admin_controller_1.AdminController],
         providers: [admin_service_1.AdminService],

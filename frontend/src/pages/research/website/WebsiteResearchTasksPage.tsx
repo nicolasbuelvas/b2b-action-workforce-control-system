@@ -1,13 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './WebsiteResearchTasksPage.css';
-
-type WebsiteResearchTask = {
-  id: string;
-  domain: string;
-  category: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'unassigned' | 'in_progress' | 'submitted';
-};
+import { researchApi, WebsiteResearchTask, SubmitResearchPayload } from '../../../api/research.api';
 
 type ResearchFormData = {
   email: string;
@@ -17,13 +10,12 @@ type ResearchFormData = {
 };
 
 export default function WebsiteResearchTasksPage() {
-  /** 
-   * IMPORTANT:
-   * This array MUST be populated by backend integration.
-   * Do NOT add mock data here.
-   */
   const [tasks, setTasks] = useState<WebsiteResearchTask[]>([]);
   const [activeTask, setActiveTask] = useState<WebsiteResearchTask | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState<ResearchFormData>({
     email: '',
@@ -31,6 +23,110 @@ export default function WebsiteResearchTasksPage() {
     techStack: '',
     notes: ''
   });
+
+  // Load tasks on mount
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await researchApi.getWebsiteTasks();
+      setTasks(data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load tasks');
+      console.error('Error loading tasks:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClaimTask = async (task: WebsiteResearchTask) => {
+    if (task.status === 'in_progress') {
+      // Already claimed, just select it
+      setActiveTask(task);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await researchApi.claimTask(task.id);
+      
+      // Update local state
+      const updatedTasks = tasks.map(t =>
+        t.id === task.id ? { ...t, status: 'in_progress' as const } : t
+      );
+      setTasks(updatedTasks);
+      
+      const updatedTask = { ...task, status: 'in_progress' as const };
+      setActiveTask(updatedTask);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to claim task');
+      console.error('Error claiming task:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!activeTask) return;
+
+    if (activeTask.status !== 'in_progress') {
+      alert('Please claim this task before submitting');
+      return;
+    }
+
+    // Basic validation
+    if (!formData.email && !formData.phone) {
+      alert('Please provide at least email or phone number');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      const payload: SubmitResearchPayload = {
+        taskId: activeTask.id,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        techStack: formData.techStack || undefined,
+        notes: formData.notes || undefined,
+      };
+
+      await researchApi.submitTask(payload);
+
+      // Update task status
+      const updatedTasks = tasks.map(t =>
+        t.id === activeTask.id ? { ...t, status: 'submitted' as const } : t
+      );
+      setTasks(updatedTasks);
+
+      // Clear form and selection
+      setFormData({ email: '', phone: '', techStack: '', notes: '' });
+      setActiveTask(null);
+
+      alert('Research submitted successfully! Awaiting audit.');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to submit research');
+      console.error('Error submitting:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSaveDraft = () => {
+    // TODO: Implement draft saving if needed
+    alert('Draft functionality not yet implemented');
+  };
+
+  const filteredTasks = tasks.filter(task =>
+    task.domain.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const activeTasks = tasks.filter(t => t.status === 'in_progress').length;
+  const submittedTasks = tasks.filter(t => t.status === 'submitted').length;
 
   return (
     <div className="wb-res-tasks-container">
@@ -42,36 +138,53 @@ export default function WebsiteResearchTasksPage() {
         </div>
 
         <div className="wb-res-stats">
-          <div className="res-stat-item">Active Tasks</div>
-          <div className="res-stat-item">Daily Progress</div>
+          <div className="res-stat-item">Active Tasks: {activeTasks}</div>
+          <div className="res-stat-item">Daily Progress: {submittedTasks}</div>
         </div>
       </header>
+
+      {error && (
+        <div style={{ background: '#fee', padding: '15px', borderRadius: '8px', marginBottom: '20px', color: '#c00' }}>
+          {error}
+        </div>
+      )}
 
       {/* MAIN */}
       <div className="wb-res-main">
         {/* TASK LIST */}
         <aside className="wb-res-list">
           <div className="list-search">
-            <input type="text" placeholder="Search domain..." />
+            <input 
+              type="text" 
+              placeholder="Search domain..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
-          {tasks.length === 0 && (
+          {loading && tasks.length === 0 && (
             <div className="empty-list">
-              <p>No tasks assigned yet.</p>
+              <p>Loading tasks...</p>
             </div>
           )}
 
-          {tasks.map(task => (
+          {!loading && filteredTasks.length === 0 && (
+            <div className="empty-list">
+              <p>No tasks available.</p>
+            </div>
+          )}
+
+          {filteredTasks.map(task => (
             <div
               key={task.id}
               className={`target-card ${activeTask?.id === task.id ? 'active' : ''}`}
-              onClick={() => setActiveTask(task)}
+              onClick={() => handleClaimTask(task)}
             >
               <div className={`priority-line ${task.priority}`} />
               <div className="target-card-info">
                 <h4>{task.domain}</h4>
                 <div className="target-card-meta">
-                  <span>{task.category}</span>
+                  <span>{task.country}</span>
                   <span>•</span>
                   <span>{task.priority.toUpperCase()}</span>
                   <span>•</span>
@@ -107,6 +220,12 @@ export default function WebsiteResearchTasksPage() {
                 </button>
               </div>
 
+              {activeTask.status === 'submitted' && (
+                <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', marginBottom: '20px', color: '#1e40af' }}>
+                  This task has been submitted and is awaiting audit.
+                </div>
+              )}
+
               <div className="editor-grid">
                 {/* DATA EXTRACTION */}
                 <section className="form-section">
@@ -121,6 +240,7 @@ export default function WebsiteResearchTasksPage() {
                       onChange={e =>
                         setFormData({ ...formData, email: e.target.value })
                       }
+                      disabled={activeTask.status === 'submitted'}
                     />
                   </div>
 
@@ -133,6 +253,7 @@ export default function WebsiteResearchTasksPage() {
                       onChange={e =>
                         setFormData({ ...formData, phone: e.target.value })
                       }
+                      disabled={activeTask.status === 'submitted'}
                     />
                   </div>
 
@@ -144,6 +265,7 @@ export default function WebsiteResearchTasksPage() {
                       onChange={e =>
                         setFormData({ ...formData, techStack: e.target.value })
                       }
+                      disabled={activeTask.status === 'submitted'}
                     />
                   </div>
                 </section>
@@ -156,7 +278,7 @@ export default function WebsiteResearchTasksPage() {
 
                     <div className="drop-zone">
                       <div className="drop-icon">📁</div>
-                      <p>Drag & drop files or click to upload</p>
+                      <p>File upload coming soon</p>
                     </div>
                   </div>
 
@@ -168,13 +290,24 @@ export default function WebsiteResearchTasksPage() {
                       onChange={e =>
                         setFormData({ ...formData, notes: e.target.value })
                       }
+                      disabled={activeTask.status === 'submitted'}
                     />
                   </div>
 
                   <div className="action-row">
-                    <button className="btn-save-draft">Save Draft</button>
-                    <button className="btn-submit-task">
-                      Submit for Audit
+                    <button 
+                      className="btn-save-draft" 
+                      onClick={handleSaveDraft}
+                      disabled={activeTask.status === 'submitted' || submitting}
+                    >
+                      Save Draft
+                    </button>
+                    <button 
+                      className="btn-submit-task"
+                      onClick={handleSubmit}
+                      disabled={activeTask.status === 'submitted' || submitting}
+                    >
+                      {submitting ? 'Submitting...' : 'Submit for Audit'}
                     </button>
                   </div>
                 </section>

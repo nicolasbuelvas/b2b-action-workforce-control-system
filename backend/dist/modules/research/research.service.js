@@ -19,11 +19,108 @@ const typeorm_2 = require("typeorm");
 const normalization_util_1 = require("../../common/utils/normalization.util");
 const company_entity_1 = require("./entities/company.entity");
 const research_task_entity_1 = require("./entities/research-task.entity");
+const research_submission_entity_1 = require("./entities/research-submission.entity");
+const user_category_entity_1 = require("../categories/entities/user-category.entity");
 let ResearchService = class ResearchService {
-    constructor(dataSource, companyRepo, researchRepo) {
+    constructor(dataSource, companyRepo, researchRepo, submissionRepo, userCategoryRepo) {
         this.dataSource = dataSource;
         this.companyRepo = companyRepo;
         this.researchRepo = researchRepo;
+        this.submissionRepo = submissionRepo;
+        this.userCategoryRepo = userCategoryRepo;
+    }
+    async getAvailableTasks(userId, targetType) {
+        const userCategories = await this.userCategoryRepo.find({
+            where: { userId },
+            select: ['categoryId'],
+        });
+        if (userCategories.length === 0) {
+            return [];
+        }
+        const categoryIds = userCategories.map(uc => uc.categoryId);
+        const tasks = await this.researchRepo
+            .createQueryBuilder('task')
+            .where('task.targettype = :targetType', { targetType })
+            .andWhere('task.status = :status', { status: research_task_entity_1.ResearchStatus.PENDING })
+            .andWhere('task.categoryId IN (:...categoryIds)', { categoryIds })
+            .andWhere('(task.assignedToUserId IS NULL OR task.assignedToUserId = :userId)', { userId })
+            .orderBy('task.createdAt', 'ASC')
+            .limit(50)
+            .getMany();
+        const tasksWithDetails = await Promise.all(tasks.map(async (task) => {
+            let targetInfo = {};
+            if (task.targetType === 'COMPANY') {
+                const company = await this.companyRepo.findOne({
+                    where: { id: task.targetId },
+                });
+                if (company) {
+                    targetInfo = {
+                        domain: company.domain,
+                        name: company.name,
+                        country: company.country,
+                    };
+                }
+            }
+            return {
+                id: task.id,
+                categoryId: task.categoryId,
+                status: task.assignedToUserId === userId ? 'in_progress' : 'unassigned',
+                priority: 'medium',
+                ...targetInfo,
+            };
+        }));
+        return tasksWithDetails;
+    }
+    async claimTask(taskId, userId) {
+        return this.dataSource.transaction(async (manager) => {
+            const task = await manager.findOne(research_task_entity_1.ResearchTask, {
+                where: { id: taskId },
+                lock: { mode: 'pessimistic_write' },
+            });
+            if (!task) {
+                throw new common_1.NotFoundException('Task not found');
+            }
+            if (task.status !== research_task_entity_1.ResearchStatus.PENDING) {
+                throw new common_1.BadRequestException('Task is not available for claiming');
+            }
+            if (task.assignedToUserId && task.assignedToUserId !== userId) {
+                throw new common_1.ConflictException('Task already claimed by another user');
+            }
+            if (task.assignedToUserId === userId) {
+                return task;
+            }
+            task.assignedToUserId = userId;
+            return manager.save(research_task_entity_1.ResearchTask, task);
+        });
+    }
+    async submitTaskData(dto, userId) {
+        return this.dataSource.transaction(async (manager) => {
+            const task = await manager.findOne(research_task_entity_1.ResearchTask, {
+                where: { id: dto.taskId },
+            });
+            if (!task) {
+                throw new common_1.NotFoundException('Task not found');
+            }
+            if (task.assignedToUserId !== userId) {
+                throw new common_1.BadRequestException('You are not assigned to this task');
+            }
+            if (task.status !== research_task_entity_1.ResearchStatus.PENDING) {
+                throw new common_1.BadRequestException('Task has already been submitted');
+            }
+            const submission = manager.create(research_submission_entity_1.ResearchSubmission, {
+                researchTaskId: task.id,
+                email: dto.email,
+                phone: dto.phone,
+                techStack: dto.techStack,
+                notes: dto.notes,
+            });
+            await manager.save(research_submission_entity_1.ResearchSubmission, submission);
+            return {
+                taskId: task.id,
+                submissionId: submission.id,
+                message: 'Research submitted successfully and awaiting audit',
+            };
+        });
     }
     async submit(dto, userId) {
         if (dto.targetType !== 'COMPANY') {
@@ -79,7 +176,11 @@ exports.ResearchService = ResearchService = __decorate([
     (0, common_1.Injectable)(),
     __param(1, (0, typeorm_1.InjectRepository)(company_entity_1.Company)),
     __param(2, (0, typeorm_1.InjectRepository)(research_task_entity_1.ResearchTask)),
+    __param(3, (0, typeorm_1.InjectRepository)(research_submission_entity_1.ResearchSubmission)),
+    __param(4, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
     __metadata("design:paramtypes", [typeorm_2.DataSource,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])
 ], ResearchService);

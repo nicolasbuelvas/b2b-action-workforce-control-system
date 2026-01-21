@@ -181,3 +181,27 @@ export async function deleteCategoryRule(id: string) {
   const res = await axios.delete(`/admin/category-rules/${id}`);
   return res.data;
 }
+
+/* =========================
+   USER CATEGORY ASSIGNMENT
+========================= */
+
+export async function assignUserToCategories(userId: string, categoryIds: string[]) {
+  const res = await axios.post('/admin/users/assign-categories', {
+    userId,
+    categoryIds,
+  });
+  return res.data;
+}
+
+export async function removeUserFromCategory(userId: string, categoryId: string) {
+  const res = await axios.delete('/admin/users/remove-from-category', {
+    data: { userId, categoryId },
+  });
+  return res.data;
+}
+
+export async function getUserCategories(userId: string) {
+  const res = await axios.get(`/admin/users/${userId}/categories`);
+  return res.data;
+}

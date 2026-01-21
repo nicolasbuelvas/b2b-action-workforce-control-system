@@ -6,6 +6,7 @@ export declare enum ResearchStatus {
 export declare class ResearchTask {
     id: string;
     targetId: string;
+    targetType: string;
     categoryId: string;
     status: ResearchStatus;
     assignedToUserId: string;

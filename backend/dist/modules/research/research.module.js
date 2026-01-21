@@ -14,6 +14,8 @@ const research_controller_1 = require("./research.controller");
 const company_entity_1 = require("./entities/company.entity");
 const research_task_entity_1 = require("./entities/research-task.entity");
 const linkedin_profile_entity_1 = require("./entities/linkedin-profile.entity");
+const research_submission_entity_1 = require("./entities/research-submission.entity");
+const categories_module_1 = require("../categories/categories.module");
 let ResearchModule = class ResearchModule {
 };
 exports.ResearchModule = ResearchModule;
@@ -24,7 +26,9 @@ exports.ResearchModule = ResearchModule = __decorate([
                 company_entity_1.Company,
                 linkedin_profile_entity_1.LinkedInProfile,
                 research_task_entity_1.ResearchTask,
+                research_submission_entity_1.ResearchSubmission,
             ]),
+            categories_module_1.CategoriesModule,
         ],
         controllers: [research_controller_1.ResearchController],
         providers: [research_service_1.ResearchService],

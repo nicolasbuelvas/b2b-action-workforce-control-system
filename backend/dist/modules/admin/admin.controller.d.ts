@@ -1,6 +1,8 @@
 import { AdminService } from './admin.service';
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignCategoryDto } from './dto/assign-category.dto';
+import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
+import { RemoveUserFromCategoryDto } from './dto/remove-user-category.dto';
 export declare class AdminController {
     private readonly adminService;
     constructor(adminService: AdminService);
@@ -97,5 +99,18 @@ export declare class AdminController {
         userId: string;
         categories: string[];
     }>;
+    assignUserToCategories(dto: AssignUserToCategoriesDto): Promise<{
+        userId: string;
+        categories: string[];
+        message: string;
+    }>;
+    removeUserFromCategory(dto: RemoveUserFromCategoryDto): Promise<{
+        message: string;
+    }>;
+    getUserCategories(userId: string): Promise<{
+        id: string;
+        name: string;
+        assignedAt: Date;
+    }[]>;
     getSubAdmins(): Promise<import("../roles/entities/user-role.entity").UserRole[]>;
 }

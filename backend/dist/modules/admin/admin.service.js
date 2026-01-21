@@ -58,8 +58,9 @@ const research_task_entity_1 = require("../research/entities/research-task.entit
 const research_audit_entity_1 = require("../audit/entities/research-audit.entity");
 const category_entity_1 = require("../categories/entities/category.entity");
 const sub_admin_category_entity_1 = require("../categories/entities/sub-admin-category.entity");
+const user_category_entity_1 = require("../categories/entities/user-category.entity");
 let AdminService = class AdminService {
-    constructor(userRepo, roleRepo, userRoleRepo, inquiryActionRepo, researchTaskRepo, researchAuditRepo, categoryRepo, subAdminCategoryRepo) {
+    constructor(userRepo, roleRepo, userRoleRepo, inquiryActionRepo, researchTaskRepo, researchAuditRepo, categoryRepo, subAdminCategoryRepo, userCategoryRepo) {
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.userRoleRepo = userRoleRepo;
@@ -68,6 +69,7 @@ let AdminService = class AdminService {
         this.researchAuditRepo = researchAuditRepo;
         this.categoryRepo = categoryRepo;
         this.subAdminCategoryRepo = subAdminCategoryRepo;
+        this.userCategoryRepo = userCategoryRepo;
     }
     async getDashboard() {
         const totalUsers = await this.userRepo.count();
@@ -350,6 +352,51 @@ let AdminService = class AdminService {
         await this.userRepo.delete(id);
         return { success: true };
     }
+    async assignUserToCategories(dto) {
+        const user = await this.userRepo.findOne({
+            where: { id: dto.userId },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const categories = await this.categoryRepo.find({
+            where: { id: (0, typeorm_2.In)(dto.categoryIds) },
+        });
+        if (categories.length !== dto.categoryIds.length) {
+            throw new common_1.NotFoundException('One or more categories not found');
+        }
+        await this.userCategoryRepo.delete({ userId: dto.userId });
+        const assignments = dto.categoryIds.map(categoryId => ({
+            userId: dto.userId,
+            categoryId,
+        }));
+        await this.userCategoryRepo.save(assignments);
+        return {
+            userId: user.id,
+            categories: dto.categoryIds,
+            message: 'User assigned to categories successfully',
+        };
+    }
+    async removeUserFromCategory(dto) {
+        await this.userCategoryRepo.delete({
+            userId: dto.userId,
+            categoryId: dto.categoryId,
+        });
+        return {
+            message: 'User removed from category successfully',
+        };
+    }
+    async getUserCategories(userId) {
+        const userCategories = await this.userCategoryRepo.find({
+            where: { userId },
+            relations: ['category'],
+        });
+        return userCategories.map(uc => ({
+            id: uc.category.id,
+            name: uc.category.name,
+            assignedAt: uc.createdAt,
+        }));
+    }
 };
 exports.AdminService = AdminService;
 exports.AdminService = AdminService = __decorate([
@@ -362,7 +409,9 @@ exports.AdminService = AdminService = __decorate([
     __param(5, (0, typeorm_1.InjectRepository)(research_audit_entity_1.ResearchAudit)),
     __param(6, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
     __param(7, (0, typeorm_1.InjectRepository)(sub_admin_category_entity_1.SubAdminCategory)),
+    __param(8, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

@@ -13,6 +13,8 @@ import {
 import { AdminService } from './admin.service';
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignCategoryDto } from './dto/assign-category.dto';
+import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
+import { RemoveUserFromCategoryDto } from './dto/remove-user-category.dto';
 
 import { JwtGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -89,6 +91,21 @@ export class AdminController {
   @Post('assign-category')
   assignCategory(@Body() dto: AssignCategoryDto) {
     return this.adminService.assignCategories(dto);
+  }
+
+  @Post('users/assign-categories')
+  assignUserToCategories(@Body() dto: AssignUserToCategoriesDto) {
+    return this.adminService.assignUserToCategories(dto);
+  }
+
+  @Delete('users/remove-from-category')
+  removeUserFromCategory(@Body() dto: RemoveUserFromCategoryDto) {
+    return this.adminService.removeUserFromCategory(dto);
+  }
+
+  @Get('users/:userId/categories')
+  getUserCategories(@Param('userId') userId: string) {
+    return this.adminService.getUserCategories(userId);
   }
 
   @Get('sub-admins')

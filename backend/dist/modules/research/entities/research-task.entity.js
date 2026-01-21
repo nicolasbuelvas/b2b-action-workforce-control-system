@@ -31,6 +31,10 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
+], ResearchTask.prototype, "targetType", void 0);
+__decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", String)
 ], ResearchTask.prototype, "categoryId", void 0);
 __decorate([
     (0, typeorm_1.Column)({

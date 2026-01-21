@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 import { User } from '../users/entities/user.entity';
@@ -11,9 +11,12 @@ import { ResearchTask } from '../research/entities/research-task.entity';
 import { ResearchAudit } from '../audit/entities/research-audit.entity';
 import { Category } from '../categories/entities/category.entity';
 import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
+import { UserCategory } from '../categories/entities/user-category.entity';
 
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignCategoryDto } from './dto/assign-category.dto';
+import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
+import { RemoveUserFromCategoryDto } from './dto/remove-user-category.dto';
 
 @Injectable()
 export class AdminService {
@@ -41,6 +44,9 @@ export class AdminService {
 
     @InjectRepository(SubAdminCategory)
     private readonly subAdminCategoryRepo: Repository<SubAdminCategory>,
+
+    @InjectRepository(UserCategory)
+    private readonly userCategoryRepo: Repository<UserCategory>,
   ) {}
 
   async getDashboard() {
@@ -382,5 +388,65 @@ export class AdminService {
   async deleteUser(id: string) {
     await this.userRepo.delete(id);
     return { success: true };
+  }
+
+  async assignUserToCategories(dto: AssignUserToCategoriesDto) {
+    const user = await this.userRepo.findOne({
+      where: { id: dto.userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify all categories exist
+    const categories = await this.categoryRepo.find({
+      where: { id: In(dto.categoryIds) },
+    });
+
+    if (categories.length !== dto.categoryIds.length) {
+      throw new NotFoundException('One or more categories not found');
+    }
+
+    // Remove existing assignments for this user
+    await this.userCategoryRepo.delete({ userId: dto.userId });
+
+    // Create new assignments
+    const assignments = dto.categoryIds.map(categoryId => ({
+      userId: dto.userId,
+      categoryId,
+    }));
+
+    await this.userCategoryRepo.save(assignments);
+
+    return {
+      userId: user.id,
+      categories: dto.categoryIds,
+      message: 'User assigned to categories successfully',
+    };
+  }
+
+  async removeUserFromCategory(dto: RemoveUserFromCategoryDto) {
+    await this.userCategoryRepo.delete({
+      userId: dto.userId,
+      categoryId: dto.categoryId,
+    });
+
+    return {
+      message: 'User removed from category successfully',
+    };
+  }
+
+  async getUserCategories(userId: string) {
+    const userCategories = await this.userCategoryRepo.find({
+      where: { userId },
+      relations: ['category'],
+    });
+
+    return userCategories.map(uc => ({
+      id: uc.category.id,
+      name: uc.category.name,
+      assignedAt: uc.createdAt,
+    }));
   }
 }

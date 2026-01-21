@@ -6,6 +6,8 @@ import { ResearchController } from './research.controller';
 import { Company } from './entities/company.entity';
 import { ResearchTask } from './entities/research-task.entity';
 import { LinkedInProfile } from './entities/linkedin-profile.entity';
+import { ResearchSubmission } from './entities/research-submission.entity';
+import { CategoriesModule } from '../categories/categories.module';
 
 @Module({
   imports: [
@@ -13,7 +15,9 @@ import { LinkedInProfile } from './entities/linkedin-profile.entity';
       Company,
       LinkedInProfile,
       ResearchTask,
+      ResearchSubmission,
     ]),
+    CategoriesModule,
   ],
   controllers: [ResearchController],
   providers: [ResearchService],

@@ -38,6 +38,7 @@ import ActionConfigPage from '../pages/admin/ActionConfigPage';
 import PricingPage from '../pages/admin/PricingPage';
 import RolePerformancePage from '../pages/admin/RolePerformancePage';
 import SystemLogsPage from '../pages/admin/SystemLogsPage';
+import UserCategoryAssignment from '../pages/admin/UserCategoryAssignment';
 
 /* ===== RESEARCH PAGES ===== */
 import WebsiteResearchTasksPage from '../pages/research/website/WebsiteResearchTasksPage';
@@ -73,6 +74,7 @@ export default function AppRouter() {
           <Route path="users" element={<UsersPage />} />
           <Route path="users/create" element={<CreateUserPage />} />
           <Route path="categories" element={<CategoriesPage />} />
+          <Route path="user-categories" element={<UserCategoryAssignment />} />
           <Route path="category-rules" element={<CategoryRulesPage />} />
           <Route path="action-config" element={<ActionConfigPage />} />
           <Route path="pricing" element={<PricingPage />} />

@@ -7,8 +7,11 @@ import { ResearchTask } from '../research/entities/research-task.entity';
 import { ResearchAudit } from '../audit/entities/research-audit.entity';
 import { Category } from '../categories/entities/category.entity';
 import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
+import { UserCategory } from '../categories/entities/user-category.entity';
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignCategoryDto } from './dto/assign-category.dto';
+import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
+import { RemoveUserFromCategoryDto } from './dto/remove-user-category.dto';
 export declare class AdminService {
     private readonly userRepo;
     private readonly roleRepo;
@@ -18,7 +21,8 @@ export declare class AdminService {
     private readonly researchAuditRepo;
     private readonly categoryRepo;
     private readonly subAdminCategoryRepo;
-    constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>, inquiryActionRepo: Repository<InquiryAction>, researchTaskRepo: Repository<ResearchTask>, researchAuditRepo: Repository<ResearchAudit>, categoryRepo: Repository<Category>, subAdminCategoryRepo: Repository<SubAdminCategory>);
+    private readonly userCategoryRepo;
+    constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>, inquiryActionRepo: Repository<InquiryAction>, researchTaskRepo: Repository<ResearchTask>, researchAuditRepo: Repository<ResearchAudit>, categoryRepo: Repository<Category>, subAdminCategoryRepo: Repository<SubAdminCategory>, userCategoryRepo: Repository<UserCategory>);
     getDashboard(): Promise<{
         totalUsers: number;
         totalResearchers: number;
@@ -115,4 +119,17 @@ export declare class AdminService {
     deleteUser(id: string): Promise<{
         success: boolean;
     }>;
+    assignUserToCategories(dto: AssignUserToCategoriesDto): Promise<{
+        userId: string;
+        categories: string[];
+        message: string;
+    }>;
+    removeUserFromCategory(dto: RemoveUserFromCategoryDto): Promise<{
+        message: string;
+    }>;
+    getUserCategories(userId: string): Promise<{
+        id: string;
+        name: string;
+        assignedAt: Date;
+    }[]>;
 }
