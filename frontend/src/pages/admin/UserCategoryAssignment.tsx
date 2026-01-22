@@ -16,15 +16,27 @@ interface Category {
 
 export default function UserCategoryAssignment() {
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userCategories, setUserCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    // Filter users based on search query (case-insensitive)
+    const query = searchQuery.toLowerCase();
+    const filtered = users.filter(u =>
+      u.name.toLowerCase().includes(query) ||
+      u.email.toLowerCase().includes(query)
+    );
+    setFilteredUsers(filtered);
+  }, [searchQuery, users]);
 
   const loadData = async () => {
     setLoading(true);
@@ -35,12 +47,9 @@ export default function UserCategoryAssignment() {
       ]);
       
       const usersList = usersData?.users || usersData || [];
-      // Filter out super_admin from worker assignment
-      const workers = usersList.filter((u: User) => 
-        u.role !== 'super_admin'
-      );
-      
-      setUsers(workers);
+      // Show ALL users (including super_admin) - filtering happens in display logic
+      setUsers(usersList);
+      setFilteredUsers(usersList);
       setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData?.categories || []);
     } catch (err) {
       console.error('Failed to load data:', err);
@@ -50,6 +59,11 @@ export default function UserCategoryAssignment() {
   };
 
   const handleSelectUser = async (user: User) => {
+    // Prevent selection if user is super_admin
+    if (user.role === 'super_admin') {
+      return;
+    }
+    
     setSelectedUser(user);
     setLoading(true);
     try {
@@ -88,6 +102,9 @@ export default function UserCategoryAssignment() {
     }
   };
 
+  // Check if selected user is super_admin
+  const isSuperAdmin = selectedUser?.role === 'super_admin';
+
   if (loading && users.length === 0) {
     return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
   }
@@ -118,27 +135,52 @@ export default function UserCategoryAssignment() {
           <h3 style={{ marginTop: 0, marginBottom: '15px', fontSize: '16px' }}>
             Select User
           </h3>
+          
+          {/* Search Bar */}
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px',
+              marginBottom: '15px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              fontSize: '14px',
+              boxSizing: 'border-box',
+            }}
+          />
+          
           <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
-            {users.map(user => (
-              <div
-                key={user.id}
-                onClick={() => handleSelectUser(user)}
-                style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  marginBottom: '8px',
-                  cursor: 'pointer',
-                  background: selectedUser?.id === user.id ? '#eff6ff' : '#f8fafc',
-                  border: selectedUser?.id === user.id ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-                }}
-              >
-                <div style={{ fontWeight: '600', fontSize: '14px' }}>{user.name}</div>
-                <div style={{ fontSize: '12px', color: '#64748b' }}>{user.email}</div>
-                <div style={{ fontSize: '11px', color: '#3b82f6', marginTop: '4px' }}>
-                  {user.role}
-                </div>
+            {filteredUsers.length === 0 ? (
+              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '20px' }}>
+                No users found
               </div>
-            ))}
+            ) : (
+              filteredUsers.map(user => (
+                <div
+                  key={user.id}
+                  onClick={() => handleSelectUser(user)}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    marginBottom: '8px',
+                    cursor: user.role === 'super_admin' ? 'not-allowed' : 'pointer',
+                    background: selectedUser?.id === user.id ? '#eff6ff' : '#f8fafc',
+                    border: selectedUser?.id === user.id ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                    opacity: user.role === 'super_admin' ? 0.6 : 1,
+                  }}
+                >
+                  <div style={{ fontWeight: '600', fontSize: '14px' }}>{user.name}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>{user.email}</div>
+                  <div style={{ fontSize: '11px', color: '#3b82f6', marginTop: '4px' }}>
+                    {user.role}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -158,6 +200,39 @@ export default function UserCategoryAssignment() {
               <div style={{ fontSize: '48px', marginBottom: '15px' }}>👤</div>
               <p>Select a user to assign categories</p>
             </div>
+          ) : isSuperAdmin ? (
+            <>
+              <div style={{ 
+                padding: '20px',
+                background: '#fee2e2',
+                borderRadius: '12px',
+                border: '2px solid #fca5a5',
+                marginBottom: '20px',
+              }}>
+                <div style={{ fontSize: '16px', fontWeight: '600', color: '#dc2626', marginBottom: '8px' }}>
+                  ⛔ Super Admin users cannot be assigned to categories
+                </div>
+                <p style={{ margin: 0, fontSize: '14px', color: '#991b1b' }}>
+                  Super Admins have access to all categories and tasks by default. Category assignment is only for workers (researchers, inquirers, auditors, etc.).
+                </p>
+              </div>
+              <button
+                disabled
+                style={{
+                  padding: '15px 30px',
+                  background: '#d1d5db',
+                  color: '#6b7280',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'not-allowed',
+                  width: '100%',
+                }}
+              >
+                Save Category Assignment (Disabled for Super Admin)
+              </button>
+            </>
           ) : (
             <>
               <div style={{ marginBottom: '30px' }}>

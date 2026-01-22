@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './WebsiteResearchTasksPage.css';
 import { researchApi, WebsiteResearchTask, SubmitResearchPayload } from '../../../api/research.api';
+import { getUserCategories } from '../../../api/admin.api';
+import { useAuth } from '../../../hooks/useAuth';
 
 type ResearchFormData = {
   email: string;
@@ -9,13 +11,22 @@ type ResearchFormData = {
   notes: string;
 };
 
+interface Category {
+  id: string;
+  name: string;
+}
+
 export default function WebsiteResearchTasksPage() {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<WebsiteResearchTask[]>([]);
   const [activeTask, setActiveTask] = useState<WebsiteResearchTask | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   const [formData, setFormData] = useState<ResearchFormData>({
     email: '',
@@ -23,6 +34,41 @@ export default function WebsiteResearchTasksPage() {
     techStack: '',
     notes: ''
   });
+
+  // Load categories on mount
+  useEffect(() => {
+    loadCategories();
+  }, [user?.id]);
+
+  // Load tasks when selected category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      loadTasks();
+    }
+  }, [selectedCategory]);
+
+  const loadCategories = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setLoadingCategories(true);
+      const userCats = await getUserCategories(user.id);
+      setCategories(userCats || []);
+      
+      // Auto-select first category if user has exactly one
+      if (userCats && userCats.length === 1) {
+        setSelectedCategory(userCats[0].id);
+      } else if (userCats && userCats.length > 1) {
+        // Let user choose - don't auto-select
+        setSelectedCategory('');
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      setError('Failed to load your assigned categories');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
   // Load tasks on mount
   useEffect(() => {
@@ -149,7 +195,66 @@ export default function WebsiteResearchTasksPage() {
         </div>
       )}
 
+      {/* CATEGORY DEPENDENCY SECTION */}
+      {loadingCategories && (
+        <div style={{ background: '#f0f9ff', padding: '20px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
+          Loading your assigned categories...
+        </div>
+      )}
+
+      {!loadingCategories && categories.length === 0 && (
+        <div style={{ background: '#fee2e2', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #fca5a5' }}>
+          <h3 style={{ margin: '0 0 10px 0', color: '#dc2626' }}>⚠️ No Categories Assigned</h3>
+          <p style={{ margin: 0, color: '#991b1b' }}>
+            You are not assigned to any category. Please contact an administrator to assign you to categories before you can access research tasks.
+          </p>
+        </div>
+      )}
+
+      {!loadingCategories && categories.length > 0 && categories.length > 1 && (
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+            Select Category:
+          </label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{
+              width: '100%',
+              maxWidth: '300px',
+              padding: '10px',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '500',
+            }}
+          >
+            <option value="">Choose a category...</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {!loadingCategories && categories.length > 0 && !selectedCategory && categories.length > 1 && (
+        <div style={{ background: '#fef3c7', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #fcd34d' }}>
+          <p style={{ margin: 0, color: '#92400e' }}>
+            📁 Please select a category from above to view available tasks.
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div style={{ background: '#fee', padding: '15px', borderRadius: '8px', marginBottom: '20px', color: '#c00' }}>
+          {error}
+        </div>
+      )}
+
       {/* MAIN */}
+      {categories.length > 0 && selectedCategory && (
       <div className="wb-res-main">
         {/* TASK LIST */}
         <aside className="wb-res-list">
@@ -316,6 +421,7 @@ export default function WebsiteResearchTasksPage() {
           )}
         </main>
       </div>
+      )}
     </div>
   );
 }
