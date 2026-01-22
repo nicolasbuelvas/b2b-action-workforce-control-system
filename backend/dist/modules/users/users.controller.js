@@ -19,6 +19,7 @@ const create_user_dto_1 = require("./dto/create-user.dto");
 const jwt_guard_1 = require("../../common/guards/jwt.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
 let UsersController = class UsersController {
     constructor(usersService) {
         this.usersService = usersService;
@@ -34,6 +35,9 @@ let UsersController = class UsersController {
     }
     suspend(id) {
         return this.usersService.suspendUser(id);
+    }
+    getMyCategories(userId) {
+        return this.usersService.getUserCategories(userId);
     }
 };
 exports.UsersController = UsersController;
@@ -68,6 +72,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "suspend", null);
+__decorate([
+    (0, common_1.Get)('me/categories'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], UsersController.prototype, "getMyCategories", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),

@@ -29,7 +29,7 @@ let ResearchService = class ResearchService {
         this.submissionRepo = submissionRepo;
         this.userCategoryRepo = userCategoryRepo;
     }
-    async getAvailableTasks(userId, targetType) {
+    async getAvailableTasks(userId, targetType, categoryId) {
         const userCategories = await this.userCategoryRepo.find({
             where: { userId },
             select: ['categoryId'],
@@ -38,12 +38,21 @@ let ResearchService = class ResearchService {
             return [];
         }
         const categoryIds = userCategories.map(uc => uc.categoryId);
-        const tasks = await this.researchRepo
+        if (categoryId && !categoryIds.includes(categoryId)) {
+            return [];
+        }
+        let query = this.researchRepo
             .createQueryBuilder('task')
             .where('task.targettype = :targetType', { targetType })
             .andWhere('task.status = :status', { status: research_task_entity_1.ResearchStatus.PENDING })
-            .andWhere('task.categoryId IN (:...categoryIds)', { categoryIds })
-            .andWhere('(task.assignedToUserId IS NULL OR task.assignedToUserId = :userId)', { userId })
+            .andWhere('(task.assignedToUserId IS NULL OR task.assignedToUserId = :userId)', { userId });
+        if (categoryId) {
+            query = query.andWhere('task.categoryId = :categoryId', { categoryId });
+        }
+        else {
+            query = query.andWhere('task.categoryId IN (:...categoryIds)', { categoryIds });
+        }
+        const tasks = await query
             .orderBy('task.createdAt', 'ASC')
             .limit(50)
             .getMany();

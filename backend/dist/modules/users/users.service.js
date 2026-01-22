@@ -52,9 +52,11 @@ const typeorm_2 = require("typeorm");
 const bcrypt = __importStar(require("bcrypt"));
 const user_entity_1 = require("./entities/user.entity");
 const roles_service_1 = require("../roles/roles.service");
+const user_category_entity_1 = require("../categories/entities/user-category.entity");
 let UsersService = class UsersService {
-    constructor(userRepo, rolesService) {
+    constructor(userRepo, userCategoryRepo, rolesService) {
         this.userRepo = userRepo;
+        this.userCategoryRepo = userCategoryRepo;
         this.rolesService = rolesService;
     }
     async create(dto) {
@@ -109,12 +111,25 @@ let UsersService = class UsersService {
         user.status = 'suspended';
         return this.userRepo.save(user);
     }
+    async getUserCategories(userId) {
+        const userCategories = await this.userCategoryRepo.find({
+            where: { userId },
+            relations: ['category'],
+        });
+        return userCategories.map(uc => ({
+            id: uc.category.id,
+            name: uc.category.name,
+            assignedAt: uc.createdAt,
+        }));
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(1, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         roles_service_1.RolesService])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

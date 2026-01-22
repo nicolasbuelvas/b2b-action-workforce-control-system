@@ -4,8 +4,8 @@ import { SubmitResearchDto } from './dto/submit-research.dto';
 export declare class ResearchController {
     private readonly researchService;
     constructor(researchService: ResearchService);
-    getWebsiteTasks(userId: string): Promise<any[]>;
-    getLinkedInTasks(userId: string): Promise<any[]>;
+    getWebsiteTasks(userId: string, categoryId?: string): Promise<any[]>;
+    getLinkedInTasks(userId: string, categoryId?: string): Promise<any[]>;
     claimTask(taskId: string, userId: string): Promise<import("./entities/research-task.entity").ResearchTask>;
     submitTask(dto: SubmitResearchDto, userId: string): Promise<{
         taskId: string;

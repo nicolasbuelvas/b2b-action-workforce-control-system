@@ -25,11 +25,11 @@ let ResearchController = class ResearchController {
     constructor(researchService) {
         this.researchService = researchService;
     }
-    getWebsiteTasks(userId) {
-        return this.researchService.getAvailableTasks(userId, 'COMPANY');
+    getWebsiteTasks(userId, categoryId) {
+        return this.researchService.getAvailableTasks(userId, 'COMPANY', categoryId);
     }
-    getLinkedInTasks(userId) {
-        return this.researchService.getAvailableTasks(userId, 'LINKEDIN');
+    getLinkedInTasks(userId, categoryId) {
+        return this.researchService.getAvailableTasks(userId, 'LINKEDIN', categoryId);
     }
     claimTask(taskId, userId) {
         return this.researchService.claimTask(taskId, userId);
@@ -46,16 +46,18 @@ __decorate([
     (0, common_1.Get)('tasks/website'),
     (0, roles_decorator_1.Roles)('website_researcher'),
     __param(0, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __param(1, (0, common_1.Query)('categoryId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ResearchController.prototype, "getWebsiteTasks", null);
 __decorate([
     (0, common_1.Get)('tasks/linkedin'),
     (0, roles_decorator_1.Roles)('linkedin_researcher'),
     __param(0, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __param(1, (0, common_1.Query)('categoryId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ResearchController.prototype, "getLinkedInTasks", null);
 __decorate([

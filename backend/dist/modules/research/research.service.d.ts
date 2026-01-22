@@ -12,7 +12,7 @@ export declare class ResearchService {
     private readonly submissionRepo;
     private readonly userCategoryRepo;
     constructor(dataSource: DataSource, companyRepo: Repository<Company>, researchRepo: Repository<ResearchTask>, submissionRepo: Repository<ResearchSubmission>, userCategoryRepo: Repository<UserCategory>);
-    getAvailableTasks(userId: string, targetType: 'COMPANY' | 'LINKEDIN'): Promise<any[]>;
+    getAvailableTasks(userId: string, targetType: 'COMPANY' | 'LINKEDIN', categoryId?: string): Promise<any[]>;
     claimTask(taskId: string, userId: string): Promise<ResearchTask>;
     submitTaskData(dto: SubmitResearchDto, userId: string): Promise<{
         taskId: string;

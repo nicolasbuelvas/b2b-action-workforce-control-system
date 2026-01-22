@@ -7,4 +7,9 @@ export declare class UsersController {
     findAll(): Promise<import("./entities/user.entity").User[]>;
     findById(id: string): Promise<import("./entities/user.entity").User>;
     suspend(id: string): Promise<import("./entities/user.entity").User>;
+    getMyCategories(userId: string): Promise<{
+        id: string;
+        name: string;
+        assignedAt: Date;
+    }[]>;
 }
