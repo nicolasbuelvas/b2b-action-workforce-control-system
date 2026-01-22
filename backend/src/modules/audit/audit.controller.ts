@@ -16,7 +16,7 @@ export class AuditController {
   auditResearch(
     @Param('id') researchTaskId: string,
     @Body() dto: AuditResearchDto,
-    @CurrentUser('id') auditorUserId: string,
+    @CurrentUser('userId') auditorUserId: string,
   ) {
     return this.auditService.auditResearch(
       researchTaskId,

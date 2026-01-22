@@ -19,6 +19,8 @@ let JwtGuard = class JwtGuard {
     canActivate(context) {
         const request = context.switchToHttp().getRequest();
         const authHeader = request.headers.authorization;
+        console.log('[JwtGuard] canActivate() called for route:', request.url);
+        console.log('[JwtGuard] Authorization header:', authHeader ? 'PRESENT' : 'MISSING');
         if (!authHeader) {
             throw new common_1.UnauthorizedException('Missing authorization header');
         }
@@ -29,6 +31,7 @@ let JwtGuard = class JwtGuard {
         try {
             const payload = this.jwtService.verify(token);
             request.user = payload;
+            console.log('[JwtGuard] Token verified, payload.sub:', payload.sub);
             return true;
         }
         catch {

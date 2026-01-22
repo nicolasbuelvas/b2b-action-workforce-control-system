@@ -14,6 +14,9 @@ export class JwtGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers.authorization;
 
+    console.log('[JwtGuard] canActivate() called for route:', request.url);
+    console.log('[JwtGuard] Authorization header:', authHeader ? 'PRESENT' : 'MISSING');
+
     if (!authHeader) {
       throw new UnauthorizedException('Missing authorization header');
     }
@@ -26,6 +29,7 @@ export class JwtGuard implements CanActivate {
     try {
       const payload = this.jwtService.verify(token);
       request.user = payload;
+      console.log('[JwtGuard] Token verified, payload.sub:', payload.sub);
       return true;
     } catch {
       throw new UnauthorizedException('Invalid or expired token');

@@ -30,14 +30,11 @@ let UsersController = class UsersController {
     findAll() {
         return this.usersService.findAll();
     }
-    findById(id) {
-        return this.usersService.findById(id);
-    }
-    suspend(id) {
-        return this.usersService.suspendUser(id);
-    }
     getMyCategories(userId) {
         return this.usersService.getUserCategories(userId);
+    }
+    findById(id) {
+        return this.usersService.findById(id);
     }
 };
 exports.UsersController = UsersController;
@@ -57,6 +54,13 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "findAll", null);
 __decorate([
+    (0, common_1.Get)('me/categories'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('sub')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], UsersController.prototype, "getMyCategories", null);
+__decorate([
     (0, common_1.Get)(':id'),
     (0, roles_decorator_1.Roles)('ADMIN', 'SUPER_ADMIN'),
     __param(0, (0, common_1.Param)('id')),
@@ -64,21 +68,6 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "findById", null);
-__decorate([
-    (0, common_1.Patch)(':id/suspend'),
-    (0, roles_decorator_1.Roles)('SUPER_ADMIN'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], UsersController.prototype, "suspend", null);
-__decorate([
-    (0, common_1.Get)('me/categories'),
-    __param(0, (0, current_user_decorator_1.CurrentUser)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], UsersController.prototype, "getMyCategories", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),

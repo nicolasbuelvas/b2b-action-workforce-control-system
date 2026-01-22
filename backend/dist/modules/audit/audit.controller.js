@@ -34,7 +34,7 @@ __decorate([
     (0, roles_decorator_1.Roles)('AUDITOR', 'ADMIN'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
-    __param(2, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)('userId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, audit_research_dto_1.AuditResearchDto, String]),
     __metadata("design:returntype", void 0)

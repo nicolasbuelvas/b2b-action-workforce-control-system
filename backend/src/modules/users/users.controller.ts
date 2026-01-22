@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 
 import { UsersService } from './users.service';
@@ -33,21 +34,16 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+@Get('me/categories')
+getMyCategories(@CurrentUser('sub') userId: string) {
+  return this.usersService.getUserCategories(userId);
+}
+
+
   @Get(':id')
   @Roles('ADMIN', 'SUPER_ADMIN')
   findById(@Param('id') id: string) {
     return this.usersService.findById(id);
-  }
-
-  @Patch(':id/suspend')
-  @Roles('SUPER_ADMIN')
-  suspend(@Param('id') id: string) {
-    return this.usersService.suspendUser(id);
-  }
-
-  @Get('me/categories')
-  getMyCategories(@CurrentUser('id') userId: string) {
-    return this.usersService.getUserCategories(userId);
   }
 }
 

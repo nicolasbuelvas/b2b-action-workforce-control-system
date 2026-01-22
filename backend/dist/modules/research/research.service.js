@@ -81,36 +81,56 @@ let ResearchService = class ResearchService {
         return tasksWithDetails;
     }
     async claimTask(taskId, userId) {
+        console.log('[claimTask] START - taskId:', taskId, 'userId:', userId);
+        console.log('[claimTask] userId TYPE:', typeof userId, 'VALUE:', JSON.stringify(userId));
         return this.dataSource.transaction(async (manager) => {
             const task = await manager.findOne(research_task_entity_1.ResearchTask, {
                 where: { id: taskId },
                 lock: { mode: 'pessimistic_write' },
             });
             if (!task) {
+                console.log('[claimTask] ERROR - Task not found');
                 throw new common_1.NotFoundException('Task not found');
             }
+            console.log('[claimTask] Task found - currentAssignedTo:', task.assignedToUserId, 'status:', task.status);
             if (task.status !== research_task_entity_1.ResearchStatus.PENDING) {
+                console.log('[claimTask] ERROR - Task not PENDING');
                 throw new common_1.BadRequestException('Task is not available for claiming');
             }
             if (task.assignedToUserId && task.assignedToUserId !== userId) {
+                console.log('[claimTask] ERROR - Task claimed by another user:', task.assignedToUserId);
                 throw new common_1.ConflictException('Task already claimed by another user');
             }
             if (task.assignedToUserId === userId) {
+                console.log('[claimTask] Task already claimed by this user - returning');
                 return task;
             }
+            console.log('[claimTask] Assigning task to user:', userId);
             task.assignedToUserId = userId;
-            return manager.save(research_task_entity_1.ResearchTask, task);
+            const savedTask = await manager.save(research_task_entity_1.ResearchTask, task);
+            console.log('[claimTask] SUCCESS - Task assigned to:', savedTask.assignedToUserId);
+            console.log('[claimTask] assignedToUserId TYPE:', typeof savedTask.assignedToUserId, 'userId TYPE:', typeof userId);
+            return savedTask;
         });
     }
     async submitTaskData(dto, userId) {
+        console.log('[submitTaskData] START - dto:', JSON.stringify(dto), 'userId:', userId);
+        console.log('[submitTaskData] userId TYPE:', typeof userId, 'VALUE:', JSON.stringify(userId));
         return this.dataSource.transaction(async (manager) => {
             const task = await manager.findOne(research_task_entity_1.ResearchTask, {
                 where: { id: dto.taskId },
             });
             if (!task) {
+                console.log('[submitTaskData] ERROR - Task not found');
                 throw new common_1.NotFoundException('Task not found');
             }
+            console.log('[submitTaskData] Task found - assignedToUserId:', task.assignedToUserId, 'requestingUserId:', userId);
+            console.log('[submitTaskData] assignedToUserId TYPE:', typeof task.assignedToUserId, 'VALUE:', JSON.stringify(task.assignedToUserId));
+            console.log('[submitTaskData] Strict comparison:', task.assignedToUserId, '!==', userId, '=', task.assignedToUserId !== userId);
+            console.log('[submitTaskData] String comparison:', String(task.assignedToUserId), '!==', String(userId), '=', String(task.assignedToUserId) !== String(userId));
             if (task.assignedToUserId !== userId) {
+                console.log('[submitTaskData] ERROR - User not assigned to task');
+                console.log('[submitTaskData] Expected:', userId, 'Actual:', task.assignedToUserId);
                 throw new common_1.BadRequestException('You are not assigned to this task');
             }
             if (task.status !== research_task_entity_1.ResearchStatus.PENDING) {

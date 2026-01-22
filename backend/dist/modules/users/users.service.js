@@ -112,15 +112,32 @@ let UsersService = class UsersService {
         return this.userRepo.save(user);
     }
     async getUserCategories(userId) {
+        console.log('[getUserCategories] Fetching categories for userId:', userId);
+        console.log('[getUserCategories] userId type:', typeof userId, 'value:', JSON.stringify(userId));
+        if (!userId || userId === 'undefined' || userId === 'null') {
+            console.error('[getUserCategories] SECURITY VIOLATION: userId is invalid:', userId);
+            throw new Error('Unauthorized: User ID is required to access categories');
+        }
         const userCategories = await this.userCategoryRepo.find({
             where: { userId },
             relations: ['category'],
         });
-        return userCategories.map(uc => ({
+        console.log('[getUserCategories] Found', userCategories.length, 'user_categories records');
+        const result = userCategories
+            .filter(uc => {
+            if (!uc.category) {
+                console.warn('[getUserCategories] WARNING: user_category record has null category:', uc.id);
+                return false;
+            }
+            return true;
+        })
+            .map(uc => ({
             id: uc.category.id,
             name: uc.category.name,
             assignedAt: uc.createdAt,
         }));
+        console.log('[getUserCategories] Returning', result.length, 'categories:', result.map(c => c.name).join(', '));
+        return result;
     }
 };
 exports.UsersService = UsersService;

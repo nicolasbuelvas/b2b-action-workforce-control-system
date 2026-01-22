@@ -93,15 +93,39 @@ export class UsersService {
   }
 
   async getUserCategories(userId: string) {
+    console.log('[getUserCategories] Fetching categories for userId:', userId);
+    console.log('[getUserCategories] userId type:', typeof userId, 'value:', JSON.stringify(userId));
+    
+    // SECURITY: Reject if userId is missing/undefined
+    if (!userId || userId === 'undefined' || userId === 'null') {
+      console.error('[getUserCategories] SECURITY VIOLATION: userId is invalid:', userId);
+      throw new Error('Unauthorized: User ID is required to access categories');
+    }
+    
     const userCategories = await this.userCategoryRepo.find({
       where: { userId },
       relations: ['category'],
     });
 
-    return userCategories.map(uc => ({
-      id: uc.category.id,
-      name: uc.category.name,
-      assignedAt: uc.createdAt,
-    }));
+    console.log('[getUserCategories] Found', userCategories.length, 'user_categories records');
+    
+    // Map and filter out any null/undefined categories
+    const result = userCategories
+      .filter(uc => {
+        if (!uc.category) {
+          console.warn('[getUserCategories] WARNING: user_category record has null category:', uc.id);
+          return false;
+        }
+        return true;
+      })
+      .map(uc => ({
+        id: uc.category.id,
+        name: uc.category.name,
+        assignedAt: uc.createdAt,
+      }));
+    
+    console.log('[getUserCategories] Returning', result.length, 'categories:', result.map(c => c.name).join(', '));
+    
+    return result;
   }
 }
