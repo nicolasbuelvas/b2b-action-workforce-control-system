@@ -28,8 +28,12 @@ export class JwtGuard implements CanActivate {
 
     try {
       const payload = this.jwtService.verify(token);
-      request.user = payload;
-      console.log('[JwtGuard] Token verified, payload.sub:', payload.sub);
+      // Set request.user with the same structure as JwtStrategy.validate()
+      request.user = {
+        userId: payload.sub,
+        roles: payload.roles || [],
+      };
+      console.log('[JwtGuard] Token verified, userId:', request.user.userId);
       return true;
     } catch {
       throw new UnauthorizedException('Invalid or expired token');

@@ -185,6 +185,7 @@ export class ResearchService {
       // Create submission record
       const submission = manager.create(ResearchSubmission, {
         researchTaskId: task.id,
+        language: dto.language,
         email: dto.email,
         phone: dto.phone,
         techStack: dto.techStack,

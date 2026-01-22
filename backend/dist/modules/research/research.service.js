@@ -138,6 +138,7 @@ let ResearchService = class ResearchService {
             }
             const submission = manager.create(research_submission_entity_1.ResearchSubmission, {
                 researchTaskId: task.id,
+                language: dto.language,
                 email: dto.email,
                 phone: dto.phone,
                 techStack: dto.techStack,

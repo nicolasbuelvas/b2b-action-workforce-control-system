@@ -5,6 +5,10 @@ export class SubmitResearchDto {
   @IsNotEmpty()
   taskId: string;
 
+  @IsString()
+  @IsOptional()
+  language?: string;
+
   @IsEmail()
   @IsOptional()
   email?: string;

@@ -3,6 +3,7 @@ export declare class ResearchSubmission {
     id: string;
     researchTaskId: string;
     researchTask: ResearchTask;
+    language: string;
     email: string;
     phone: string;
     techStack: string;

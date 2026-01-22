@@ -21,6 +21,9 @@ export class ResearchSubmission {
   researchTask: ResearchTask;
 
   @Column({ nullable: true })
+  language: string;
+
+  @Column({ nullable: true })
   email: string;
 
   @Column({ nullable: true })

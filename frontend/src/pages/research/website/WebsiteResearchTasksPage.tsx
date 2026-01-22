@@ -4,10 +4,9 @@ import { researchApi, WebsiteResearchTask, SubmitResearchPayload, Category } fro
 import { useAuth } from '../../../hooks/useAuth';
 
 type ResearchFormData = {
-  email: string;
-  phone: string;
-  techStack: string;
-  notes: string;
+  companyName: string;
+  country: string;
+  language: string;
 };
 
 export default function WebsiteResearchTasksPage() {
@@ -23,10 +22,9 @@ export default function WebsiteResearchTasksPage() {
   const [loadingCategories, setLoadingCategories] = useState(true);
 
   const [formData, setFormData] = useState<ResearchFormData>({
-    email: '',
-    phone: '',
-    techStack: '',
-    notes: ''
+    companyName: '',
+    country: '',
+    language: '',
   });
 
   // Load categories on mount
@@ -99,7 +97,7 @@ export default function WebsiteResearchTasksPage() {
       
       setTasks(data || []);
       setActiveTask(null); // Clear active task when switching categories
-      setFormData({ email: '', phone: '', techStack: '', notes: '' }); // Clear form
+      setFormData({ companyName: '', country: '', language: '' }); // Clear form
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load tasks');
       console.error('Error loading tasks:', err);
@@ -108,28 +106,63 @@ export default function WebsiteResearchTasksPage() {
     }
   };
 
-  const handleClaimTask = async (task: WebsiteResearchTask) => {
+  const handleSelectTask = (task: WebsiteResearchTask) => {
+    // Just select the task - don't claim yet
+    setActiveTask(task);
+    
+    // If already claimed, pre-fill form
     if (task.status === 'in_progress') {
-      // Already claimed, just select it
-      setActiveTask(task);
-      return;
+      setFormData({
+        companyName: task.name || '',
+        country: task.country || '',
+        language: '',
+      });
+    } else {
+      // Clear form for unclaimed tasks
+      setFormData({
+        companyName: '',
+        country: '',
+        language: '',
+      });
     }
+  };
+
+  const handleClaimTask = async () => {
+    if (!activeTask) return;
 
     try {
       setLoading(true);
-      await researchApi.claimTask(task.id);
+      console.log('[CLAIM] Claiming task:', activeTask.id);
+      const claimResponse = await researchApi.claimTask(activeTask.id);
+      console.log('[CLAIM] Claim response:', claimResponse);
+      console.log('[CLAIM] Response assignedToUserId:', claimResponse?.assignedToUserId);
       
-      // Update local state
+      // Verify claim was successful
+      if (!claimResponse) {
+        throw new Error('No response from claim endpoint');
+      }
+      
+      // Update local state with response data
       const updatedTasks = tasks.map(t =>
-        t.id === task.id ? { ...t, status: 'in_progress' as const } : t
+        t.id === activeTask.id ? { ...t, status: 'in_progress' as const } : t
       );
       setTasks(updatedTasks);
       
-      const updatedTask = { ...task, status: 'in_progress' as const };
+      const updatedTask = { ...activeTask, status: 'in_progress' as const };
       setActiveTask(updatedTask);
+      
+      console.log('[CLAIM] Task successfully claimed and updated in state');
+      
+      // Pre-fill form with system data
+      setFormData({
+        companyName: activeTask.name || '',
+        country: activeTask.country || '',
+        language: '',
+      });
     } catch (err: any) {
+      console.error('[CLAIM] Error claiming task:', err);
+      console.error('[CLAIM] Error response:', err.response?.data);
       alert(err.response?.data?.message || 'Failed to claim task');
-      console.error('Error claiming task:', err);
     } finally {
       setLoading(false);
     }
@@ -144,49 +177,52 @@ export default function WebsiteResearchTasksPage() {
     }
 
     // Basic validation
-    if (!formData.email && !formData.phone) {
-      alert('Please provide at least email or phone number');
+    if (!formData.companyName || !formData.companyName.trim()) {
+      alert('Please provide the company name');
+      return;
+    }
+    if (!formData.country || !formData.country.trim()) {
+      alert('Please provide the country');
+      return;
+    }
+    if (!formData.language || !formData.language.trim()) {
+      alert('Please provide the website language');
       return;
     }
 
     try {
       setSubmitting(true);
       
-      // Build payload - only include fields that are not empty
+      // Build payload - only language field
       const payload: SubmitResearchPayload = {
         taskId: activeTask.id,
-        ...(formData.email && { email: formData.email.trim() }),
-        ...(formData.phone && { phone: formData.phone.trim() }),
-        ...(formData.techStack && { techStack: formData.techStack.trim() }),
-        ...(formData.notes && { notes: formData.notes.trim() }),
+        language: formData.language.trim(),
       };
 
-      console.log('Submitting payload:', payload);
+      console.log('[SUBMIT] Submitting task:', activeTask.id);
+      console.log('[SUBMIT] Payload:', payload);
+      console.log('[SUBMIT] Active task status:', activeTask.status);
 
       await researchApi.submitTask(payload);
 
-      // Update task status
-      const updatedTasks = tasks.map(t =>
-        t.id === activeTask.id ? { ...t, status: 'submitted' as const } : t
-      );
+      console.log('[SUBMIT] Task submitted successfully');
+
+      // Remove task from list after successful submission
+      const updatedTasks = tasks.filter(t => t.id !== activeTask.id);
       setTasks(updatedTasks);
 
       // Clear form and selection
-      setFormData({ email: '', phone: '', techStack: '', notes: '' });
+      setFormData({ companyName: '', country: '', language: '' });
       setActiveTask(null);
 
       alert('Research submitted successfully! Awaiting audit.');
     } catch (err: any) {
-      console.error('Submit error:', err.response?.data);
+      console.error('[SUBMIT] Submit error:', err);
+      console.error('[SUBMIT] Error response:', err.response?.data);
       alert(err.response?.data?.message || 'Failed to submit research');
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleSaveDraft = () => {
-    // TODO: Implement draft saving if needed
-    alert('Draft functionality not yet implemented');
   };
 
   const filteredTasks = tasks.filter(task =>
@@ -305,7 +341,7 @@ export default function WebsiteResearchTasksPage() {
             <div
               key={task.id}
               className={`target-card ${activeTask?.id === task.id ? 'active' : ''}`}
-              onClick={() => handleClaimTask(task)}
+              onClick={() => handleSelectTask(task)}
             >
               <div className={`priority-line ${task.priority}`} />
               <div className="target-card-info">
@@ -347,98 +383,141 @@ export default function WebsiteResearchTasksPage() {
                 </button>
               </div>
 
-              {activeTask.status === 'submitted' && (
-                <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', marginBottom: '20px', color: '#1e40af' }}>
-                  This task has been submitted and is awaiting audit.
-                </div>
-              )}
-
-              <div className="editor-grid">
-                {/* DATA EXTRACTION */}
-                <section className="form-section">
-                  <h3>Required Data Extraction</h3>
-
-                  <div className="form-group">
-                    <label>Corporate Email</label>
-                    <input
-                      type="email"
-                      placeholder="info@company.com"
-                      value={formData.email}
-                      onChange={e =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      disabled={activeTask.status === 'submitted'}
-                    />
+              {/* UNCLAIMED TASK - SHOW CLAIM BUTTON */}
+              {activeTask.status === 'unassigned' && (
+                <div style={{ padding: '40px', textAlign: 'center' }}>
+                  <div style={{ background: '#fef3c7', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #fcd34d' }}>
+                    <h3 style={{ margin: '0 0 10px 0', color: '#92400e' }}>🔒 Task Not Claimed</h3>
+                    <p style={{ margin: '0 0 15px 0', color: '#78350f' }}>
+                      You must claim this task before you can enter research data.
+                    </p>
                   </div>
-
-                  <div className="form-group">
-                    <label>Phone Number</label>
-                    <input
-                      type="text"
-                      placeholder="+1 555..."
-                      value={formData.phone}
-                      onChange={e =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
-                      disabled={activeTask.status === 'submitted'}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Identified Tech Stack</label>
-                    <textarea
-                      placeholder="React, Cloudflare, AWS, etc."
-                      value={formData.techStack}
-                      onChange={e =>
-                        setFormData({ ...formData, techStack: e.target.value })
-                      }
-                      disabled={activeTask.status === 'submitted'}
-                    />
-                  </div>
-                </section>
-
-                {/* SUBMISSION */}
-                <section className="submission-section">
-                  <div className="evidence-upload-area">
-                    <h3>Proof of Existence</h3>
-                    <p>Upload evidence from About / Contact pages.</p>
-
-                    <div className="drop-zone">
-                      <div className="drop-icon">📁</div>
-                      <p>File upload coming soon</p>
+                  
+                  <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+                    <div style={{ marginBottom: '10px', color: '#64748b', fontSize: '14px' }}>
+                      <strong>Domain:</strong> {activeTask.domain}
+                    </div>
+                    {activeTask.name && (
+                      <div style={{ marginBottom: '10px', color: '#64748b', fontSize: '14px' }}>
+                        <strong>Company:</strong> {activeTask.name}
+                      </div>
+                    )}
+                    <div style={{ marginBottom: '10px', color: '#64748b', fontSize: '14px' }}>
+                      <strong>Country:</strong> {activeTask.country}
                     </div>
                   </div>
 
-                  <div className="submission-notes">
-                    <h3>Internal Notes</h3>
-                    <textarea
-                      placeholder="Optional notes for the auditor..."
-                      value={formData.notes}
-                      onChange={e =>
-                        setFormData({ ...formData, notes: e.target.value })
-                      }
-                      disabled={activeTask.status === 'submitted'}
+                  <button
+                    className="btn-submit-task"
+                    onClick={handleClaimTask}
+                    disabled={loading}
+                    style={{ padding: '12px 40px', fontSize: '16px' }}
+                  >
+                    {loading ? 'Claiming...' : 'Claim Task'}
+                  </button>
+                </div>
+              )}
+
+              {/* CLAIMED TASK - SHOW EDITABLE FORM */}
+              {activeTask.status === 'in_progress' && (
+                <div className="editor-content">
+                  {/* READ-ONLY SYSTEM FIELD */}
+                  <div className="form-group">
+                    <label>Company Link (Domain)</label>
+                    <input
+                      type="text"
+                      value={activeTask.domain}
+                      disabled
+                      style={{ background: '#f1f5f9', cursor: 'not-allowed', fontWeight: '500' }}
                     />
+                    <small style={{ display: 'block', marginTop: '6px', color: '#64748b', fontSize: '12px' }}>
+                      System-provided, cannot be changed
+                    </small>
                   </div>
 
-                  <div className="action-row">
-                    <button 
-                      className="btn-save-draft" 
-                      onClick={handleSaveDraft}
-                      disabled={activeTask.status === 'submitted' || submitting}
-                    >
-                      Save Draft
-                    </button>
+                  <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #e2e8f0' }} />
+
+                  {/* EDITABLE RESEARCH FIELDS */}
+                  <div className="form-group">
+                    <label>Company Name <span style={{ color: '#dc2626' }}>*</span></label>
+                    <input
+                      type="text"
+                      placeholder="Enter or verify company name..."
+                      value={formData.companyName}
+                      onChange={e => setFormData({ ...formData, companyName: e.target.value })}
+                      style={{ borderColor: '#3b82f6' }}
+                    />
+                    <small style={{ display: 'block', marginTop: '6px', color: '#64748b', fontSize: '12px' }}>
+                      Verify or correct the company name from the website
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Country <span style={{ color: '#dc2626' }}>*</span></label>
+                    <input
+                      type="text"
+                      placeholder="Enter or verify country..."
+                      value={formData.country}
+                      onChange={e => setFormData({ ...formData, country: e.target.value })}
+                      style={{ borderColor: '#3b82f6' }}
+                    />
+                    <small style={{ display: 'block', marginTop: '6px', color: '#64748b', fontSize: '12px' }}>
+                      Verify or correct the country from the website
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Website Language <span style={{ color: '#dc2626' }}>*</span></label>
+                    <input
+                      type="text"
+                      placeholder="e.g., English, Spanish, French, German..."
+                      value={formData.language}
+                      onChange={e => setFormData({ ...formData, language: e.target.value })}
+                      style={{ borderColor: '#3b82f6' }}
+                    />
+                    <small style={{ display: 'block', marginTop: '6px', color: '#64748b', fontSize: '12px' }}>
+                      Primary language of the website content
+                    </small>
+                  </div>
+
+                  <div className="action-row" style={{ marginTop: '30px' }}>
                     <button 
                       className="btn-submit-task"
                       onClick={handleSubmit}
-                      disabled={activeTask.status === 'submitted' || submitting}
+                      disabled={submitting}
+                      style={{ width: '100%', padding: '12px' }}
                     >
                       {submitting ? 'Submitting...' : 'Submit for Audit'}
                     </button>
                   </div>
-                </section>
-              </div>
+                </div>
+              )}
+
+              {/* SUBMITTED TASK - READ-ONLY VIEW */}
+              {activeTask.status === 'submitted' && (
+                <div className="editor-content">
+                  <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', marginBottom: '20px', color: '#1e40af' }}>
+                    ✓ This task has been submitted and is awaiting audit.
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Company Link (Domain)</label>
+                    <input type="text" value={activeTask.domain} disabled style={{ background: '#f1f5f9' }} />
+                  </div>
+                  
+                  {activeTask.name && (
+                    <div className="form-group">
+                      <label>Company Name</label>
+                      <input type="text" value={activeTask.name} disabled style={{ background: '#f1f5f9' }} />
+                    </div>
+                  )}
+                  
+                  <div className="form-group">
+                    <label>Country</label>
+                    <input type="text" value={activeTask.country} disabled style={{ background: '#f1f5f9' }} />
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </main>

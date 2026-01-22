@@ -31,6 +31,10 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
+], ResearchSubmission.prototype, "language", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
 ], ResearchSubmission.prototype, "email", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),

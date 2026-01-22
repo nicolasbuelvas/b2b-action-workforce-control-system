@@ -19,10 +19,7 @@ export interface WebsiteResearchTask {
 
 export interface SubmitResearchPayload {
   taskId: string;
-  email?: string;
-  phone?: string;
-  techStack?: string;
-  notes?: string;
+  language: string;
 }
 
 export const researchApi = {

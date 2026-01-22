@@ -30,8 +30,11 @@ let JwtGuard = class JwtGuard {
         }
         try {
             const payload = this.jwtService.verify(token);
-            request.user = payload;
-            console.log('[JwtGuard] Token verified, payload.sub:', payload.sub);
+            request.user = {
+                userId: payload.sub,
+                roles: payload.roles || [],
+            };
+            console.log('[JwtGuard] Token verified, userId:', request.user.userId);
             return true;
         }
         catch {

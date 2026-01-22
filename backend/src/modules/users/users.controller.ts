@@ -35,7 +35,7 @@ export class UsersController {
   }
 
 @Get('me/categories')
-getMyCategories(@CurrentUser('sub') userId: string) {
+getMyCategories(@CurrentUser('userId') userId: string) {
   return this.usersService.getUserCategories(userId);
 }
 
