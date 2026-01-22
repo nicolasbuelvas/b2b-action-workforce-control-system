@@ -20,12 +20,12 @@ __decorate([
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid' }),
+    (0, typeorm_1.Column)({ type: 'uuid', name: 'researchtaskid' }),
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "researchTaskId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => research_task_entity_1.ResearchTask),
-    (0, typeorm_1.JoinColumn)({ name: 'researchTaskId' }),
+    (0, typeorm_1.JoinColumn)({ name: 'researchtaskid' }),
     __metadata("design:type", research_task_entity_1.ResearchTask)
 ], ResearchSubmission.prototype, "researchTask", void 0);
 __decorate([
@@ -33,27 +33,27 @@ __decorate([
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "language", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, name: 'email' }),
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "email", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, name: 'phone' }),
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "phone", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'text', nullable: true, name: 'techstack' }),
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "techStack", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'text', nullable: true, name: 'notes' }),
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "notes", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, name: 'screenshotpath' }),
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "screenshotPath", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)(),
+    (0, typeorm_1.CreateDateColumn)({ name: 'createdat' }),
     __metadata("design:type", Date)
 ], ResearchSubmission.prototype, "createdAt", void 0);
 exports.ResearchSubmission = ResearchSubmission = __decorate([

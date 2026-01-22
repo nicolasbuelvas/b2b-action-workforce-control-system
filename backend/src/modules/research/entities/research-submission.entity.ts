@@ -13,31 +13,31 @@ export class ResearchSubmission {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', name: 'researchtaskid' })
   researchTaskId: string;
 
   @ManyToOne(() => ResearchTask)
-  @JoinColumn({ name: 'researchTaskId' })
+  @JoinColumn({ name: 'researchtaskid' })
   researchTask: ResearchTask;
 
   @Column({ nullable: true })
   language: string;
 
-  @Column({ nullable: true })
+    @Column({ nullable: true, name: 'email' })
   email: string;
 
-  @Column({ nullable: true })
+    @Column({ nullable: true, name: 'phone' })
   phone: string;
 
-  @Column({ type: 'text', nullable: true })
+    @Column({ type: 'text', nullable: true, name: 'techstack' })
   techStack: string;
 
-  @Column({ type: 'text', nullable: true })
+    @Column({ type: 'text', nullable: true, name: 'notes' })
   notes: string;
 
-  @Column({ nullable: true })
+    @Column({ nullable: true, name: 'screenshotpath' })
   screenshotPath: string;
 
-  @CreateDateColumn()
+    @CreateDateColumn({ name: 'createdat' })
   createdAt: Date;
 }

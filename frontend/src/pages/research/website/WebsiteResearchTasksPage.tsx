@@ -20,6 +20,7 @@ export default function WebsiteResearchTasksPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [submissionConfirmed, setSubmissionConfirmed] = useState(false);
 
   const [formData, setFormData] = useState<ResearchFormData>({
     companyName: '',
@@ -125,6 +126,7 @@ export default function WebsiteResearchTasksPage() {
         language: '',
       });
     }
+    setSubmissionConfirmed(false); // Reset confirmation when task is selected
   };
 
   const handleClaimTask = async () => {
@@ -207,15 +209,17 @@ export default function WebsiteResearchTasksPage() {
 
       console.log('[SUBMIT] Task submitted successfully');
 
-      // Remove task from list after successful submission
-      const updatedTasks = tasks.filter(t => t.id !== activeTask.id);
+
+
+      // Update task status to submitted and show confirmation
+      const updatedTasks = tasks.map(t =>
+        t.id === activeTask.id ? { ...t, status: 'submitted' as const } : t
+      );
       setTasks(updatedTasks);
-
-      // Clear form and selection
-      setFormData({ companyName: '', country: '', language: '' });
-      setActiveTask(null);
-
-      alert('Research submitted successfully! Awaiting audit.');
+      
+      const updatedTask = { ...activeTask, status: 'submitted' as const };
+      setActiveTask(updatedTask);
+      setSubmissionConfirmed(true);
     } catch (err: any) {
       console.error('[SUBMIT] Submit error:', err);
       console.error('[SUBMIT] Error response:', err.response?.data);
@@ -232,6 +236,15 @@ export default function WebsiteResearchTasksPage() {
   const activeTasks = tasks.filter(t => t.status === 'in_progress').length;
   const submittedTasks = tasks.filter(t => t.status === 'submitted').length;
 
+  const getStatusColor = (task: WebsiteResearchTask): string => {
+    if (task.status === 'submitted') {
+      return '#22c55e'; // GREEN - Submitted
+    } else if (task.status === 'in_progress') {
+      return '#eab308'; // YELLOW - Claimed
+    } else {
+      return '#ef4444'; // RED - Not claimed
+    }
+  };
   return (
     <div className="wb-res-tasks-container">
       {/* HEADER */}
@@ -343,7 +356,7 @@ export default function WebsiteResearchTasksPage() {
               className={`target-card ${activeTask?.id === task.id ? 'active' : ''}`}
               onClick={() => handleSelectTask(task)}
             >
-              <div className={`priority-line ${task.priority}`} />
+              <div className={`priority-line`} style={{ backgroundColor: getStatusColor(task), height: '4px' }} />
               <div className="target-card-info">
                 <h4>{task.domain}</h4>
                 <div className="target-card-meta">
@@ -515,6 +528,24 @@ export default function WebsiteResearchTasksPage() {
                   <div className="form-group">
                     <label>Country</label>
                     <input type="text" value={activeTask.country} disabled style={{ background: '#f1f5f9' }} />
+                  
+                                    {!submissionConfirmed && (
+                                      <div className="action-row" style={{ marginTop: '30px' }}>
+                                        <button 
+                                          className="btn-submit-task"
+                                          onClick={() => {
+                                            setSubmissionConfirmed(true);
+                                            const updatedTasks = tasks.filter(t => t.id !== activeTask.id);
+                                            setTasks(updatedTasks);
+                                            setActiveTask(null);
+                                            setFormData({ companyName: '', country: '', language: '' });
+                                          }}
+                                          style={{ width: '100%', padding: '12px', background: '#22c55e' }}
+                                        >
+                                          Understood
+                                        </button>
+                                      </div>
+                                    )}
                   </div>
                 </div>
               )}
