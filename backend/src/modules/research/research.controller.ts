@@ -14,14 +14,20 @@ export class ResearchController {
 
   @Get('tasks/website')
   @Roles('website_researcher')
-  getWebsiteTasks(@CurrentUser('userId') userId: string) {
-    return this.researchService.getAvailableTasks(userId, 'COMPANY');
+  getWebsiteTasks(
+    @CurrentUser('userId') userId: string,
+    @Query('categoryId') categoryId?: string,
+  ) {
+    return this.researchService.getAvailableTasks(userId, 'COMPANY', categoryId);
   }
 
   @Get('tasks/linkedin')
   @Roles('linkedin_researcher')
-  getLinkedInTasks(@CurrentUser('userId') userId: string) {
-    return this.researchService.getAvailableTasks(userId, 'LINKEDIN');
+  getLinkedInTasks(
+    @CurrentUser('userId') userId: string,
+    @Query('categoryId') categoryId?: string,
+  ) {
+    return this.researchService.getAvailableTasks(userId, 'LINKEDIN', categoryId);
   }
 
   @Post('tasks/:taskId/claim')

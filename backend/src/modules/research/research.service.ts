@@ -37,7 +37,11 @@ export class ResearchService {
     private readonly userCategoryRepo: Repository<UserCategory>,
   ) {}
 
-  async getAvailableTasks(userId: string, targetType: 'COMPANY' | 'LINKEDIN') {
+  async getAvailableTasks(
+    userId: string,
+    targetType: 'COMPANY' | 'LINKEDIN',
+    categoryId?: string,
+  ) {
     // First, get user's assigned categories
     const userCategories = await this.userCategoryRepo.find({
       where: { userId },
@@ -51,13 +55,27 @@ export class ResearchService {
 
     const categoryIds = userCategories.map(uc => uc.categoryId);
 
-    // Get tasks that are unassigned or assigned to this user, AND in user's categories
-    const tasks = await this.researchRepo
+    // If a specific categoryId is provided, validate it belongs to user's assigned categories
+    if (categoryId && !categoryIds.includes(categoryId)) {
+      return []; // User trying to access a category they're not assigned to
+    }
+
+    // Build query with optional categoryId filter
+    let query = this.researchRepo
       .createQueryBuilder('task')
       .where('task.targettype = :targetType', { targetType })
       .andWhere('task.status = :status', { status: ResearchStatus.PENDING })
-      .andWhere('task.categoryId IN (:...categoryIds)', { categoryIds })
-      .andWhere('(task.assignedToUserId IS NULL OR task.assignedToUserId = :userId)', { userId })
+      .andWhere('(task.assignedToUserId IS NULL OR task.assignedToUserId = :userId)', { userId });
+
+    // If categoryId is specified, filter to only that category
+    if (categoryId) {
+      query = query.andWhere('task.categoryId = :categoryId', { categoryId });
+    } else {
+      // Otherwise, include all user's categories
+      query = query.andWhere('task.categoryId IN (:...categoryIds)', { categoryIds });
+    }
+
+    const tasks = await query
       .orderBy('task.createdAt', 'ASC')
       .limit(50)
       .getMany();

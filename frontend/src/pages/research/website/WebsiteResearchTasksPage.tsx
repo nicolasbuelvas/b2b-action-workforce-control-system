@@ -47,12 +47,28 @@ export default function WebsiteResearchTasksPage() {
     try {
       setLoadingCategories(true);
       const userCats = await researchApi.getMyCategories();
-      setCategories(userCats || []);
+      
+      // DEBUG: Log raw response
+      console.log('Raw categories from API:', userCats);
+      console.log('Category count:', userCats?.length);
+      if (userCats && userCats.length > 0) {
+        console.log('First category ID:', userCats[0].id);
+        console.log('All category IDs:', userCats.map((c: any) => c.id));
+      }
+      
+      // Deduplicate categories by id before setting state
+      const uniqueCategories = userCats && userCats.length > 0
+        ? Array.from(new Map(userCats.map((cat: Category) => [cat.id, cat])).values())
+        : [];
+      
+      console.log('After deduplication:', uniqueCategories.length, 'unique categories');
+      
+      setCategories(uniqueCategories);
       
       // Auto-select first category if user has exactly one
-      if (userCats && userCats.length === 1) {
-        setSelectedCategory(userCats[0].id);
-      } else if (userCats && userCats.length > 1) {
+      if (uniqueCategories && uniqueCategories.length === 1) {
+        setSelectedCategory(uniqueCategories[0].id);
+      } else if (uniqueCategories && uniqueCategories.length > 1) {
         // Let user choose - don't auto-select
         setSelectedCategory('');
       }
@@ -66,15 +82,24 @@ export default function WebsiteResearchTasksPage() {
 
   // Load tasks on mount
   useEffect(() => {
-    loadTasks();
-  }, []);
+    if (selectedCategory) {
+      loadTasks();
+    }
+  }, [selectedCategory]);
 
   const loadTasks = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await researchApi.getWebsiteTasks();
-      setTasks(data);
+      
+      // Load tasks filtered by selected category (if available)
+      const data = await researchApi.getWebsiteTasks(selectedCategory || undefined);
+      
+      console.log('Loaded tasks for category:', selectedCategory, 'Count:', data?.length);
+      
+      setTasks(data || []);
+      setActiveTask(null); // Clear active task when switching categories
+      setFormData({ email: '', phone: '', techStack: '', notes: '' }); // Clear form
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load tasks');
       console.error('Error loading tasks:', err);
@@ -127,13 +152,16 @@ export default function WebsiteResearchTasksPage() {
     try {
       setSubmitting(true);
       
+      // Build payload - only include fields that are not empty
       const payload: SubmitResearchPayload = {
         taskId: activeTask.id,
-        email: formData.email || undefined,
-        phone: formData.phone || undefined,
-        techStack: formData.techStack || undefined,
-        notes: formData.notes || undefined,
+        ...(formData.email && { email: formData.email.trim() }),
+        ...(formData.phone && { phone: formData.phone.trim() }),
+        ...(formData.techStack && { techStack: formData.techStack.trim() }),
+        ...(formData.notes && { notes: formData.notes.trim() }),
       };
+
+      console.log('Submitting payload:', payload);
 
       await researchApi.submitTask(payload);
 
@@ -149,8 +177,8 @@ export default function WebsiteResearchTasksPage() {
 
       alert('Research submitted successfully! Awaiting audit.');
     } catch (err: any) {
+      console.error('Submit error:', err.response?.data);
       alert(err.response?.data?.message || 'Failed to submit research');
-      console.error('Error submitting:', err);
     } finally {
       setSubmitting(false);
     }

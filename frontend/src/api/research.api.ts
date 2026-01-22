@@ -32,15 +32,17 @@ export const researchApi = {
     return response.data;
   },
 
-  // Get available website research tasks
-  getWebsiteTasks: async (): Promise<WebsiteResearchTask[]> => {
-    const response = await axios.get('/research/tasks/website');
+  // Get available website research tasks, optionally filtered by category
+  getWebsiteTasks: async (categoryId?: string): Promise<WebsiteResearchTask[]> => {
+    const params = categoryId ? { categoryId } : {};
+    const response = await axios.get('/research/tasks/website', { params });
     return response.data;
   },
 
-  // Get available LinkedIn research tasks
-  getLinkedInTasks: async (): Promise<any[]> => {
-    const response = await axios.get('/research/tasks/linkedin');
+  // Get available LinkedIn research tasks, optionally filtered by category
+  getLinkedInTasks: async (categoryId?: string): Promise<any[]> => {
+    const params = categoryId ? { categoryId } : {};
+    const response = await axios.get('/research/tasks/linkedin', { params });
     return response.data;
   },
 
