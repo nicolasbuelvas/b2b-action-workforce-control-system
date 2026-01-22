@@ -1,24 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './LinkedinInquiryTasksPage.css';
+import { inquiryApi, InquiryTask } from '../../../api/inquiry.api';
 
-interface InquiryTask {
-  id: string;
-  company: string;
-  contact: string;
-  role: string;
-  status: string;
-  stepsCompleted: number;
-  totalSteps: number;
+interface LinkedinInquiryTask extends InquiryTask {
+  company?: string;
+  contact?: string;
+  role?: string;
+  stepsCompleted?: number;
+  totalSteps?: number;
   lastUpdate?: string;
 }
 
 export default function LinkedinInquiryTasksPage() {
-  const [tasks] = useState<InquiryTask[]>([]);
-  const [selectedTask, setSelectedTask] = useState<InquiryTask | null>(null);
+  const [tasks, setTasks] = useState<LinkedinInquiryTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<LinkedinInquiryTask | null>(null);
   const [search, setSearch] = useState('');
 
+  // Load tasks from API on component mount
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await inquiryApi.getLinkedInTasks();
+        setTasks(data || []);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load tasks');
+        console.error('Error loading tasks:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTasks();
+  }, []);
+
   const filteredTasks = tasks.filter(t =>
-    `${t.company} ${t.contact}`.toLowerCase().includes(search.toLowerCase())
+    `${t.targetId}`.toLowerCase().includes(search.toLowerCase())
   );
 
   return (

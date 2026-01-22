@@ -1,12 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import './WebsiteInquiryTasksPage.css';
+import { inquiryApi, InquiryTask } from '../../../api/inquiry.api';
 
-export interface WebsiteInquiryTask {
-  id: string;
-  domain: string;
-  action: string;
-  contactName: string;
-  reward: string;
+export interface WebsiteInquiryTask extends InquiryTask {
+  domain?: string;
+  action?: string;
+  contactName?: string;
+  reward?: string;
   contactUrl?: string;
   prefilledMessage?: string;
 }
@@ -17,13 +17,35 @@ interface Props {
 }
 
 export default function WebsiteInquiryTasksPage({
-  tasks = [], // ⬅️ DEFAULT SEGURO
+  tasks: initialTasks = [], // ⬅️ DEFAULT SEGURO
   onSubmitProof,
 }: Props) {
+  const [tasks, setTasks] = useState<WebsiteInquiryTask[]>(initialTasks);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] =
     useState<WebsiteInquiryTask | null>(null);
   const [step, setStep] = useState<number>(1);
   const [proofFile, setProofFile] = useState<File | null>(null);
+
+  // Load tasks from API on component mount
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await inquiryApi.getWebsiteTasks();
+        setTasks(data || []);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load tasks');
+        console.error('Error loading tasks:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTasks();
+  }, []);
 
   const hasTasks = useMemo(() => tasks.length > 0, [tasks]);
 

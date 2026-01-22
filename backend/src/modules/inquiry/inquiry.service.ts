@@ -37,6 +37,28 @@ export class InquiryService {
   ) {}
 
   // ===============================
+  // GET AVAILABLE TASKS
+  // ===============================
+  async getAvailableTasks(userId: string, type: 'website' | 'linkedin') {
+    // Get all pending inquiry tasks that the user hasn't claimed yet
+    const tasks = await this.taskRepo.find({
+      where: {
+        status: InquiryStatus.PENDING,
+      },
+      take: 50,
+    });
+
+    return tasks.map(task => ({
+      id: task.id,
+      targetId: task.targetId,
+      categoryId: task.categoryId,
+      status: 'available',
+      type: type,
+      createdAt: task.createdAt,
+    }));
+  }
+
+  // ===============================
   // TAKE INQUIRY
   // ===============================
   async takeInquiry(

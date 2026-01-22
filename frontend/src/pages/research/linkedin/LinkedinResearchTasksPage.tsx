@@ -1,29 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './LinkedinResearchTasksPage.css';
+import { researchApi, WebsiteResearchTask } from '../../../api/research.api';
 
 interface Category {
   id: string;
   name: string;
 }
 
-interface Lead {
-  id: string;
-  name: string;
-  role: string;
-  company: string;
-  location: string;
-  connectionLevel: string;
+interface Lead extends WebsiteResearchTask {
+  name?: string;
+  role?: string;
+  company?: string;
+  location?: string;
+  connectionLevel?: string;
 }
 
 export default function LinkedinResearchTasksPage() {
+  const [tasks, setTasks] = useState<Lead[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [manualProfileUrl, setManualProfileUrl] = useState('');
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredLeads = leads.filter(lead =>
-    `${lead.name} ${lead.role} ${lead.company}`
+  // Load LinkedIn research tasks on mount
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await researchApi.getLinkedInTasks();
+        setTasks(data || []);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load tasks');
+        console.error('Error loading tasks:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTasks();
+  }, []);
+
+  const filteredLeads = tasks.filter(lead =>
+    `${lead.domain} ${lead.priority} ${lead.category}`
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
   );

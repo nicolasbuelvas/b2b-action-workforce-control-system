@@ -29,6 +29,22 @@ let InquiryService = class InquiryService {
         this.screenshotsService = screenshotsService;
         this.cooldownService = cooldownService;
     }
+    async getAvailableTasks(userId, type) {
+        const tasks = await this.taskRepo.find({
+            where: {
+                status: inquiry_task_entity_1.InquiryStatus.PENDING,
+            },
+            take: 50,
+        });
+        return tasks.map(task => ({
+            id: task.id,
+            targetId: task.targetId,
+            categoryId: task.categoryId,
+            status: 'available',
+            type: type,
+            createdAt: task.createdAt,
+        }));
+    }
     async takeInquiry(targetId, categoryId, userId) {
         const active = await this.taskRepo.findOne({
             where: {

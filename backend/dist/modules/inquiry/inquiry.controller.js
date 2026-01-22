@@ -18,10 +18,18 @@ const platform_express_1 = require("@nestjs/platform-express");
 const inquiry_service_1 = require("./inquiry.service");
 const submit_inquiry_dto_1 = require("./dto/submit-inquiry.dto");
 const jwt_guard_1 = require("../../common/guards/jwt.guard");
+const roles_guard_1 = require("../../common/guards/roles.guard");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
+const roles_decorator_1 = require("../../common/decorators/roles.decorator");
 let InquiryController = class InquiryController {
     constructor(inquiryService) {
         this.inquiryService = inquiryService;
+    }
+    getWebsiteTasks(userId) {
+        return this.inquiryService.getAvailableTasks(userId, 'website');
+    }
+    getLinkedInTasks(userId) {
+        return this.inquiryService.getAvailableTasks(userId, 'linkedin');
     }
     takeInquiry(body, userId) {
         return this.inquiryService.takeInquiry(body.targetId, body.categoryId, userId);
@@ -32,9 +40,25 @@ let InquiryController = class InquiryController {
 };
 exports.InquiryController = InquiryController;
 __decorate([
+    (0, common_1.Get)('tasks/website'),
+    (0, roles_decorator_1.Roles)('website_inquirer'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InquiryController.prototype, "getWebsiteTasks", null);
+__decorate([
+    (0, common_1.Get)('tasks/linkedin'),
+    (0, roles_decorator_1.Roles)('linkedin_inquirer'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], InquiryController.prototype, "getLinkedInTasks", null);
+__decorate([
     (0, common_1.Post)('take'),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)('userId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
@@ -44,14 +68,14 @@ __decorate([
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('screenshot')),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.UploadedFile)()),
-    __param(2, (0, current_user_decorator_1.CurrentUser)('id')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)('userId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [submit_inquiry_dto_1.SubmitInquiryDto, Object, String]),
     __metadata("design:returntype", void 0)
 ], InquiryController.prototype, "submitInquiry", null);
 exports.InquiryController = InquiryController = __decorate([
     (0, common_1.Controller)('inquiry'),
-    (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [inquiry_service_1.InquiryService])
 ], InquiryController);
 //# sourceMappingURL=inquiry.controller.js.map
