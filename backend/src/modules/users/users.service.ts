@@ -10,12 +10,15 @@ import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RolesService } from '../roles/roles.service';
+import { UserCategory } from '../categories/entities/user-category.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(UserCategory)
+    private readonly userCategoryRepo: Repository<UserCategory>,
     private readonly rolesService: RolesService,
   ) {}
 
@@ -87,5 +90,18 @@ export class UsersService {
     const user = await this.findById(userId);
     user.status = 'suspended';
     return this.userRepo.save(user);
+  }
+
+  async getUserCategories(userId: string) {
+    const userCategories = await this.userCategoryRepo.find({
+      where: { userId },
+      relations: ['category'],
+    });
+
+    return userCategories.map(uc => ({
+      id: uc.category.id,
+      name: uc.category.name,
+      assignedAt: uc.createdAt,
+    }));
   }
 }

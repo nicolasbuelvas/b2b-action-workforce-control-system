@@ -14,6 +14,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { JwtGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('users')
 @UseGuards(JwtGuard, RolesGuard)
@@ -43,4 +44,10 @@ export class UsersController {
   suspend(@Param('id') id: string) {
     return this.usersService.suspendUser(id);
   }
+
+  @Get('me/categories')
+  getMyCategories(@CurrentUser('id') userId: string) {
+    return this.usersService.getUserCategories(userId);
+  }
 }
+

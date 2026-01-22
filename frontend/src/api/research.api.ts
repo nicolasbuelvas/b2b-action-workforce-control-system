@@ -1,5 +1,11 @@
 import axios from './axios';
 
+export interface Category {
+  id: string;
+  name: string;
+  assignedAt?: string;
+}
+
 export interface WebsiteResearchTask {
   id: string;
   domain: string;
@@ -20,6 +26,12 @@ export interface SubmitResearchPayload {
 }
 
 export const researchApi = {
+  // Get user's assigned categories (non-admin endpoint - for authenticated users)
+  getMyCategories: async (): Promise<Category[]> => {
+    const response = await axios.get('/users/me/categories');
+    return response.data;
+  },
+
   // Get available website research tasks
   getWebsiteTasks: async (): Promise<WebsiteResearchTask[]> => {
     const response = await axios.get('/research/tasks/website');

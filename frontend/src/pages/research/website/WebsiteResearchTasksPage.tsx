@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './WebsiteResearchTasksPage.css';
-import { researchApi, WebsiteResearchTask, SubmitResearchPayload } from '../../../api/research.api';
-import { getUserCategories } from '../../../api/admin.api';
+import { researchApi, WebsiteResearchTask, SubmitResearchPayload, Category } from '../../../api/research.api';
 import { useAuth } from '../../../hooks/useAuth';
 
 type ResearchFormData = {
@@ -10,11 +9,6 @@ type ResearchFormData = {
   techStack: string;
   notes: string;
 };
-
-interface Category {
-  id: string;
-  name: string;
-}
 
 export default function WebsiteResearchTasksPage() {
   const { user } = useAuth();
@@ -52,7 +46,7 @@ export default function WebsiteResearchTasksPage() {
     
     try {
       setLoadingCategories(true);
-      const userCats = await getUserCategories(user.id);
+      const userCats = await researchApi.getMyCategories();
       setCategories(userCats || []);
       
       // Auto-select first category if user has exactly one
