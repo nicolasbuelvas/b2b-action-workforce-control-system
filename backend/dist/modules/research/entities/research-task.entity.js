@@ -14,6 +14,8 @@ const typeorm_1 = require("typeorm");
 var ResearchStatus;
 (function (ResearchStatus) {
     ResearchStatus["PENDING"] = "PENDING";
+    ResearchStatus["IN_PROGRESS"] = "IN_PROGRESS";
+    ResearchStatus["SUBMITTED"] = "SUBMITTED";
     ResearchStatus["COMPLETED"] = "COMPLETED";
     ResearchStatus["REJECTED"] = "REJECTED";
 })(ResearchStatus || (exports.ResearchStatus = ResearchStatus = {}));

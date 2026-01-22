@@ -15,6 +15,7 @@ const research_task_entity_1 = require("../research/entities/research-task.entit
 const research_audit_entity_1 = require("./entities/research-audit.entity");
 const rejection_reason_entity_1 = require("./entities/rejection-reason.entity");
 const flagged_action_entity_1 = require("./entities/flagged-action.entity");
+const research_submission_entity_1 = require("../research/entities/research-submission.entity");
 let AuditModule = class AuditModule {
 };
 exports.AuditModule = AuditModule;
@@ -26,6 +27,7 @@ exports.AuditModule = AuditModule = __decorate([
                 research_audit_entity_1.ResearchAudit,
                 rejection_reason_entity_1.RejectionReason,
                 flagged_action_entity_1.FlaggedAction,
+                research_submission_entity_1.ResearchSubmission,
             ]),
         ],
         controllers: [audit_controller_1.AuditController],

@@ -1,4 +1,4 @@
-import { Controller, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Param, Body, UseGuards, Get } from '@nestjs/common';
 import { AuditService } from './audit.service';
 import { AuditResearchDto } from './dto/audit-research.dto';
 import { JwtGuard } from '../../common/guards/jwt.guard';
@@ -11,8 +11,14 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
+  @Get('research/pending')
+  @Roles('website_auditor', 'linkedin_auditor')
+  getPendingResearch() {
+    return this.auditService.getPendingResearch();
+  }
+
   @Post('research/:id')
-  @Roles('AUDITOR', 'ADMIN')
+  @Roles('website_auditor', 'linkedin_auditor')
   auditResearch(
     @Param('id') researchTaskId: string,
     @Body() dto: AuditResearchDto,

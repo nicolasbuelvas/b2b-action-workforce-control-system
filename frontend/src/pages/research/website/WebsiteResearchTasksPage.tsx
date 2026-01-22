@@ -146,11 +146,13 @@ export default function WebsiteResearchTasksPage() {
       
       // Update local state with response data
       const updatedTasks = tasks.map(t =>
-        t.id === activeTask.id ? { ...t, status: 'in_progress' as const } : t
+        t.id === activeTask.id
+          ? { ...t, status: 'in_progress' as const, assignedToUserId: user?.id || null }
+          : t
       );
       setTasks(updatedTasks);
       
-      const updatedTask = { ...activeTask, status: 'in_progress' as const };
+      const updatedTask = { ...activeTask, status: 'in_progress' as const, assignedToUserId: user?.id || null };
       setActiveTask(updatedTask);
       
       console.log('[CLAIM] Task successfully claimed and updated in state');
@@ -239,11 +241,14 @@ export default function WebsiteResearchTasksPage() {
   const getStatusColor = (task: WebsiteResearchTask): string => {
     if (task.status === 'submitted') {
       return '#22c55e'; // GREEN - Submitted
-    } else if (task.status === 'in_progress') {
-      return '#eab308'; // YELLOW - Claimed
-    } else {
-      return '#ef4444'; // RED - Not claimed
     }
+
+    const isMine = task.assignedToUserId && user?.id && task.assignedToUserId === user.id;
+    if (isMine) {
+      return '#eab308'; // YELLOW - Claimed by me
+    }
+
+    return '#ef4444'; // RED - Not claimed or claimed by someone else
   };
   return (
     <div className="wb-res-tasks-container">

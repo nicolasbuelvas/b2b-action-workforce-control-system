@@ -44,7 +44,9 @@ let ResearchService = class ResearchService {
         let query = this.researchRepo
             .createQueryBuilder('task')
             .where('task.targettype = :targetType', { targetType })
-            .andWhere('task.status = :status', { status: research_task_entity_1.ResearchStatus.PENDING })
+            .andWhere('task.status IN (:...statuses)', {
+            statuses: [research_task_entity_1.ResearchStatus.PENDING, research_task_entity_1.ResearchStatus.IN_PROGRESS],
+        })
             .andWhere('(task.assignedToUserId IS NULL OR task.assignedToUserId = :userId)', { userId });
         if (categoryId) {
             query = query.andWhere('task.categoryId = :categoryId', { categoryId });
@@ -73,7 +75,10 @@ let ResearchService = class ResearchService {
             return {
                 id: task.id,
                 categoryId: task.categoryId,
-                status: task.assignedToUserId === userId ? 'in_progress' : 'unassigned',
+                assignedToUserId: task.assignedToUserId,
+                status: task.assignedToUserId === userId
+                    ? 'in_progress'
+                    : 'unassigned',
                 priority: 'medium',
                 ...targetInfo,
             };
@@ -93,8 +98,9 @@ let ResearchService = class ResearchService {
                 throw new common_1.NotFoundException('Task not found');
             }
             console.log('[claimTask] Task found - currentAssignedTo:', task.assignedToUserId, 'status:', task.status);
-            if (task.status !== research_task_entity_1.ResearchStatus.PENDING) {
-                console.log('[claimTask] ERROR - Task not PENDING');
+            if (task.status !== research_task_entity_1.ResearchStatus.PENDING &&
+                !(task.status === research_task_entity_1.ResearchStatus.IN_PROGRESS && task.assignedToUserId === userId)) {
+                console.log('[claimTask] ERROR - Task not claimable');
                 throw new common_1.BadRequestException('Task is not available for claiming');
             }
             if (task.assignedToUserId && task.assignedToUserId !== userId) {
@@ -107,6 +113,7 @@ let ResearchService = class ResearchService {
             }
             console.log('[claimTask] Assigning task to user:', userId);
             task.assignedToUserId = userId;
+            task.status = research_task_entity_1.ResearchStatus.IN_PROGRESS;
             const savedTask = await manager.save(research_task_entity_1.ResearchTask, task);
             console.log('[claimTask] SUCCESS - Task assigned to:', savedTask.assignedToUserId);
             console.log('[claimTask] assignedToUserId TYPE:', typeof savedTask.assignedToUserId, 'userId TYPE:', typeof userId);
@@ -133,8 +140,8 @@ let ResearchService = class ResearchService {
                 console.log('[submitTaskData] Expected:', userId, 'Actual:', task.assignedToUserId);
                 throw new common_1.BadRequestException('You are not assigned to this task');
             }
-            if (task.status !== research_task_entity_1.ResearchStatus.PENDING) {
-                throw new common_1.BadRequestException('Task has already been submitted');
+            if (task.status !== research_task_entity_1.ResearchStatus.IN_PROGRESS) {
+                throw new common_1.BadRequestException('Task must be claimed before submission');
             }
             const submission = manager.create(research_submission_entity_1.ResearchSubmission, {
                 researchTaskId: task.id,
@@ -145,6 +152,8 @@ let ResearchService = class ResearchService {
                 notes: dto.notes,
             });
             await manager.save(research_submission_entity_1.ResearchSubmission, submission);
+            task.status = research_task_entity_1.ResearchStatus.SUBMITTED;
+            await manager.save(research_task_entity_1.ResearchTask, task);
             return {
                 taskId: task.id,
                 submissionId: submission.id,

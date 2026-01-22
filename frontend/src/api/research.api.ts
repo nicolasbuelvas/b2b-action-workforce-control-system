@@ -14,6 +14,7 @@ export interface WebsiteResearchTask {
   category: string;
   categoryId: string;
   priority: 'high' | 'medium' | 'low';
+  assignedToUserId?: string | null;
   status: 'unassigned' | 'in_progress' | 'submitted';
 }
 

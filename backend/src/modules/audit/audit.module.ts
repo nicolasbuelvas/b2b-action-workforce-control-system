@@ -8,6 +8,7 @@ import { ResearchTask } from '../research/entities/research-task.entity';
 import { ResearchAudit } from './entities/research-audit.entity';
 import { RejectionReason } from './entities/rejection-reason.entity';
 import { FlaggedAction } from './entities/flagged-action.entity';
+import { ResearchSubmission } from '../research/entities/research-submission.entity';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { FlaggedAction } from './entities/flagged-action.entity';
       ResearchAudit,
       RejectionReason,
       FlaggedAction,
+      ResearchSubmission,
     ]),
   ],
   controllers: [AuditController],

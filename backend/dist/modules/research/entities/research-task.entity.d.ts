@@ -1,5 +1,7 @@
 export declare enum ResearchStatus {
     PENDING = "PENDING",
+    IN_PROGRESS = "IN_PROGRESS",
+    SUBMITTED = "SUBMITTED",
     COMPLETED = "COMPLETED",
     REJECTED = "REJECTED"
 }

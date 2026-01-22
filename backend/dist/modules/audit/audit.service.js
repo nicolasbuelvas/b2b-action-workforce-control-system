@@ -17,13 +17,40 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const research_task_entity_1 = require("../research/entities/research-task.entity");
+const research_submission_entity_1 = require("../research/entities/research-submission.entity");
 const research_audit_entity_1 = require("./entities/research-audit.entity");
 const flagged_action_entity_1 = require("./entities/flagged-action.entity");
 let AuditService = class AuditService {
-    constructor(researchRepo, auditRepo, flaggedRepo) {
+    constructor(researchRepo, auditRepo, submissionRepo, flaggedRepo) {
         this.researchRepo = researchRepo;
         this.auditRepo = auditRepo;
+        this.submissionRepo = submissionRepo;
         this.flaggedRepo = flaggedRepo;
+    }
+    async getPendingResearch() {
+        const tasks = await this.researchRepo.find({
+            where: { status: research_task_entity_1.ResearchStatus.SUBMITTED },
+            order: { createdAt: 'ASC' },
+        });
+        const enriched = await Promise.all(tasks.map(async (task) => {
+            const submission = await this.submissionRepo.findOne({
+                where: { researchTaskId: task.id },
+                order: { createdAt: 'DESC' },
+            });
+            return {
+                task,
+                submission,
+            };
+        }));
+        return enriched.map(item => ({
+            id: item.task.id,
+            categoryId: item.task.categoryId,
+            assignedToUserId: item.task.assignedToUserId,
+            targetId: item.task.targetId,
+            targetType: item.task.targetType,
+            createdAt: item.task.createdAt,
+            submission: item.submission,
+        }));
     }
     async auditResearch(researchTaskId, dto, auditorUserId) {
         const task = await this.researchRepo.findOne({
@@ -32,8 +59,8 @@ let AuditService = class AuditService {
         if (!task) {
             throw new common_1.BadRequestException('Research task not found');
         }
-        if (task.status !== research_task_entity_1.ResearchStatus.PENDING) {
-            throw new common_1.BadRequestException('Research task already audited');
+        if (task.status !== research_task_entity_1.ResearchStatus.SUBMITTED) {
+            throw new common_1.BadRequestException('Research task not ready for audit');
         }
         if (task.assignedToUserId === auditorUserId) {
             throw new common_1.ForbiddenException('Auditor cannot audit own submission');
@@ -46,7 +73,7 @@ let AuditService = class AuditService {
         task.status =
             dto.decision === 'APPROVED'
                 ? research_task_entity_1.ResearchStatus.COMPLETED
-                : research_task_entity_1.ResearchStatus.REJECTED;
+                : research_task_entity_1.ResearchStatus.IN_PROGRESS;
         if (dto.decision === 'REJECTED') {
             await this.flaggedRepo.save({
                 userId: task.assignedToUserId,
@@ -63,8 +90,10 @@ exports.AuditService = AuditService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(research_task_entity_1.ResearchTask)),
     __param(1, (0, typeorm_1.InjectRepository)(research_audit_entity_1.ResearchAudit)),
-    __param(2, (0, typeorm_1.InjectRepository)(flagged_action_entity_1.FlaggedAction)),
+    __param(2, (0, typeorm_1.InjectRepository)(research_submission_entity_1.ResearchSubmission)),
+    __param(3, (0, typeorm_1.InjectRepository)(flagged_action_entity_1.FlaggedAction)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])
 ], AuditService);

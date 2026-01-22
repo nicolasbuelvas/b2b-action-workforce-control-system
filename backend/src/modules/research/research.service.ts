@@ -64,8 +64,13 @@ export class ResearchService {
     let query = this.researchRepo
       .createQueryBuilder('task')
       .where('task.targettype = :targetType', { targetType })
-      .andWhere('task.status = :status', { status: ResearchStatus.PENDING })
-      .andWhere('(task.assignedToUserId IS NULL OR task.assignedToUserId = :userId)', { userId });
+      .andWhere('task.status IN (:...statuses)', {
+        statuses: [ResearchStatus.PENDING, ResearchStatus.IN_PROGRESS],
+      })
+      .andWhere(
+        '(task.assignedToUserId IS NULL OR task.assignedToUserId = :userId)',
+        { userId },
+      );
 
     // If categoryId is specified, filter to only that category
     if (categoryId) {
@@ -102,7 +107,11 @@ export class ResearchService {
         return {
           id: task.id,
           categoryId: task.categoryId,
-          status: task.assignedToUserId === userId ? 'in_progress' : 'unassigned',
+          assignedToUserId: task.assignedToUserId,
+          status:
+            task.assignedToUserId === userId
+              ? 'in_progress'
+              : 'unassigned',
           priority: 'medium', // Can be enhanced with actual priority logic
           ...targetInfo,
         };
@@ -129,8 +138,11 @@ export class ResearchService {
 
       console.log('[claimTask] Task found - currentAssignedTo:', task.assignedToUserId, 'status:', task.status);
 
-      if (task.status !== ResearchStatus.PENDING) {
-        console.log('[claimTask] ERROR - Task not PENDING');
+      if (
+        task.status !== ResearchStatus.PENDING &&
+        !(task.status === ResearchStatus.IN_PROGRESS && task.assignedToUserId === userId)
+      ) {
+        console.log('[claimTask] ERROR - Task not claimable');
         throw new BadRequestException('Task is not available for claiming');
       }
 
@@ -146,6 +158,7 @@ export class ResearchService {
 
       console.log('[claimTask] Assigning task to user:', userId);
       task.assignedToUserId = userId;
+      task.status = ResearchStatus.IN_PROGRESS;
       const savedTask = await manager.save(ResearchTask, task);
       console.log('[claimTask] SUCCESS - Task assigned to:', savedTask.assignedToUserId);
       console.log('[claimTask] assignedToUserId TYPE:', typeof savedTask.assignedToUserId, 'userId TYPE:', typeof userId);
@@ -178,8 +191,8 @@ export class ResearchService {
         throw new BadRequestException('You are not assigned to this task');
       }
 
-      if (task.status !== ResearchStatus.PENDING) {
-        throw new BadRequestException('Task has already been submitted');
+      if (task.status !== ResearchStatus.IN_PROGRESS) {
+        throw new BadRequestException('Task must be claimed before submission');
       }
 
       // Create submission record
@@ -194,9 +207,8 @@ export class ResearchService {
 
       await manager.save(ResearchSubmission, submission);
 
-      // Mark task as submitted (still PENDING until audited)
-      // We keep it PENDING for auditor review
-      // You could add a 'SUBMITTED' status if needed
+      task.status = ResearchStatus.SUBMITTED;
+      await manager.save(ResearchTask, task);
 
       return {
         taskId: task.id,
