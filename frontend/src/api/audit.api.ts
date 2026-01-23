@@ -3,11 +3,15 @@ import axios from './axios';
 export interface PendingResearchSubmission {
   id: string;
   categoryId: string;
-  categoryName?: string;
-  targetId: string;
-  targetType: 'COMPANY' | 'LINKEDIN';
+  categoryName: string;
   assignedToUserId: string;
-  researcherEmail?: string;
+  workerName: string;
+  workerEmail: string;
+  targetId: string;
+  companyName: string;
+  companyDomain: string;
+  companyCountry: string;
+  targetType: 'COMPANY' | 'LINKEDIN';
   createdAt: string;
   submission: {
     id: string;

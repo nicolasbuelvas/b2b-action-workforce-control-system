@@ -128,11 +128,6 @@ function SubmissionCard({
   const sub = submission.submission;
   if (!sub) return null;
 
-  const companyName = sub.contactName || 'Unknown Company';
-  const companyLink = submission.targetId.startsWith('http') 
-    ? submission.targetId 
-    : `https://${submission.targetId}`;
-
   const allValidationsChecked = Object.values(validationChecks).every(v => v);
   const canApprove = allValidationsChecked && !suspicious;
   const canReject = rejectionReason || suspiciousReason;
@@ -174,17 +169,22 @@ function SubmissionCard({
           <h3>Context</h3>
           <div className="info-row">
             <label>Company Name:</label>
-            <span className="info-value">{companyName}</span>
+            <span className="info-value">{submission.companyName || 'Unknown'}</span>
           </div>
           <div className="info-row">
             <label>Company Link:</label>
-            <a href={companyLink} target="_blank" rel="noopener noreferrer" className="company-link">
-              {submission.targetId}
+            <a 
+              href={`https://${submission.companyDomain}`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="company-link"
+            >
+              {submission.companyDomain || 'N/A'}
             </a>
           </div>
           <div className="info-row">
             <label>Country:</label>
-            <span className="info-value">{sub.country || 'N/A'}</span>
+            <span className="info-value">{submission.companyCountry || 'N/A'}</span>
           </div>
           <div className="info-row">
             <label>Language:</label>
@@ -198,13 +198,35 @@ function SubmissionCard({
             <label>Task ID:</label>
             <span className="info-value task-id" title={submission.id}>{submission.id}</span>
           </div>
-          <div className="info-row">
-            <label>Worker:</label>
-            <span className="info-value">{submission.researcherEmail || submission.assignedToUserId}</span>
+          <div className="info-section-nested">
+            <label className="nested-label">Worker</label>
+            <div className="nested-items">
+              <div className="nested-row">
+                <span className="nested-key">ID:</span>
+                <span className="nested-value">{submission.assignedToUserId}</span>
+              </div>
+              <div className="nested-row">
+                <span className="nested-key">Name:</span>
+                <span className="nested-value">{submission.workerName || 'Unknown'}</span>
+              </div>
+              <div className="nested-row">
+                <span className="nested-key">Email:</span>
+                <span className="nested-value">{submission.workerEmail || 'N/A'}</span>
+              </div>
+            </div>
           </div>
-          <div className="info-row">
-            <label>Category:</label>
-            <span className="info-value">{submission.categoryName || submission.categoryId}</span>
+          <div className="info-section-nested">
+            <label className="nested-label">Category</label>
+            <div className="nested-items">
+              <div className="nested-row">
+                <span className="nested-key">ID:</span>
+                <span className="nested-value">{submission.categoryId}</span>
+              </div>
+              <div className="nested-row">
+                <span className="nested-key">Name:</span>
+                <span className="nested-value">{submission.categoryName || 'Unknown'}</span>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -225,7 +247,7 @@ function SubmissionCard({
                 checked={validationChecks.companyName}
                 onChange={() => toggleValidation('companyName')}
               />
-              <span>Company Name: {companyName}</span>
+              <span>Company Name: {submission.companyName || 'Unknown'}</span>
             </label>
             <label className="checkbox-item">
               <input
@@ -233,7 +255,7 @@ function SubmissionCard({
                 checked={validationChecks.companyLink}
                 onChange={() => toggleValidation('companyLink')}
               />
-              <span>Company Link: {submission.targetId}</span>
+              <span>Company Link: {submission.companyDomain || 'N/A'}</span>
             </label>
             <label className="checkbox-item">
               <input
@@ -241,7 +263,7 @@ function SubmissionCard({
                 checked={validationChecks.country}
                 onChange={() => toggleValidation('country')}
               />
-              <span>Country: {sub.country || 'N/A'}</span>
+              <span>Country: {submission.companyCountry || 'N/A'}</span>
             </label>
             <label className="checkbox-item">
               <input

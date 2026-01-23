@@ -6,8 +6,14 @@ export declare class AuditController {
     getPendingResearch(): Promise<{
         id: string;
         categoryId: string;
+        categoryName: string;
         assignedToUserId: string;
+        workerName: string;
+        workerEmail: string;
         targetId: string;
+        companyName: any;
+        companyDomain: any;
+        companyCountry: any;
         targetType: string;
         createdAt: Date;
         submission: import("../research/entities/research-submission.entity").ResearchSubmission;

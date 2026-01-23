@@ -62,6 +62,7 @@
   background: #f5f5f5;
   border-bottom: 1px solid #e0e0e0;
 }
+
 .type-badge {
   display: inline-block;
   background: #2196f3;
@@ -103,7 +104,87 @@
   letter-spacing: 0.5px;
 }
 
-.checkbox-group {
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.info-row label {
+  font-weight: 500;
+  color: #666;
+  min-width: 120px;
+}
+
+.info-value {
+  color: #1a1a1a;
+  text-align: right;
+  word-break: break-word;
+}
+
+.task-id {
+  font-family: monospace;
+  font-size: 12px;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.company-link {
+  color: #2196f3;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.company-link:hover {
+  text-decoration: underline;
+}
+
+.info-section-nested {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 4px;
+  border-left: 3px solid #2196f3;
+}
+
+.nested-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.nested-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nested-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.nested-key {
+  font-weight: 500;
+  color: #666;
+  min-width: 50px;
+}
+
+.nested-value {
+  color: #1a1a1a;
+  text-align: right;
+  word-break: break-word;
+}
+
   display: flex;
   flex-direction: column;
   gap: 8px;

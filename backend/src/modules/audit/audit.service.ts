@@ -14,6 +14,9 @@ import { ResearchSubmission } from '../research/entities/research-submission.ent
 import { ResearchAudit } from './entities/research-audit.entity';
 import { FlaggedAction } from './entities/flagged-action.entity';
 import { AuditResearchDto } from './dto/audit-research.dto';
+import { Category } from '../categories/entities/category.entity';
+import { Company } from '../research/entities/company.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuditService {
@@ -29,6 +32,15 @@ export class AuditService {
 
     @InjectRepository(FlaggedAction)
     private readonly flaggedRepo: Repository<FlaggedAction>,
+
+    @InjectRepository(Category)
+    private readonly categoryRepo: Repository<Category>,
+
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>,
+
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
   ) {}
 
   async getPendingResearch() {
@@ -39,14 +51,26 @@ export class AuditService {
 
     const enriched = await Promise.all(
       tasks.map(async task => {
-        const submission = await this.submissionRepo.findOne({
-          where: { researchTaskId: task.id },
-          order: { createdAt: 'DESC' },
-        });
+        const [submission, category, worker] = await Promise.all([
+          this.submissionRepo.findOne({
+            where: { researchTaskId: task.id },
+            order: { createdAt: 'DESC' },
+          }),
+          this.categoryRepo.findOne({ where: { id: task.categoryId } }),
+          this.userRepo.findOne({ where: { id: task.assignedToUserId } }),
+        ]);
+
+        let company = null;
+        if (task.targetType === 'COMPANY') {
+          company = await this.companyRepo.findOne({ where: { id: task.targetId } });
+        }
 
         return {
           task,
           submission,
+          category,
+          company,
+          worker,
         };
       }),
     );
@@ -54,8 +78,14 @@ export class AuditService {
     return enriched.map(item => ({
       id: item.task.id,
       categoryId: item.task.categoryId,
+      categoryName: item.category?.name || '',
       assignedToUserId: item.task.assignedToUserId,
+      workerName: item.worker?.name || '',
+      workerEmail: item.worker?.email || '',
       targetId: item.task.targetId,
+      companyName: item.company?.name || '',
+      companyDomain: item.company?.domain || '',
+      companyCountry: item.company?.country || '',
       targetType: item.task.targetType,
       createdAt: item.task.createdAt,
       submission: item.submission,
