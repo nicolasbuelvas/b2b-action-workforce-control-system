@@ -8,8 +8,6 @@ export default function WebsiteResearchAuditorPendingPage() {
   const [submissions, setSubmissions] = useState<PendingResearchSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Record<string, string>>({});
-  const [users, setUsers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadSubmissions();
@@ -20,23 +18,8 @@ export default function WebsiteResearchAuditorPendingPage() {
       setLoading(true);
       const data = await auditApi.getPendingResearch();
       
-      // Filter only COMPANY (website) submissions
       const websiteSubmissions = data.filter(s => s.targetType === 'COMPANY');
       setSubmissions(websiteSubmissions);
-
-      // Extract unique category and user IDs for display enrichment
-      const catIds = new Set(websiteSubmissions.map(s => s.categoryId));
-      const userIds = new Set(websiteSubmissions.map(s => s.assignedToUserId));
-
-      // TODO: Fetch category names and user emails in production
-      const catMap: Record<string, string> = {};
-      catIds.forEach(id => { catMap[id] = id; });
-      setCategories(catMap);
-
-      const userMap: Record<string, string> = {};
-      userIds.forEach(id => { userMap[id] = id; });
-      setUsers(userMap);
-
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load submissions');
@@ -54,9 +37,13 @@ export default function WebsiteResearchAuditorPendingPage() {
     }
   };
 
-  const handleReject = async (taskId: string, reason?: string) => {
+  const handleReject = async (taskId: string, rejectionReasonId?: string) => {
     try {
-      await auditApi.auditResearch(taskId, { decision: 'REJECTED', reason });
+      const payload: any = { decision: 'REJECTED' };
+      if (rejectionReasonId) {
+        payload.rejectionReasonId = rejectionReasonId;
+      }
+      await auditApi.auditResearch(taskId, payload);
       setSubmissions(prev => prev.filter(s => s.id !== taskId));
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to reject submission');
@@ -103,8 +90,6 @@ export default function WebsiteResearchAuditorPendingPage() {
           <SubmissionCard
             key={submission.id}
             submission={submission}
-            categoryName={categories[submission.categoryId] || submission.categoryId}
-            researcherEmail={users[submission.assignedToUserId] || submission.assignedToUserId}
             onApprove={handleApprove}
             onReject={handleReject}
             formatTimeAgo={formatTimeAgo}
@@ -117,39 +102,64 @@ export default function WebsiteResearchAuditorPendingPage() {
 
 interface SubmissionCardProps {
   submission: PendingResearchSubmission;
-  categoryName: string;
-  researcherEmail: string;
   onApprove: (taskId: string) => void;
-  onReject: (taskId: string, reason?: string) => void;
+  onReject: (taskId: string, rejectionReasonId?: string) => void;
   formatTimeAgo: (date: string) => string;
 }
 
 function SubmissionCard({ 
   submission, 
-  categoryName, 
-  researcherEmail,
   onApprove, 
   onReject,
   formatTimeAgo
 }: SubmissionCardProps) {
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [showRejectDropdown, setShowRejectDropdown] = useState(false);
+  const [validationChecks, setValidationChecks] = useState({
+    noRecentContact: false,
+    companyName: false,
+    companyLink: false,
+    country: false,
+    language: false,
+  });
   const [suspicious, setSuspicious] = useState(false);
+  const [suspiciousReason, setSuspiciousReason] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const sub = submission.submission;
   if (!sub) return null;
 
-  const companyName = sub.notes?.split('\n')[0] || 'Unknown Company';
+  const companyName = sub.contactName || 'Unknown Company';
   const companyLink = submission.targetId.startsWith('http') 
     ? submission.targetId 
     : `https://${submission.targetId}`;
 
-  const handleRejectClick = () => {
-    if (!rejectionReason.trim()) {
-      alert('Please select a rejection reason');
-      return;
+  const allValidationsChecked = Object.values(validationChecks).every(v => v);
+  const canApprove = allValidationsChecked && !suspicious;
+  const canReject = rejectionReason || suspiciousReason;
+
+  const handleApproveClick = async () => {
+    if (!canApprove) return;
+    setSubmitting(true);
+    try {
+      await onApprove(submission.id);
+    } finally {
+      setSubmitting(false);
     }
-    onReject(submission.id, rejectionReason);
+  };
+
+  const handleRejectClick = async () => {
+    if (!canReject) return;
+    setSubmitting(true);
+    try {
+      const reasonId = rejectionReason || suspiciousReason;
+      await onReject(submission.id, reasonId);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const toggleValidation = (key: keyof typeof validationChecks) => {
+    setValidationChecks(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
@@ -186,25 +196,62 @@ function SubmissionCard({
           <h3>Submission Details</h3>
           <div className="info-row">
             <label>Task ID:</label>
-            <span className="info-value task-id">{submission.id.slice(0, 8)}...</span>
+            <span className="info-value task-id" title={submission.id}>{submission.id}</span>
           </div>
           <div className="info-row">
             <label>Worker:</label>
-            <span className="info-value">{researcherEmail}</span>
+            <span className="info-value">{submission.researcherEmail || submission.assignedToUserId}</span>
           </div>
           <div className="info-row">
             <label>Category:</label>
-            <span className="info-value">{categoryName}</span>
+            <span className="info-value">{submission.categoryName || submission.categoryId}</span>
           </div>
         </section>
 
         <section className="info-section">
-          <h3>Validation</h3>
-          <div className="validation-item">✓ No recent contact (30 days)</div>
-          <div className="validation-item">✓ Company Name: {companyName}</div>
-          <div className="validation-item">✓ Company Link: {submission.targetId}</div>
-          <div className="validation-item">✓ Country: {sub.country || 'N/A'}</div>
-          <div className="validation-item">✓ Language: {sub.language || 'N/A'}</div>
+          <h3>Validation Checklist</h3>
+          <div className="checkbox-group">
+            <label className="checkbox-item">
+              <input
+                type="checkbox"
+                checked={validationChecks.noRecentContact}
+                onChange={() => toggleValidation('noRecentContact')}
+              />
+              <span>No recent contact (30 days)</span>
+            </label>
+            <label className="checkbox-item">
+              <input
+                type="checkbox"
+                checked={validationChecks.companyName}
+                onChange={() => toggleValidation('companyName')}
+              />
+              <span>Company Name: {companyName}</span>
+            </label>
+            <label className="checkbox-item">
+              <input
+                type="checkbox"
+                checked={validationChecks.companyLink}
+                onChange={() => toggleValidation('companyLink')}
+              />
+              <span>Company Link: {submission.targetId}</span>
+            </label>
+            <label className="checkbox-item">
+              <input
+                type="checkbox"
+                checked={validationChecks.country}
+                onChange={() => toggleValidation('country')}
+              />
+              <span>Country: {sub.country || 'N/A'}</span>
+            </label>
+            <label className="checkbox-item">
+              <input
+                type="checkbox"
+                checked={validationChecks.language}
+                onChange={() => toggleValidation('language')}
+              />
+              <span>Language: {sub.language || 'N/A'}</span>
+            </label>
+          </div>
         </section>
 
         {sub.email && (
@@ -221,8 +268,12 @@ function SubmissionCard({
             <label>Rejection Reason:</label>
             <select 
               value={rejectionReason} 
-              onChange={(e) => setRejectionReason(e.target.value)}
+              onChange={(e) => {
+                setRejectionReason(e.target.value);
+                if (e.target.value) setSuspiciousReason('');
+              }}
               className="rejection-select"
+              disabled={suspicious}
             >
               <option value="">Select reason...</option>
               <option value="INVALID_DATA">Invalid Data</option>
@@ -234,12 +285,21 @@ function SubmissionCard({
           </div>
 
           <div className="control-group">
-            <button
-              onClick={() => setSuspicious(!suspicious)}
-              className={`btn-flag ${suspicious ? 'flagged' : ''}`}
+            <label>Flag as Suspicious:</label>
+            <select
+              value={suspiciousReason}
+              onChange={(e) => {
+                setSuspiciousReason(e.target.value);
+                if (e.target.value) setRejectionReason('');
+              }}
+              className={`suspicious-select ${suspiciousReason ? 'active' : ''}`}
             >
-              {suspicious ? '🚩 Flagged as Suspicious' : 'Flag as Suspicious'}
-            </button>
+              <option value="">Not suspicious</option>
+              <option value="SUSPICIOUS_CONTACT">Suspicious Contact</option>
+              <option value="SUSPICIOUS_DATA">Suspicious Data</option>
+              <option value="REQUIRES_REVIEW">Requires Further Review</option>
+              <option value="POTENTIAL_FRAUD">Potential Fraud</option>
+            </select>
           </div>
         </section>
       </div>
@@ -247,15 +307,19 @@ function SubmissionCard({
       <div className="card-actions">
         <button 
           onClick={handleRejectClick}
+          disabled={!canReject || submitting}
           className="btn-reject"
+          title={!canReject ? 'Select a rejection reason' : ''}
         >
-          Reject
+          {submitting ? 'Processing...' : 'Reject'}
         </button>
         <button 
-          onClick={() => onApprove(submission.id)}
+          onClick={handleApproveClick}
+          disabled={!canApprove || submitting}
           className="btn-approve"
+          title={!canApprove ? (suspicious ? 'Disable suspicious flag first' : 'Complete all validations') : ''}
         >
-          Approve
+          {submitting ? 'Processing...' : 'Approve'}
         </button>
       </div>
     </div>

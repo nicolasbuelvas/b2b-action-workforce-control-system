@@ -103,6 +103,42 @@
   letter-spacing: 0.5px;
 }
 
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.checkbox-item:hover {
+  background: #f5f5f5;
+}
+
+.checkbox-item input[type="checkbox"] {
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #4caf50;
+  width: 18px;
+  height: 18px;
+}
+
+.checkbox-item span {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.4;
+}
+
+
 .info-row {
   display: flex;
   justify-content: space-between;
@@ -178,26 +214,27 @@
   background: white;
 }
 
-.btn-flag {
+.rejection-select:disabled {
+  background: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.suspicious-select {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ff9800;
-  background: white;
-  color: #ff9800;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.2s;
 }
 
-.btn-flag:hover {
-  background: #fff3e0;
+.suspicious-select.active {
+  border-color: #ff9800;
+  background: #fff8f0;
 }
 
-.btn-flag.flagged {
-  background: #ff9800;
-  color: white;
-}
 
 .card-actions {
   display: flex;
@@ -224,10 +261,17 @@
   color: white;
 }
 
-.btn-approve:hover {
+.btn-approve:hover:not(:disabled) {
   background: #45a049;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.btn-approve:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-reject {
@@ -235,8 +279,15 @@
   color: white;
 }
 
-.btn-reject:hover {
+.btn-reject:hover:not(:disabled) {
   background: #da190b;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+.btn-reject:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
 }

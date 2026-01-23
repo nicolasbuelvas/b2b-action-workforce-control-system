@@ -3,9 +3,11 @@ import axios from './axios';
 export interface PendingResearchSubmission {
   id: string;
   categoryId: string;
+  categoryName?: string;
   targetId: string;
   targetType: 'COMPANY' | 'LINKEDIN';
   assignedToUserId: string;
+  researcherEmail?: string;
   createdAt: string;
   submission: {
     id: string;
@@ -24,7 +26,7 @@ export interface PendingResearchSubmission {
 
 export interface AuditDecision {
   decision: 'APPROVED' | 'REJECTED';
-  reason?: string;
+  rejectionReasonId?: string;
 }
 
 export const auditApi = {
