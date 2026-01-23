@@ -10,6 +10,10 @@ import { OutreachRecord } from './entities/outreach-record.entity';
 
 import { ScreenshotsModule } from '../screenshots/screenshots.module';
 import { CooldownModule } from '../cooldown/cooldown.module';
+import { ResearchTask } from '../research/entities/research-task.entity';
+import { ResearchSubmission } from '../research/entities/research-submission.entity';
+import { Company } from '../research/entities/company.entity';
+import { Category } from '../categories/entities/category.entity';
 
 @Module({
   imports: [
@@ -17,6 +21,10 @@ import { CooldownModule } from '../cooldown/cooldown.module';
       InquiryAction,
       InquiryTask,
       OutreachRecord,
+      ResearchTask,
+      ResearchSubmission,
+      Company,
+      Category,
     ]),
     ScreenshotsModule,
     CooldownModule,

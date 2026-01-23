@@ -4,19 +4,36 @@ export interface InquiryTask {
   id: string;
   targetId: string;
   categoryId: string;
+  categoryName: string;
   status: string;
   type: 'website' | 'linkedin';
+  companyName: string;
+  companyDomain: string;
+  companyCountry: string;
+  language?: string;
+  country?: string;
+  contactName?: string;
+  contactLinkedinUrl?: string;
+  email?: string;
+  phone?: string;
+  techStack?: string;
+  notes?: string;
   createdAt: string;
 }
 
+export interface SubmitInquiryPayload {
+  inquiryTaskId: string;
+  actionType: 'EMAIL' | 'LINKEDIN' | 'CALL';
+}
+
 export const inquiryApi = {
-  // Get available website inquiry tasks
+  // Get available website inquiry tasks (approved research)
   getWebsiteTasks: async (): Promise<InquiryTask[]> => {
     const response = await axios.get('/inquiry/tasks/website');
     return response.data;
   },
 
-  // Get available LinkedIn inquiry tasks
+  // Get available LinkedIn inquiry tasks (approved research)
   getLinkedInTasks: async (): Promise<InquiryTask[]> => {
     const response = await axios.get('/inquiry/tasks/linkedin');
     return response.data;
@@ -34,18 +51,13 @@ export const inquiryApi = {
   // Submit an inquiry action with screenshot
   submitAction: async (
     inquiryTaskId: string,
-    actionType: 'outreach' | 'email_request' | 'catalogue',
+    actionType: 'EMAIL' | 'LINKEDIN' | 'CALL',
     screenshot: File,
-    actionData?: any,
   ): Promise<any> => {
     const formData = new FormData();
     formData.append('inquiryTaskId', inquiryTaskId);
     formData.append('actionType', actionType);
     formData.append('screenshot', screenshot);
-    
-    if (actionData) {
-      formData.append('actionData', JSON.stringify(actionData));
-    }
 
     const response = await axios.post('/inquiry/submit', formData, {
       headers: {

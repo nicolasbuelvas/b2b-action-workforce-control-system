@@ -16,6 +16,10 @@ const inquiry_task_entity_1 = require("./entities/inquiry-task.entity");
 const outreach_record_entity_1 = require("./entities/outreach-record.entity");
 const screenshots_module_1 = require("../screenshots/screenshots.module");
 const cooldown_module_1 = require("../cooldown/cooldown.module");
+const research_task_entity_1 = require("../research/entities/research-task.entity");
+const research_submission_entity_1 = require("../research/entities/research-submission.entity");
+const company_entity_1 = require("../research/entities/company.entity");
+const category_entity_1 = require("../categories/entities/category.entity");
 let InquiryModule = class InquiryModule {
 };
 exports.InquiryModule = InquiryModule;
@@ -26,6 +30,10 @@ exports.InquiryModule = InquiryModule = __decorate([
                 inquiry_action_entity_1.InquiryAction,
                 inquiry_task_entity_1.InquiryTask,
                 outreach_record_entity_1.OutreachRecord,
+                research_task_entity_1.ResearchTask,
+                research_submission_entity_1.ResearchSubmission,
+                company_entity_1.Company,
+                category_entity_1.Category,
             ]),
             screenshots_module_1.ScreenshotsModule,
             cooldown_module_1.CooldownModule,

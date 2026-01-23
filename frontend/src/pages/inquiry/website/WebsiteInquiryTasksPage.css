@@ -31,6 +31,21 @@
   border: 1px solid #e2e8f0;
 }
 
+.loading-state,
+.error-state {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.error-state {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
 .inq-layout {
   display: grid;
   grid-template-columns: 320px 1fr;
@@ -80,29 +95,33 @@
   margin: 0;
   font-size: 16px;
   color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.task-selector-card p {
-  font-size: 13px;
-  color: #64748b;
-  margin: 6px 0 14px;
+.task-category {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 6px 0 0;
+}
+
+.task-country {
+  font-size: 12px;
+  color: #cbd5e1;
+  margin: 4px 0 12px;
 }
 
 .task-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-}
-
-.reward {
-  color: #10b981;
-  font-weight: 800;
 }
 
 .status {
   font-size: 11px;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: #10b981;
   font-weight: 700;
 }
 
@@ -110,94 +129,263 @@
   background: white;
   border-radius: 24px;
   border: 1px solid #e2e8f0;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .execution-card {
   padding: 40px;
-  height: 100%;
   display: flex;
   flex-direction: column;
+  gap: 30px;
 }
 
-.exec-steps {
+.no-task-selected {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   gap: 20px;
-  margin-bottom: 30px;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 20px;
-}
-
-.step {
-  font-size: 14px;
-  font-weight: 700;
-  color: #cbd5e1;
-}
-
-.step.done {
-  color: #6366f1;
-}
-
-.instruction-box {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 25px;
-  border-radius: 16px;
-  margin: 20px 0 30px;
-  line-height: 1.6;
-}
-
-.terminal-box {
-  background: #0f172a;
-  color: #38bdf8;
-  padding: 25px;
-  border-radius: 16px;
-  font-family: 'Fira Code', monospace;
-  margin-bottom: 30px;
-}
-
-.copy-block label {
-  display: block;
   color: #94a3b8;
-  font-size: 12px;
-  margin: 12px 0 6px;
 }
 
-.copy-block textarea {
+.empty-illustration {
+  font-size: 64px;
+}
+
+.empty-tasks {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.card-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 25px;
+  background: #f8fafc;
+}
+
+.card-section h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #1e293b;
+}
+
+.research-context {
+  background: #f8fafc;
+}
+
+.context-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.context-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.context-item label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.context-item p,
+.context-item a {
+  font-size: 14px;
+  color: #1e293b;
+  margin: 0;
+}
+
+.context-item a {
+  color: #6366f1;
+  text-decoration: none;
+}
+
+.context-item a:hover {
+  text-decoration: underline;
+}
+
+.task-id {
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  word-break: break-all;
+}
+
+.message-section {
+  background: white;
+}
+
+.message-info {
+  margin-bottom: 15px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.message-textarea {
   width: 100%;
-  height: 90px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 120px;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.message-textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.proof-section {
+  background: white;
+}
+
+.proof-requirements {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 15px;
+}
+
+.upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  background: #f8fafc;
+  transition: 0.2s ease;
+}
+
+.upload-zone:hover {
+  border-color: #6366f1;
+  background: #f0f4ff;
+}
+
+.upload-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.upload-text {
+  color: #64748b;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.btn-upload {
+  background: #6366f1;
   color: white;
-  padding: 10px;
-  border-radius: 8px;
-  resize: none;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-block;
+  transition: 0.2s ease;
+  font-size: 14px;
+}
+
+.btn-upload:hover {
+  background: #4f46e5;
+}
+
+.file-error {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.file-name {
+  color: #10b981;
+  font-size: 14px;
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+.preview-container {
+  margin-top: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  max-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+}
+
+.submit-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 15px;
+  border-radius: 12px;
+  font-size: 14px;
 }
 
 .action-buttons {
   display: flex;
   gap: 15px;
-  margin-top: auto;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 
-.btn-next,
-.btn-finish {
-  background: #6366f1;
-  color: white;
-  border: none;
-  padding: 14px 28px;
-  border-radius: 12px;
+.btn-cancel,
+.btn-submit {
+  padding: 12px 32px;
+  border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
-  flex: 1;
+  font-size: 14px;
+  transition: 0.2s ease;
+  border: none;
 }
 
-.btn-finish:disabled {
+.btn-cancel {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #cbd5e1;
+}
+
+.btn-cancel:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.btn-back {
+.btn-submit {
+  background: #6366f1;
+  color: white;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
   background: #f1f5f9;
   color: #475569;
   border: none;

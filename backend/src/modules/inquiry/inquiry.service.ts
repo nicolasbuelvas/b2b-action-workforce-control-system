@@ -19,6 +19,10 @@ import { ScreenshotsService } from '../screenshots/screenshots.service';
 import { CooldownService } from '../cooldown/cooldown.service';
 
 import { SubmitInquiryDto } from './dto/submit-inquiry.dto';
+import { ResearchTask, ResearchStatus } from '../research/entities/research-task.entity';
+import { ResearchSubmission } from '../research/entities/research-submission.entity';
+import { Company } from '../research/entities/company.entity';
+import { Category } from '../categories/entities/category.entity';
 
 @Injectable()
 export class InquiryService {
@@ -32,6 +36,18 @@ export class InquiryService {
     @InjectRepository(OutreachRecord)
     private readonly outreachRepo: Repository<OutreachRecord>,
 
+    @InjectRepository(ResearchTask)
+    private readonly researchRepo: Repository<ResearchTask>,
+
+    @InjectRepository(ResearchSubmission)
+    private readonly submissionRepo: Repository<ResearchSubmission>,
+
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>,
+
+    @InjectRepository(Category)
+    private readonly categoryRepo: Repository<Category>,
+
     private readonly screenshotsService: ScreenshotsService,
     private readonly cooldownService: CooldownService,
   ) {}
@@ -40,22 +56,74 @@ export class InquiryService {
   // GET AVAILABLE TASKS
   // ===============================
   async getAvailableTasks(userId: string, type: 'website' | 'linkedin') {
-    // Get all pending inquiry tasks that the user hasn't claimed yet
-    const tasks = await this.taskRepo.find({
+    const targetType = type === 'website' ? 'COMPANY' : 'LINKEDIN';
+
+    const completedResearch = await this.researchRepo.find({
       where: {
-        status: InquiryStatus.PENDING,
+        status: ResearchStatus.COMPLETED,
+        targetType: targetType,
       },
+      order: { createdAt: 'ASC' },
       take: 50,
     });
 
-    return tasks.map(task => ({
-      id: task.id,
-      targetId: task.targetId,
-      categoryId: task.categoryId,
-      status: 'available',
-      type: type,
-      createdAt: task.createdAt,
-    }));
+    const tasksWithDetails = await Promise.all(
+      completedResearch.map(async (task) => {
+        let companyName = '';
+        let companyDomain = '';
+        let companyCountry = '';
+        let submissionData: any = {};
+
+        if (task.targetType === 'COMPANY') {
+          const company = await this.companyRepo.findOne({
+            where: { id: task.targetId },
+          });
+          if (company) {
+            companyName = company.name;
+            companyDomain = company.domain;
+            companyCountry = company.country;
+          }
+        } else if (task.targetType === 'LINKEDIN') {
+          companyDomain = task.targetId;
+        }
+
+        const submission = await this.submissionRepo.findOne({
+          where: { researchTaskId: task.id },
+        });
+        if (submission) {
+          submissionData = {
+            language: submission.language,
+            country: submission.country,
+            contactName: submission.contactName,
+            contactLinkedinUrl: submission.contactLinkedinUrl,
+            email: submission.email,
+            phone: submission.phone,
+            techStack: submission.techStack,
+            notes: submission.notes,
+          };
+        }
+
+        const category = await this.categoryRepo.findOne({
+          where: { id: task.categoryId },
+        });
+
+        return {
+          id: task.id,
+          targetId: task.targetId,
+          categoryId: task.categoryId,
+          categoryName: category?.name || '',
+          status: 'available',
+          type: type,
+          companyName,
+          companyDomain,
+          companyCountry,
+          ...submissionData,
+          createdAt: task.createdAt,
+        };
+      }),
+    );
+
+    return tasksWithDetails;
   }
 
   // ===============================
