@@ -75,16 +75,11 @@ let ResearchService = class ResearchService {
                 }
             }
             else if (task.targetType === 'LINKEDIN') {
-                const profile = await this.linkedinProfileRepo.findOne({
-                    where: { id: task.targetId },
-                });
-                if (profile) {
-                    targetInfo = {
-                        domain: profile.url,
-                        name: profile.url,
-                        country: '',
-                    };
-                }
+                targetInfo = {
+                    domain: task.targetId,
+                    name: task.targetId,
+                    country: '',
+                };
             }
             return {
                 id: task.id,

@@ -107,17 +107,12 @@ export class ResearchService {
             };
           }
         } else if (task.targetType === 'LINKEDIN') {
-          const profile = await this.linkedinProfileRepo.findOne({
-            where: { id: task.targetId },
-          });
-
-          if (profile) {
-            targetInfo = {
-              domain: profile.url,
-              name: profile.url,
-              country: '',
-            };
-          }
+          // For LINKEDIN tasks, targetId is already the URL; do not treat it as a UUID or join other tables
+          targetInfo = {
+            domain: task.targetId,
+            name: task.targetId,
+            country: '',
+          };
         }
 
         return {
