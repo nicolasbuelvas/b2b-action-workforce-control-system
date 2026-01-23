@@ -5,15 +5,39 @@ import { inquiryApi, InquiryTask } from '../../../api/inquiry.api';
 const FILE_SIZE_LIMIT = 500 * 1024;
 const ALLOWED_FORMATS = ['image/png', 'image/jpeg'];
 
+interface OutreachTemplate {
+  title: string;
+  content: string;
+}
+
+const OUTREACH_TEMPLATES: OutreachTemplate[] = [
+  {
+    title: 'Partnership Inquiry',
+    content: `Hi there,\n\nI came across your website and was impressed by your work in [industry/field]. We specialize in [your service/product] and believe there could be valuable synergies between our companies.\n\nWould you be open to a brief call to explore potential collaboration opportunities?\n\nBest regards`
+  },
+  {
+    title: 'Service Introduction',
+    content: `Hello,\n\nI noticed your company is active in [specific area]. We provide [specific service] that has helped similar businesses achieve [specific benefit].\n\nI'd love to share how we might be able to support your goals. Would you have 15 minutes for a quick chat?\n\nThank you`
+  },
+  {
+    title: 'Business Development',
+    content: `Dear Team,\n\nYour company's approach to [specific aspect] caught my attention. We work with organizations like yours to [value proposition].\n\nI believe there's potential for a mutually beneficial relationship. Are you available for a brief discussion next week?\n\nLooking forward to connecting`
+  }
+];
+
 export default function WebsiteInquiryTasksPage() {
   const [tasks, setTasks] = useState<InquiryTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<InquiryTask | null>(null);
+  const [claimedTaskId, setClaimedTaskId] = useState<string | null>(null);
+  const [claiming, setClaiming] = useState(false);
+  const [templateIndex, setTemplateIndex] = useState(0);
+  const [messageTitle, setMessageTitle] = useState<string>('');
+  const [messageContent, setMessageContent] = useState<string>('');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [fileError, setFileError] = useState<string>('');
-  const [messageDraft, setMessageDraft] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
 
@@ -37,11 +61,48 @@ export default function WebsiteInquiryTasksPage() {
 
   const handleTaskSelect = (task: InquiryTask) => {
     setSelectedTask(task);
+    setClaimedTaskId(null);
+    setClaiming(false);
+    setTemplateIndex(0);
+    setMessageTitle(OUTREACH_TEMPLATES[0].title);
+    setMessageContent(OUTREACH_TEMPLATES[0].content);
     setProofFile(null);
     setPreviewUrl('');
     setFileError('');
-    setMessageDraft('');
     setSubmitError('');
+  };
+
+  const handleClaimTask = async () => {
+    if (!selectedTask) return;
+
+    try {
+      setClaiming(true);
+      setSubmitError('');
+      const result = await inquiryApi.takeTask(
+        selectedTask.targetId,
+        selectedTask.categoryId,
+      );
+      setClaimedTaskId(result.id);
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to claim task');
+      console.error('Error claiming task:', err);
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const handlePrevTemplate = () => {
+    const newIndex = templateIndex === 0 ? OUTREACH_TEMPLATES.length - 1 : templateIndex - 1;
+    setTemplateIndex(newIndex);
+    setMessageTitle(OUTREACH_TEMPLATES[newIndex].title);
+    setMessageContent(OUTREACH_TEMPLATES[newIndex].content);
+  };
+
+  const handleNextTemplate = () => {
+    const newIndex = (templateIndex + 1) % OUTREACH_TEMPLATES.length;
+    setTemplateIndex(newIndex);
+    setMessageTitle(OUTREACH_TEMPLATES[newIndex].title);
+    setMessageContent(OUTREACH_TEMPLATES[newIndex].content);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,21 +134,23 @@ export default function WebsiteInquiryTasksPage() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedTask || !proofFile) return;
+    if (!claimedTaskId || !proofFile || !messageTitle.trim() || !messageContent.trim()) return;
 
     try {
       setSubmitting(true);
       setSubmitError('');
       await inquiryApi.submitAction(
-        selectedTask.id,
+        claimedTaskId,
         'EMAIL',
         proofFile,
       );
-      setTasks(tasks.filter(t => t.id !== selectedTask.id));
+      setTasks(tasks.filter(t => t.id !== selectedTask?.id));
       setSelectedTask(null);
+      setClaimedTaskId(null);
       setProofFile(null);
       setPreviewUrl('');
-      setMessageDraft('');
+      setMessageTitle('');
+      setMessageContent('');
     } catch (err: any) {
       setSubmitError(err.message || 'Failed to submit inquiry');
       console.error('Error submitting inquiry:', err);
@@ -97,17 +160,17 @@ export default function WebsiteInquiryTasksPage() {
   };
 
   const hasTasks = useMemo(() => tasks.length > 0, [tasks]);
-  const canSubmit = selectedTask && proofFile && messageDraft.trim().length > 0 && !submitting;
+  const canSubmit = claimedTaskId && proofFile && messageTitle.trim().length > 0 && messageContent.trim().length > 0 && !submitting;
 
   return (
     <div className="inq-tasks-container">
       <header className="inq-tasks-header">
         <div className="title-group">
           <h1>Website Outreach Tasks</h1>
-          <p>Execute contact actions and submit verifiable proof for review.</p>
+          <p>Claim approved research, execute contact actions, and submit verifiable proof.</p>
         </div>
         <div className="task-counter">
-          <span>Active Tasks: <strong>{tasks.length}</strong></span>
+          <span>Available Tasks: <strong>{tasks.length}</strong></span>
         </div>
       </header>
 
@@ -154,12 +217,33 @@ export default function WebsiteInquiryTasksPage() {
               <div className="no-task-selected">
                 <div className="empty-illustration">📨</div>
                 <h3>Select a research to begin outreach</h3>
-                <p>Review the research details and submit contact proof.</p>
+                <p>Claim the task, review research details, and submit contact proof.</p>
               </div>
             ) : (
               <div className="execution-card">
-                <div className="card-section research-context">
-                  <h2>Research Context (Read-Only)</h2>
+                {!claimedTaskId ? (
+                  <div className="claim-section">
+                    <div className="claim-box">
+                      <h2>Ready to Start Outreach</h2>
+                      <div className="claim-info">
+                        <p><strong>Company:</strong> {selectedTask.companyName}</p>
+                        <p><strong>Domain:</strong> {selectedTask.companyDomain}</p>
+                        <p><strong>Category:</strong> {selectedTask.categoryName}</p>
+                      </div>
+                      {submitError && <div className="submit-error">{submitError}</div>}
+                      <button
+                        className="btn-claim"
+                        onClick={handleClaimTask}
+                        disabled={claiming}
+                      >
+                        {claiming ? 'Claiming...' : 'Claim This Task'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="card-section research-context">
+                      <h2>Research Context (Read-Only)</h2>
                   <div className="context-grid">
                     <div className="context-item">
                       <label>Company Name</label>
@@ -196,22 +280,53 @@ export default function WebsiteInquiryTasksPage() {
                       <code className="task-id">{selectedTask.id}</code>
                     </div>
                   </div>
-                </div>
+                    </div>
 
-                <div className="card-section message-section">
-                  <h2>Outreach Message</h2>
-                  <div className="message-info">
-                    <p>Customize the outreach message for this contact:</p>
-                  </div>
-                  <textarea
-                    className="message-textarea"
-                    placeholder="Enter your outreach message..."
-                    value={messageDraft}
-                    onChange={(e) => setMessageDraft(e.target.value)}
-                  />
-                </div>
+                    <div className="card-section message-section">
+                      <h2>Outreach Message Template</h2>
+                      <div className="template-selector">
+                        <button
+                          className="btn-template-nav"
+                          onClick={handlePrevTemplate}
+                          type="button"
+                        >
+                          ←
+                        </button>
+                        <span className="template-indicator">
+                          Template {templateIndex + 1} of {OUTREACH_TEMPLATES.length}
+                        </span>
+                        <button
+                          className="btn-template-nav"
+                          onClick={handleNextTemplate}
+                          type="button"
+                        >
+                          →
+                        </button>
+                      </div>
+                      <div className="message-fields">
+                        <div className="message-field">
+                          <label>Subject / Title</label>
+                          <input
+                            type="text"
+                            className="message-title-input"
+                            value={messageTitle}
+                            onChange={(e) => setMessageTitle(e.target.value)}
+                            placeholder="Message subject"
+                          />
+                        </div>
+                        <div className="message-field">
+                          <label>Message Content</label>
+                          <textarea
+                            className="message-textarea"
+                            value={messageContent}
+                            onChange={(e) => setMessageContent(e.target.value)}
+                            placeholder="Message content..."
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="card-section proof-section">
+                    <div className="card-section proof-section">
                   <h2>Upload Proof of Contact</h2>
                   <p className="proof-requirements">Maximum file size: 500 KB | Formats: PNG, JPG, JPEG</p>
 
@@ -237,26 +352,31 @@ export default function WebsiteInquiryTasksPage() {
                       <img src={previewUrl} alt="Preview" className="preview-image" />
                     </div>
                   )}
-                </div>
+                    </div>
 
-                {submitError && <div className="submit-error">{submitError}</div>}
+                    {submitError && <div className="submit-error">{submitError}</div>}
 
-                <div className="action-buttons">
-                  <button
-                    className="btn-cancel"
-                    onClick={() => handleTaskSelect(null as any)}
-                    disabled={submitting}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="btn-submit"
-                    onClick={handleSubmit}
-                    disabled={!canSubmit}
-                  >
-                    {submitting ? 'Submitting...' : 'Submit for Review'}
-                  </button>
-                </div>
+                    <div className="action-buttons">
+                      <button
+                        className="btn-cancel"
+                        onClick={() => {
+                          setSelectedTask(null);
+                          setClaimedTaskId(null);
+                        }}
+                        disabled={submitting}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="btn-submit"
+                        onClick={handleSubmit}
+                        disabled={!canSubmit}
+                      >
+                        {submitting ? 'Submitting...' : 'Submit for Review'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </main>

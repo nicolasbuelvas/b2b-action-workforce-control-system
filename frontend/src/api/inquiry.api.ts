@@ -21,25 +21,21 @@ export interface InquiryTask {
   createdAt: string;
 }
 
-export interface SubmitInquiryPayload {
-  inquiryTaskId: string;
-  actionType: 'EMAIL' | 'LINKEDIN' | 'CALL';
+export interface ClaimedInquiryTask extends InquiryTask {
+  claimedTaskId: string;
 }
 
 export const inquiryApi = {
-  // Get available website inquiry tasks (approved research)
   getWebsiteTasks: async (): Promise<InquiryTask[]> => {
     const response = await axios.get('/inquiry/tasks/website');
     return response.data;
   },
 
-  // Get available LinkedIn inquiry tasks (approved research)
   getLinkedInTasks: async (): Promise<InquiryTask[]> => {
     const response = await axios.get('/inquiry/tasks/linkedin');
     return response.data;
   },
 
-  // Take/claim an inquiry task
   takeTask: async (targetId: string, categoryId: string): Promise<any> => {
     const response = await axios.post('/inquiry/take', {
       targetId,
@@ -48,7 +44,6 @@ export const inquiryApi = {
     return response.data;
   },
 
-  // Submit an inquiry action with screenshot
   submitAction: async (
     inquiryTaskId: string,
     actionType: 'EMAIL' | 'LINKEDIN' | 'CALL',
