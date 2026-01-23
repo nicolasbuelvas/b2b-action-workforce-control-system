@@ -2,16 +2,76 @@ import React, { useEffect, useState } from 'react';
 import './WebsiteResearchAuditorPendingPage.css';
 import { useAuth } from '../../../hooks/useAuth';
 import { auditApi, PendingResearchSubmission } from '../../../api/audit.api';
+import { researchApi, Category } from '../../../api/research.api';
 
 export default function WebsiteResearchAuditorPendingPage() {
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState<PendingResearchSubmission[]>([]);
+  const [allSubmissions, setAllSubmissions] = useState<PendingResearchSubmission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  useEffect(() => {
+    loadCategories();
+  }, [user?.id]);
 
   useEffect(() => {
     loadSubmissions();
   }, []);
+
+  useEffect(() => {
+    if (loadingCategories) return;
+
+    if (!selectedCategory && categories.length === 1) {
+      setSelectedCategory(categories[0].id);
+      return;
+    }
+
+    if (!selectedCategory && categories.length > 1) {
+      setSubmissions([]);
+      return;
+    }
+
+    const filtered = selectedCategory
+      ? allSubmissions.filter(s => s.categoryId === selectedCategory)
+      : allSubmissions;
+
+    setSubmissions(filtered);
+  }, [selectedCategory, allSubmissions, loadingCategories, categories]);
+
+  const loadCategories = async () => {
+    if (!user?.id) return;
+
+    try {
+      setLoadingCategories(true);
+      const rawCategories = await researchApi.getMyCategories();
+
+      const list: Category[] = Array.isArray(rawCategories)
+        ? rawCategories
+        : (Array.isArray((rawCategories as any)?.data) ? (rawCategories as any).data : []);
+
+      console.log('[Auditor] Raw categories:', rawCategories);
+      const uniqueCategories = list.length > 0
+        ? Array.from(new Map(list.map((cat: Category) => [cat.id, cat])).values())
+        : [];
+
+      setCategories(uniqueCategories);
+
+      if (uniqueCategories.length === 1) {
+        setSelectedCategory(uniqueCategories[0].id);
+      } else if (uniqueCategories.length > 1) {
+        setSelectedCategory('');
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      setError('Failed to load your assigned categories');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
   const loadSubmissions = async () => {
     try {
@@ -19,7 +79,13 @@ export default function WebsiteResearchAuditorPendingPage() {
       const data = await auditApi.getPendingResearch();
       
       const websiteSubmissions = data.filter(s => s.targetType === 'COMPANY');
-      setSubmissions(websiteSubmissions);
+      setAllSubmissions(websiteSubmissions);
+
+      const filtered = selectedCategory
+        ? websiteSubmissions.filter(s => s.categoryId === selectedCategory)
+        : websiteSubmissions;
+
+      setSubmissions(filtered);
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load submissions');
@@ -64,38 +130,95 @@ export default function WebsiteResearchAuditorPendingPage() {
     return 'Just now';
   };
 
-  if (loading) {
-    return <div className="wb-state-screen"><p>Loading submissions…</p></div>;
+  if (loadingCategories) {
+    return <div className="wb-state-screen"><p>Loading categories…</p></div>;
   }
 
-  if (error) {
-    return <div className="wb-state-screen error"><p>{error}</p></div>;
-  }
-
-  if (submissions.length === 0) {
-    return <div className="wb-state-screen"><p>No pending submissions to review.</p></div>;
+  if (categories.length === 0) {
+    return <div className="wb-state-screen"><p>No categories assigned. Contact administrator.</p></div>;
   }
 
   return (
     <div className="wb-research-pending-container">
-      <header className="wb-pending-header">
-        <div>
-          <h1>Website Research Audits</h1>
-          <p>{submissions.length} pending submission{submissions.length !== 1 ? 's' : ''}</p>
+      {/* CATEGORY SELECTOR - ALWAYS VISIBLE */}
+      {categories.length > 1 && (
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+            Select Category:
+          </label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{
+              width: '100%',
+              maxWidth: '300px',
+              padding: '10px',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '500',
+            }}
+          >
+            <option value="">Choose a category...</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
         </div>
-      </header>
+      )}
 
-      <div className="submissions-grid">
-        {submissions.map(submission => (
-          <SubmissionCard
-            key={submission.id}
-            submission={submission}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            formatTimeAgo={formatTimeAgo}
-          />
-        ))}
-      </div>
+      {/* WARNING IF NO CATEGORY SELECTED */}
+      {!selectedCategory && categories.length > 1 && (
+        <div style={{ background: '#fef3c7', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #fcd34d' }}>
+          <p style={{ margin: 0, color: '#92400e' }}>
+            📁 Please select a category from above to view pending submissions.
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div style={{ background: '#fee', padding: '15px', borderRadius: '8px', marginBottom: '20px', color: '#c00' }}>
+          {error}
+        </div>
+      )}
+
+      {/* MAIN CONTENT - ONLY SHOW IF CATEGORY SELECTED */}
+      {selectedCategory && categories.length > 0 && (
+        <>
+          {loading && (
+            <div className="wb-state-screen"><p>Loading submissions…</p></div>
+          )}
+
+          {!loading && submissions.length === 0 && (
+            <div style={{ background: '#f3f4f6', padding: '20px', borderRadius: '8px', textAlign: 'center' }}>
+              <p style={{ margin: 0, color: '#666' }}>No pending submissions to review in this category.</p>
+            </div>
+          )}
+
+          {!loading && submissions.length > 0 && (
+            <>
+              <header className="wb-pending-header">
+                <div>
+                  <h1>Website Research Audits</h1>
+                  <p>{submissions.length} pending submission{submissions.length !== 1 ? 's' : ''}</p>
+                </div>
+              </header>
+
+              <div className="submissions-grid">
+                {submissions.map(submission => (
+                  <SubmissionCard
+                    key={submission.id}
+                    submission={submission}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    formatTimeAgo={formatTimeAgo}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }

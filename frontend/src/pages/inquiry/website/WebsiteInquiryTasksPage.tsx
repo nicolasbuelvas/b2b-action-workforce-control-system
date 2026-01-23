@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import './WebsiteInquiryTasksPage.css';
 import { inquiryApi, InquiryTask } from '../../../api/inquiry.api';
 import { researchApi, Category } from '../../../api/research.api';
+import { useAuth } from '../../../hooks/useAuth';
 
 const FILE_SIZE_LIMIT = 500 * 1024;
 const ALLOWED_FORMATS = ['image/png', 'image/jpeg'];
@@ -27,6 +28,7 @@ const OUTREACH_TEMPLATES: OutreachTemplate[] = [
 ];
 
 export default function WebsiteInquiryTasksPage() {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<InquiryTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +62,7 @@ export default function WebsiteInquiryTasksPage() {
   // Load categories on mount
   useEffect(() => {
     loadCategories();
-  }, []);
+  }, [user?.id]);
 
   // Load tasks when category changes
   useEffect(() => {
@@ -72,19 +74,25 @@ export default function WebsiteInquiryTasksPage() {
   const loadCategories = async () => {
     try {
       setLoadingCategories(true);
-      const userCats = await researchApi.getMyCategories();
-      
-      const uniqueCategories = userCats && userCats.length > 0
-        ? Array.from(new Map(userCats.map((cat: Category) => [cat.id, cat])).values())
+      const rawCategories = await researchApi.getMyCategories();
+
+      // Support both array and wrapped data shapes
+      const list: Category[] = Array.isArray(rawCategories)
+        ? rawCategories
+        : (Array.isArray((rawCategories as any)?.data) ? (rawCategories as any).data : []);
+
+      console.log('[Inquirer] Raw categories from API:', rawCategories);
+      const uniqueCategories = list && list.length > 0
+        ? Array.from(new Map(list.map((cat: Category) => [cat.id, cat])).values())
         : [];
-      
+
+      console.log('[Inquirer] Unique categories:', uniqueCategories.length, uniqueCategories.map(c => c.id));
       setCategories(uniqueCategories);
       
       // Auto-select first category if user has exactly one
       if (uniqueCategories && uniqueCategories.length === 1) {
         setSelectedCategory(uniqueCategories[0].id);
       } else if (uniqueCategories && uniqueCategories.length > 1) {
-        // Let user choose - don't auto-select
         setSelectedCategory('');
       }
     } catch (err) {
