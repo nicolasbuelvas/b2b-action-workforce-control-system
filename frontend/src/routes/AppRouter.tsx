@@ -13,8 +13,11 @@ import LinkedinResearcherLayout from '../layouts/researcher/linkedin/LinkedinRes
 import WebsiteInquirerLayout from '../layouts/inquirer/website/WebsiteInquirerLayout';
 import LinkedinInquirerLayout from '../layouts/inquirer/linkedin/LinkedinInquirerLayout';
 
-import WebsiteAuditorLayout from '../layouts/audit/website/WebsiteAuditorLayout';
-import LinkedinAuditorLayout from '../layouts/audit/linkedin/LinkedinAuditorLayout';
+import WebsiteInquirerAuditorLayout from '../layouts/audit-inquirer/website/WebsiteAuditorLayout';
+import LinkedinInquirerAuditorLayout from '../layouts/audit-inquirer/linkedin/LinkedinAuditorLayout';
+
+import WebsiteResearchAuditorLayout from '../layouts/audit-researcher/website/WebsiteResearchAuditorLayout';
+import LinkedinResearchAuditorLayout from '../layouts/audit-researcher/linkedin/LinkedinResearchAuditorLayout';
 
 /* ===== DASHBOARDS ===== */
 import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
@@ -26,8 +29,8 @@ import LinkedinResearcherDashboard from '../pages/research/linkedin/LinkedinRese
 import WebsiteInquirerDashboard from '../pages/inquiry/website/WebsiteInquirerDashboard';
 import LinkedinInquirerDashboard from '../pages/inquiry/linkedin/LinkedinInquirerDashboard';
 
-import WebsiteAuditorDashboard from '../pages/audit/website/WebsiteAuditorDashboard';
-import LinkedinAuditorDashboard from '../pages/audit/linkedin/LinkedinAuditorDashboard';
+import WebsiteAuditorDashboard from '../pages/audit-inquirer/website/WebsiteAuditorDashboard';
+import LinkedinAuditorDashboard from '../pages/audit-inquirer/linkedin/LinkedinAuditorDashboard';
 
 /* ===== ADMIN PAGES ===== */
 import UsersPage from '../pages/admin/UsersPage';
@@ -52,13 +55,19 @@ import LinkedinInquiryTasksPage from '../pages/inquiry/linkedin/LinkedinInquiryT
 import LinkedinEvidenceUploadsPage from '../pages/inquiry/linkedin/LinkedinEvidenceUploadsPage';
 
 /* ===== AUDIT PAGES ===== */
-import WebsiteAuditorPendingPage from '../pages/audit/website/WebsiteAuditorPendingPage';
-import WebsiteAuditorFlagsPage from '../pages/audit/website/WebsiteAuditorFlagsPage';
-import WebsiteAuditorHistoryPage from '../pages/audit/website/WebsiteAuditorHistoryPage';
+import WebsiteAuditorPendingPage from '../pages/audit-inquirer/website/WebsiteAuditorPendingPage';
+import WebsiteAuditorFlagsPage from '../pages/audit-inquirer/website/WebsiteAuditorFlagsPage';
+import WebsiteAuditorHistoryPage from '../pages/audit-inquirer/website/WebsiteAuditorHistoryPage';
 
-import LinkedinAuditorPendingPage from '../pages/audit/linkedin/LinkedinAuditorPendingPage';
-import LinkedinAuditorFlagsPage from '../pages/audit/linkedin/LinkedinAuditorFlagsPage';
-import LinkedinAuditorHistoryPage from '../pages/audit/linkedin/LinkedinAuditorHistoryPage';
+import LinkedinAuditorPendingPage from '../pages/audit-inquirer/linkedin/LinkedinAuditorPendingPage';
+import LinkedinAuditorFlagsPage from '../pages/audit-inquirer/linkedin/LinkedinAuditorFlagsPage';
+import LinkedinAuditorHistoryPage from '../pages/audit-inquirer/linkedin/LinkedinAuditorHistoryPage';
+
+import WebsiteResearchAuditorDashboard from '../pages/audit-researcher/website/WebsiteResearchAuditorDashboard';
+import WebsiteResearchAuditorPendingPage from '../pages/audit-researcher/website/WebsiteResearchAuditorPendingPage';
+
+import LinkedinResearchAuditorDashboard from '../pages/audit-researcher/linkedin/LinkedinResearchAuditorDashboard';
+import LinkedinResearchAuditorPendingPage from '../pages/audit-researcher/linkedin/LinkedinResearchAuditorPendingPage';
 
 export default function AppRouter() {
   return (
@@ -132,9 +141,9 @@ export default function AppRouter() {
         </Route>
       </Route>
 
-      {/* ========= WEBSITE AUDITOR ========= */}
-      <Route element={<ProtectedRoute allowedRoles={['website_auditor']} />}>
-        <Route path="/auditor/website" element={<WebsiteAuditorLayout />}>
+      {/* ========= WEBSITE INQUIRER AUDITOR ========= */}
+      <Route element={<ProtectedRoute allowedRoles={['website_inquirer_auditor']} />}>
+        <Route path="/auditor/website" element={<WebsiteInquirerAuditorLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<WebsiteAuditorDashboard />} />
           <Route path="pending" element={<WebsiteAuditorPendingPage />} />
@@ -143,14 +152,32 @@ export default function AppRouter() {
         </Route>
       </Route>
 
-      {/* ========= LINKEDIN AUDITOR ========= */}
-      <Route element={<ProtectedRoute allowedRoles={['linkedin_auditor']} />}>
-        <Route path="/auditor/linkedin" element={<LinkedinAuditorLayout />}>
+      {/* ========= LINKEDIN INQUIRER AUDITOR ========= */}
+      <Route element={<ProtectedRoute allowedRoles={['linkedin_inquirer_auditor']} />}>
+        <Route path="/auditor/linkedin" element={<LinkedinInquirerAuditorLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<LinkedinAuditorDashboard />} />
           <Route path="pending" element={<LinkedinAuditorPendingPage />} />
           <Route path="flags" element={<LinkedinAuditorFlagsPage />} />
           <Route path="history" element={<LinkedinAuditorHistoryPage />} />
+        </Route>
+      </Route>
+
+      {/* ========= WEBSITE RESEARCH AUDITOR ========= */}
+      <Route element={<ProtectedRoute allowedRoles={['website_research_auditor']} />}>
+        <Route path="/auditor-researcher/website" element={<WebsiteResearchAuditorLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<WebsiteResearchAuditorDashboard />} />
+          <Route path="pending" element={<WebsiteResearchAuditorPendingPage />} />
+        </Route>
+      </Route>
+
+      {/* ========= LINKEDIN RESEARCH AUDITOR ========= */}
+      <Route element={<ProtectedRoute allowedRoles={['linkedin_research_auditor']} />}>
+        <Route path="/auditor-researcher/linkedin" element={<LinkedinResearchAuditorLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<LinkedinResearchAuditorDashboard />} />
+          <Route path="pending" element={<LinkedinResearchAuditorPendingPage />} />
         </Route>
       </Route>
 

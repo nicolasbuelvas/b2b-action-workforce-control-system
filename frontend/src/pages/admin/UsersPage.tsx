@@ -272,8 +272,10 @@ export default function UsersPage() {
             <option value="linkedin_researcher">LinkedIn Researcher</option>
             <option value="website_inquirer">Website Inquirer</option>
             <option value="linkedin_inquirer">LinkedIn Inquirer</option>
-            <option value="website_auditor">Website Auditor</option>
-            <option value="linkedin_auditor">LinkedIn Auditor</option>
+            <option value="website_inquirer_auditor">Website Inquirer Auditor</option>
+            <option value="linkedin_inquirer_auditor">LinkedIn Inquirer Auditor</option>
+            <option value="website_research_auditor">Website Research Auditor</option>
+            <option value="linkedin_research_auditor">LinkedIn Research Auditor</option>
           </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">All Status</option>
@@ -383,8 +385,10 @@ export default function UsersPage() {
                 <option value="linkedin_researcher">LinkedIn Researcher</option>
                 <option value="website_inquirer">Website Inquirer</option>
                 <option value="linkedin_inquirer">LinkedIn Inquirer</option>
-                <option value="website_auditor">Website Auditor</option>
-                <option value="linkedin_auditor">LinkedIn Auditor</option>
+                <option value="website_inquirer_auditor">Website Inquirer Auditor</option>
+                <option value="linkedin_inquirer_auditor">LinkedIn Inquirer Auditor</option>
+                <option value="website_research_auditor">Website Research Auditor</option>
+                <option value="linkedin_research_auditor">LinkedIn Research Auditor</option>
               </select>
             </div>
             <div className="form-group">

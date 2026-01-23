@@ -8,8 +8,10 @@ type Role =
   | 'LinkedIn Researcher'
   | 'Website Inquirer'
   | 'LinkedIn Inquirer'
-  | 'Website Auditor'
-  | 'LinkedIn Auditor';
+  | 'Website Inquirer Auditor'
+  | 'LinkedIn Inquirer Auditor'
+  | 'Website Research Auditor'
+  | 'LinkedIn Research Auditor';
 
 type Status = 'active' | 'inactive';
 

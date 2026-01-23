@@ -12,13 +12,13 @@ export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get('research/pending')
-  @Roles('website_auditor', 'linkedin_auditor')
+  @Roles('website_inquirer_auditor', 'linkedin_inquirer_auditor')
   getPendingResearch() {
     return this.auditService.getPendingResearch();
   }
 
   @Post('research/:id')
-  @Roles('website_auditor', 'linkedin_auditor')
+  @Roles('website_inquirer_auditor', 'linkedin_inquirer_auditor')
   auditResearch(
     @Param('id') researchTaskId: string,
     @Body() dto: AuditResearchDto,

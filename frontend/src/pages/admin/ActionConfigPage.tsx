@@ -11,6 +11,10 @@ type Role =
   | 'Website Inquirer'
   | 'Backlink Outreacher'
   | 'LinkedIn Inquirer'
+  | 'Website Inquirer Auditor'
+  | 'LinkedIn Inquirer Auditor'
+  | 'Website Research Auditor'
+  | 'LinkedIn Research Auditor'
   | 'Website Reviewer'
   | 'Backlink Website Reviewer'
   | 'LinkedIn Reviewer';
@@ -102,6 +106,10 @@ const roles: Role[] = [
   'Website Inquirer',
   'Backlink Outreacher',
   'LinkedIn Inquirer',
+  'Website Inquirer Auditor',
+  'LinkedIn Inquirer Auditor',
+  'Website Research Auditor',
+  'LinkedIn Research Auditor',
   'Website Reviewer',
   'Backlink Website Reviewer',
   'LinkedIn Reviewer',

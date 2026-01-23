@@ -19,7 +19,7 @@ export class RoleMetrics {
    * Ej:
    * - website_researcher
    * - linkedin_inquirer
-   * - website_auditor
+   * - website_inquirer_auditor
    */
   @Column()
   role: string;

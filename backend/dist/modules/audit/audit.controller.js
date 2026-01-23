@@ -34,14 +34,14 @@ let AuditController = class AuditController {
 exports.AuditController = AuditController;
 __decorate([
     (0, common_1.Get)('research/pending'),
-    (0, roles_decorator_1.Roles)('website_auditor', 'linkedin_auditor'),
+    (0, roles_decorator_1.Roles)('website_inquirer_auditor', 'linkedin_inquirer_auditor'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AuditController.prototype, "getPendingResearch", null);
 __decorate([
     (0, common_1.Post)('research/:id'),
-    (0, roles_decorator_1.Roles)('website_auditor', 'linkedin_auditor'),
+    (0, roles_decorator_1.Roles)('website_inquirer_auditor', 'linkedin_inquirer_auditor'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)('userId')),

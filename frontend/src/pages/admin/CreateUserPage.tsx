@@ -28,8 +28,10 @@ export default function CreateUserPage() {
     'LinkedIn Researcher': 'linkedin_researcher',
     'Website Inquirer': 'website_inquirer',
     'LinkedIn Inquirer': 'linkedin_inquirer',
-    'Website Auditor': 'website_auditor',
-    'LinkedIn Auditor': 'linkedin_auditor',
+    'Website Inquirer Auditor': 'website_inquirer_auditor',
+    'LinkedIn Inquirer Auditor': 'linkedin_inquirer_auditor',
+    'Website Research Auditor': 'website_research_auditor',
+    'LinkedIn Research Auditor': 'linkedin_research_auditor',
   };
 
   const roles = Object.keys(roleMapping);
