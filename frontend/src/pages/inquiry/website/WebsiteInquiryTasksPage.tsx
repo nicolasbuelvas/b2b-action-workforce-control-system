@@ -253,101 +253,97 @@ export default function WebsiteInquiryTasksPage() {
     return <div className="inq-state-screen"><p>No categories assigned. Contact administrator.</p></div>;
   }
 
-  if (categories.length > 1 && !selectedCategory) {
-    return (
-      <div className="inq-state-screen">
-        <p>Select a category to view inquiry tasks:</p>
-        <div style={{ marginTop: '1rem' }}>
-          {categories.map(cat => (
-            <button 
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              style={{
-                display: 'block',
-                margin: '0.5rem auto',
-                padding: '0.75rem 1.5rem',
-                fontSize: '1rem',
-                cursor: 'pointer',
-              }}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="inq-tasks-container">
+      {/* CATEGORY SELECTOR - ALWAYS VISIBLE */}
       {categories.length > 1 && (
-        <div className="inq-category-selector" style={{ padding: '1rem', backgroundColor: '#f3f4f6', marginBottom: '1rem' }}>
-          <label htmlFor="category-select" style={{ marginRight: '0.5rem', fontWeight: 600 }}>Category:</label>
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+            Select Category:
+          </label>
           <select
-            id="category-select"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            style={{ padding: '0.5rem', fontSize: '1rem', minWidth: '200px' }}
+            style={{
+              width: '100%',
+              maxWidth: '300px',
+              padding: '10px',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '500',
+            }}
           >
+            <option value="">Choose a category...</option>
             {categories.map(cat => (
               <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </select>
-          <span style={{ marginLeft: '1rem', color: '#6b7280' }}>
-            {tasks.length} task{tasks.length !== 1 ? 's' : ''} in {categories.find(c => c.id === selectedCategory)?.name}
-          </span>
-        </div>
-      )}
-      <header className="inq-tasks-header">
-        <div className="title-group">
-          <h1>Website Outreach Tasks</h1>
-          <p>Claim approved research, execute contact actions, and submit verifiable proof.</p>
-        </div>
-        <div className="task-counter">
-          <span>Available Tasks: <strong>{tasks.length}</strong></span>
-        </div>
-      </header>
-
-      {loading && (
-        <div className="loading-state">
-          <p>Loading tasks...</p>
         </div>
       )}
 
-      {error && (
-        <div className="error-state">
-          <p>{error}</p>
+      {/* WARNING IF NO CATEGORY SELECTED */}
+      {!selectedCategory && categories.length > 1 && (
+        <div style={{ background: '#fef3c7', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #fcd34d' }}>
+          <p style={{ margin: 0, color: '#92400e' }}>
+            📁 Please select a category from above to view available tasks.
+          </p>
         </div>
       )}
 
-      {!loading && !error && (
-        <div className="inq-layout">
-          <aside className="tasks-sidebar">
-            {!hasTasks && (
-              <div className="empty-tasks">
-                <p>No approved research available at the moment.</p>
-              </div>
-            )}
+      {/* MAIN CONTENT - ONLY SHOW IF CATEGORY SELECTED */}
+      {selectedCategory && categories.length > 0 && (
+        <>
+          <header className="inq-tasks-header">
+            <div className="title-group">
+              <h1>Website Outreach Tasks</h1>
+              <p>Claim approved research, execute contact actions, and submit verifiable proof.</p>
+            </div>
+            <div className="task-counter">
+              <span>Available Tasks: <strong>{tasks.length}</strong></span>
+            </div>
+          </header>
 
-            {tasks.map(task => (
-              <div
-                key={task.id}
-                className={`task-selector-card ${selectedTask?.id === task.id ? 'active' : ''}`}
-                onClick={() => handleTaskSelect(task)}
-              >
-                <div className="priority-line" style={{ backgroundColor: getStatusColor(task), height: '4px' }} />
-                <div className="task-id-badge">RESEARCH</div>
-                <h4>{task.companyName || task.companyDomain}</h4>
-                <p className="task-category">{task.categoryName}</p>
-                <p className="task-country">{task.companyCountry || 'Global'}</p>
-                <div className="task-footer">
-                  <span className="status">Ready for Inquiry</span>
-                </div>
-              </div>
-            ))}
-          </aside>
+          {loading && (
+            <div className="loading-state">
+              <p>Loading tasks...</p>
+            </div>
+          )}
 
-          <main className="task-execution-area">
+          {error && (
+            <div className="error-state">
+              <p>{error}</p>
+            </div>
+          )}
+
+          {!loading && !error && (
+            <div className="inq-layout">
+              <aside className="tasks-sidebar">
+                {!hasTasks && (
+                  <div className="empty-tasks">
+                    <p>No approved research available at the moment.</p>
+                  </div>
+                )}
+
+                {tasks.map(task => (
+                  <div
+                    key={task.id}
+                    className={`task-selector-card ${selectedTask?.id === task.id ? 'active' : ''}`}
+                    onClick={() => handleTaskSelect(task)}
+                  >
+                    <div className="priority-line" style={{ backgroundColor: getStatusColor(task), height: '4px' }} />
+                    <div className="task-id-badge">RESEARCH</div>
+                    <h4>{task.companyName || task.companyDomain}</h4>
+                    <p className="task-category">{task.categoryName}</p>
+                    <p className="task-country">{task.companyCountry || 'Global'}</p>
+                    <div className="task-footer">
+                      <span className="status">Ready for Inquiry</span>
+                    </div>
+                  </div>
+                ))}
+              </aside>
+
+              <main className="task-execution-area">
             {!selectedTask ? (
               <div className="no-task-selected">
                 <div className="empty-illustration">📨</div>
@@ -516,6 +512,8 @@ export default function WebsiteInquiryTasksPage() {
             )}
           </main>
         </div>
+          )}
+        </>
       )}
     </div>
   );
