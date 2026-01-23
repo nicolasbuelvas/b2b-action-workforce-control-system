@@ -14,8 +14,11 @@ const ROLE_REDIRECT_MAP: Record<UserRole, string> = {
   website_inquirer: '/inquirer/website/dashboard',
   linkedin_inquirer: '/inquirer/linkedin/dashboard',
 
-  website_auditor: '/auditor/website/dashboard',
-  linkedin_auditor: '/auditor/linkedin/dashboard',
+  website_inquirer_auditor: '/auditor/website/dashboard',
+  linkedin_inquirer_auditor: '/auditor/linkedin/dashboard',
+
+  website_research_auditor: '/auditor-researcher/website/pending',
+  linkedin_research_auditor: '/auditor-researcher/linkedin/pending',
 };
 
 export default function LoginPage() {
