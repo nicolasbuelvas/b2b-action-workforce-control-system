@@ -15,6 +15,7 @@ import { ResearchAudit } from './entities/research-audit.entity';
 import { FlaggedAction } from './entities/flagged-action.entity';
 import { AuditResearchDto } from './dto/audit-research.dto';
 import { Category } from '../categories/entities/category.entity';
+import { UserCategory } from '../categories/entities/user-category.entity';
 import { Company } from '../research/entities/company.entity';
 import { User } from '../users/entities/user.entity';
 
@@ -36,6 +37,9 @@ export class AuditService {
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
 
+    @InjectRepository(UserCategory)
+    private readonly userCategoryRepo: Repository<UserCategory>,
+
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
 
@@ -43,11 +47,27 @@ export class AuditService {
     private readonly userRepo: Repository<User>,
   ) {}
 
-  async getPendingResearch() {
-    const tasks = await this.researchRepo.find({
-      where: { status: ResearchStatus.SUBMITTED },
-      order: { createdAt: 'ASC' },
+  async getPendingResearch(auditorUserId: string) {
+    // Get auditor's assigned categories
+    const userCategories = await this.userCategoryRepo.find({
+      where: { userId: auditorUserId },
+      select: ['categoryId'],
     });
+
+    const categoryIds = userCategories.map(uc => uc.categoryId);
+
+    // If auditor has no categories assigned, return empty
+    if (categoryIds.length === 0) {
+      return [];
+    }
+
+    // Fetch ONLY tasks from auditor's assigned categories
+    const tasks = await this.researchRepo
+      .createQueryBuilder('task')
+      .where('task.status = :status', { status: ResearchStatus.SUBMITTED })
+      .andWhere('task.categoryId IN (:...categoryIds)', { categoryIds })
+      .orderBy('task.createdAt', 'ASC')
+      .getMany();
 
     const enriched = await Promise.all(
       tasks.map(async task => {

@@ -17,6 +17,7 @@ const rejection_reason_entity_1 = require("./entities/rejection-reason.entity");
 const flagged_action_entity_1 = require("./entities/flagged-action.entity");
 const research_submission_entity_1 = require("../research/entities/research-submission.entity");
 const category_entity_1 = require("../categories/entities/category.entity");
+const user_category_entity_1 = require("../categories/entities/user-category.entity");
 const company_entity_1 = require("../research/entities/company.entity");
 const user_entity_1 = require("../users/entities/user.entity");
 let AuditModule = class AuditModule {
@@ -32,6 +33,7 @@ exports.AuditModule = AuditModule = __decorate([
                 flagged_action_entity_1.FlaggedAction,
                 research_submission_entity_1.ResearchSubmission,
                 category_entity_1.Category,
+                user_category_entity_1.UserCategory,
                 company_entity_1.Company,
                 user_entity_1.User,
             ]),

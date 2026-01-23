@@ -13,8 +13,8 @@ export class AuditController {
 
   @Get('research/pending')
   @Roles('website_inquirer_auditor', 'linkedin_inquirer_auditor', 'website_research_auditor', 'linkedin_research_auditor')
-  getPendingResearch() {
-    return this.auditService.getPendingResearch();
+  getPendingResearch(@CurrentUser('userId') auditorUserId: string) {
+    return this.auditService.getPendingResearch(auditorUserId);
   }
 
   @Post('research/:id')

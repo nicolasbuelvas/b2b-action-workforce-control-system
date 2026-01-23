@@ -24,8 +24,8 @@ let AuditController = class AuditController {
     constructor(auditService) {
         this.auditService = auditService;
     }
-    getPendingResearch() {
-        return this.auditService.getPendingResearch();
+    getPendingResearch(auditorUserId) {
+        return this.auditService.getPendingResearch(auditorUserId);
     }
     auditResearch(researchTaskId, dto, auditorUserId) {
         return this.auditService.auditResearch(researchTaskId, dto, auditorUserId);
@@ -35,8 +35,9 @@ exports.AuditController = AuditController;
 __decorate([
     (0, common_1.Get)('research/pending'),
     (0, roles_decorator_1.Roles)('website_inquirer_auditor', 'linkedin_inquirer_auditor', 'website_research_auditor', 'linkedin_research_auditor'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('userId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], AuditController.prototype, "getPendingResearch", null);
 __decorate([

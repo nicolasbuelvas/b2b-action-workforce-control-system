@@ -183,6 +183,26 @@ let ResearchService = class ResearchService {
                 notes: dto.notes,
             });
             await manager.save(research_submission_entity_1.ResearchSubmission, submission);
+            if (task.targetType === 'COMPANY' && task.targetId) {
+                const company = await manager.findOne(company_entity_1.Company, {
+                    where: { id: task.targetId },
+                });
+                if (company) {
+                    let updated = false;
+                    if (dto.country && dto.country.trim()) {
+                        company.country = dto.country.trim();
+                        updated = true;
+                    }
+                    if (dto.companyName && dto.companyName.trim()) {
+                        company.name = dto.companyName.trim();
+                        updated = true;
+                    }
+                    if (updated) {
+                        await manager.save(company_entity_1.Company, company);
+                        console.log('[submitTaskData] Updated company:', company.id, 'name:', company.name, 'country:', company.country);
+                    }
+                }
+            }
             task.status = research_task_entity_1.ResearchStatus.SUBMITTED;
             await manager.save(research_task_entity_1.ResearchTask, task);
             return {

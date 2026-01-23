@@ -25,6 +25,8 @@ export interface LinkedinResearchTask extends WebsiteResearchTask {
 export interface SubmitResearchPayload {
   taskId: string;
   language: string;
+  companyName?: string;
+  country?: string;
 }
 
 export interface SubmitLinkedinResearchPayload {

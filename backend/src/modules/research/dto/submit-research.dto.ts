@@ -9,6 +9,11 @@ export class SubmitResearchDto {
   @IsOptional()
   language?: string;
 
+  // Website researcher fields
+  @IsString()
+  @IsOptional()
+  companyName?: string;
+
   // LinkedIn researcher fields (validated in service based on task type)
   @IsString()
   @IsOptional()

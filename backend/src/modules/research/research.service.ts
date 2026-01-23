@@ -242,6 +242,37 @@ export class ResearchService {
 
       await manager.save(ResearchSubmission, submission);
 
+      // CRITICAL FIX: Update Company entity with submitted research data
+      // This ensures auditors and inquirers see the correct company name & country
+      if (task.targetType === 'COMPANY' && task.targetId) {
+        const company = await manager.findOne(Company, {
+          where: { id: task.targetId },
+        });
+
+        if (company) {
+          // Update company fields if provided by researcher
+          let updated = false;
+
+          // Update country if provided
+          if (dto.country && dto.country.trim()) {
+            company.country = dto.country.trim();
+            updated = true;
+          }
+
+          // Update company name if provided and different from placeholder
+          if (dto.companyName && dto.companyName.trim()) {
+            // Always update if researcher provides a name
+            company.name = dto.companyName.trim();
+            updated = true;
+          }
+
+          if (updated) {
+            await manager.save(Company, company);
+            console.log('[submitTaskData] Updated company:', company.id, 'name:', company.name, 'country:', company.country);
+          }
+        }
+      }
+
       task.status = ResearchStatus.SUBMITTED;
       await manager.save(ResearchTask, task);
 

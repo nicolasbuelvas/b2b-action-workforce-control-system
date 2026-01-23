@@ -1,6 +1,7 @@
 export declare class SubmitResearchDto {
     taskId: string;
     language?: string;
+    companyName?: string;
     contactName?: string;
     contactLinkedinUrl?: string;
     country?: string;

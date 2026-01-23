@@ -3,7 +3,7 @@ import { AuditResearchDto } from './dto/audit-research.dto';
 export declare class AuditController {
     private readonly auditService;
     constructor(auditService: AuditService);
-    getPendingResearch(): Promise<{
+    getPendingResearch(auditorUserId: string): Promise<{
         id: string;
         categoryId: string;
         categoryName: string;

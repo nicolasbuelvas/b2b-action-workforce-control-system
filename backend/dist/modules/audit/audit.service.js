@@ -21,23 +21,35 @@ const research_submission_entity_1 = require("../research/entities/research-subm
 const research_audit_entity_1 = require("./entities/research-audit.entity");
 const flagged_action_entity_1 = require("./entities/flagged-action.entity");
 const category_entity_1 = require("../categories/entities/category.entity");
+const user_category_entity_1 = require("../categories/entities/user-category.entity");
 const company_entity_1 = require("../research/entities/company.entity");
 const user_entity_1 = require("../users/entities/user.entity");
 let AuditService = class AuditService {
-    constructor(researchRepo, auditRepo, submissionRepo, flaggedRepo, categoryRepo, companyRepo, userRepo) {
+    constructor(researchRepo, auditRepo, submissionRepo, flaggedRepo, categoryRepo, userCategoryRepo, companyRepo, userRepo) {
         this.researchRepo = researchRepo;
         this.auditRepo = auditRepo;
         this.submissionRepo = submissionRepo;
         this.flaggedRepo = flaggedRepo;
         this.categoryRepo = categoryRepo;
+        this.userCategoryRepo = userCategoryRepo;
         this.companyRepo = companyRepo;
         this.userRepo = userRepo;
     }
-    async getPendingResearch() {
-        const tasks = await this.researchRepo.find({
-            where: { status: research_task_entity_1.ResearchStatus.SUBMITTED },
-            order: { createdAt: 'ASC' },
+    async getPendingResearch(auditorUserId) {
+        const userCategories = await this.userCategoryRepo.find({
+            where: { userId: auditorUserId },
+            select: ['categoryId'],
         });
+        const categoryIds = userCategories.map(uc => uc.categoryId);
+        if (categoryIds.length === 0) {
+            return [];
+        }
+        const tasks = await this.researchRepo
+            .createQueryBuilder('task')
+            .where('task.status = :status', { status: research_task_entity_1.ResearchStatus.SUBMITTED })
+            .andWhere('task.categoryId IN (:...categoryIds)', { categoryIds })
+            .orderBy('task.createdAt', 'ASC')
+            .getMany();
         const enriched = await Promise.all(tasks.map(async (task) => {
             const [submission, category, worker] = await Promise.all([
                 this.submissionRepo.findOne({
@@ -116,9 +128,11 @@ exports.AuditService = AuditService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(research_submission_entity_1.ResearchSubmission)),
     __param(3, (0, typeorm_1.InjectRepository)(flagged_action_entity_1.FlaggedAction)),
     __param(4, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
-    __param(5, (0, typeorm_1.InjectRepository)(company_entity_1.Company)),
-    __param(6, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(5, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
+    __param(6, (0, typeorm_1.InjectRepository)(company_entity_1.Company)),
+    __param(7, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import './WebsiteInquiryTasksPage.css';
 import { inquiryApi, InquiryTask } from '../../../api/inquiry.api';
+import { researchApi, Category } from '../../../api/research.api';
 
 const FILE_SIZE_LIMIT = 500 * 1024;
 const ALLOWED_FORMATS = ['image/png', 'image/jpeg'];
@@ -40,6 +41,9 @@ export default function WebsiteInquiryTasksPage() {
   const [fileError, setFileError] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   const getCurrentUserId = (): string | null => {
     const token = localStorage.getItem('accessToken');
@@ -53,23 +57,64 @@ export default function WebsiteInquiryTasksPage() {
     }
   };
 
+  // Load categories on mount
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await inquiryApi.getWebsiteTasks();
-        setTasks(data || []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load tasks');
-        console.error('Error loading tasks:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTasks();
+    loadCategories();
   }, []);
+
+  // Load tasks when category changes
+  useEffect(() => {
+    if (selectedCategory || (!loadingCategories && categories.length > 0)) {
+      loadTasks();
+    }
+  }, [selectedCategory, loadingCategories]);
+
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const userCats = await researchApi.getMyCategories();
+      
+      const uniqueCategories = userCats && userCats.length > 0
+        ? Array.from(new Map(userCats.map((cat: Category) => [cat.id, cat])).values())
+        : [];
+      
+      setCategories(uniqueCategories);
+      
+      // Auto-select first category if user has exactly one
+      if (uniqueCategories && uniqueCategories.length === 1) {
+        setSelectedCategory(uniqueCategories[0].id);
+      } else if (uniqueCategories && uniqueCategories.length > 1) {
+        // Let user choose - don't auto-select
+        setSelectedCategory('');
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      setError('Failed to load your assigned categories');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await inquiryApi.getWebsiteTasks();
+      
+      // Filter by selected category (client-side for consistency)
+      // Backend already filters by inquirer's categories
+      const filtered = selectedCategory
+        ? (data || []).filter(t => t.categoryId === selectedCategory)
+        : (data || []);
+      
+      setTasks(filtered);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load tasks');
+      console.error('Error loading tasks:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleTaskSelect = (task: InquiryTask) => {
     const userId = getCurrentUserId();
@@ -192,8 +237,59 @@ export default function WebsiteInquiryTasksPage() {
     return '#ef4444'; // RED - Not claimed or other states
   };
 
+  if (loadingCategories) {
+    return <div className="inq-state-screen"><p>Loading categories…</p></div>;
+  }
+
+  if (categories.length === 0) {
+    return <div className="inq-state-screen"><p>No categories assigned. Contact administrator.</p></div>;
+  }
+
+  if (categories.length > 1 && !selectedCategory) {
+    return (
+      <div className="inq-state-screen">
+        <p>Select a category to view inquiry tasks:</p>
+        <div style={{ marginTop: '1rem' }}>
+          {categories.map(cat => (
+            <button 
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              style={{
+                display: 'block',
+                margin: '0.5rem auto',
+                padding: '0.75rem 1.5rem',
+                fontSize: '1rem',
+                cursor: 'pointer',
+              }}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="inq-tasks-container">
+      {categories.length > 1 && (
+        <div className="inq-category-selector" style={{ padding: '1rem', backgroundColor: '#f3f4f6', marginBottom: '1rem' }}>
+          <label htmlFor="category-select" style={{ marginRight: '0.5rem', fontWeight: 600 }}>Category:</label>
+          <select
+            id="category-select"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{ padding: '0.5rem', fontSize: '1rem', minWidth: '200px' }}
+          >
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+          <span style={{ marginLeft: '1rem', color: '#6b7280' }}>
+            {tasks.length} task{tasks.length !== 1 ? 's' : ''} in {categories.find(c => c.id === selectedCategory)?.name}
+          </span>
+        </div>
+      )}
       <header className="inq-tasks-header">
         <div className="title-group">
           <h1>Website Outreach Tasks</h1>

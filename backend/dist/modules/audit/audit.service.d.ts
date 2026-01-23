@@ -5,6 +5,7 @@ import { ResearchAudit } from './entities/research-audit.entity';
 import { FlaggedAction } from './entities/flagged-action.entity';
 import { AuditResearchDto } from './dto/audit-research.dto';
 import { Category } from '../categories/entities/category.entity';
+import { UserCategory } from '../categories/entities/user-category.entity';
 import { Company } from '../research/entities/company.entity';
 import { User } from '../users/entities/user.entity';
 export declare class AuditService {
@@ -13,10 +14,11 @@ export declare class AuditService {
     private readonly submissionRepo;
     private readonly flaggedRepo;
     private readonly categoryRepo;
+    private readonly userCategoryRepo;
     private readonly companyRepo;
     private readonly userRepo;
-    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, companyRepo: Repository<Company>, userRepo: Repository<User>);
-    getPendingResearch(): Promise<{
+    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, companyRepo: Repository<Company>, userRepo: Repository<User>);
+    getPendingResearch(auditorUserId: string): Promise<{
         id: string;
         categoryId: string;
         categoryName: string;
