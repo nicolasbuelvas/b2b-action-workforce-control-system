@@ -23,6 +23,15 @@ export class ResearchSubmission {
   @Column({ nullable: true })
   language: string;
 
+  @Column({ nullable: true, name: 'contact_name' })
+  contactName?: string;
+
+  @Column({ nullable: true, name: 'contact_linkedin_url' })
+  contactLinkedinUrl?: string;
+
+  @Column({ nullable: true, name: 'country' })
+  country?: string;
+
     @Column({ nullable: true, name: 'email' })
   email: string;
 

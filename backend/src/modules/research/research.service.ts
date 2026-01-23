@@ -18,6 +18,7 @@ import { ResearchSubmission } from './entities/research-submission.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
 import { CreateResearchDto } from './dto/create-research.dto';
 import { SubmitResearchDto } from './dto/submit-research.dto';
+import { LinkedInProfile } from './entities/linkedin-profile.entity';
 
 @Injectable()
 export class ResearchService {
@@ -35,6 +36,9 @@ export class ResearchService {
 
     @InjectRepository(UserCategory)
     private readonly userCategoryRepo: Repository<UserCategory>,
+
+    @InjectRepository(LinkedInProfile)
+    private readonly linkedinProfileRepo: Repository<LinkedInProfile>,
   ) {}
 
   async getAvailableTasks(
@@ -100,6 +104,18 @@ export class ResearchService {
               domain: company.domain,
               name: company.name,
               country: company.country,
+            };
+          }
+        } else if (task.targetType === 'LINKEDIN') {
+          const profile = await this.linkedinProfileRepo.findOne({
+            where: { id: task.targetId },
+          });
+
+          if (profile) {
+            targetInfo = {
+              domain: profile.url,
+              name: profile.url,
+              country: '',
             };
           }
         }
@@ -195,10 +211,34 @@ export class ResearchService {
         throw new BadRequestException('Task must be claimed before submission');
       }
 
+      // Validate required fields based on task type
+      if (task.targetType === 'LINKEDIN') {
+        if (!dto.contactName || !dto.contactName.trim()) {
+          throw new BadRequestException('Contact name is required');
+        }
+        if (!dto.contactLinkedinUrl || !dto.contactLinkedinUrl.trim()) {
+          throw new BadRequestException('Contact LinkedIn link is required');
+        }
+        if (!dto.country || !dto.country.trim()) {
+          throw new BadRequestException('Country is required');
+        }
+        if (!dto.language || !dto.language.trim()) {
+          throw new BadRequestException('Language is required');
+        }
+      } else {
+        // Website researcher minimal validation (language is optional but encourage presence)
+        if (dto.language && !dto.language.trim()) {
+          throw new BadRequestException('Language is required');
+        }
+      }
+
       // Create submission record
       const submission = manager.create(ResearchSubmission, {
         researchTaskId: task.id,
         language: dto.language,
+        contactName: dto.contactName,
+        contactLinkedinUrl: dto.contactLinkedinUrl,
+        country: dto.country,
         email: dto.email,
         phone: dto.phone,
         techStack: dto.techStack,

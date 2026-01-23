@@ -25,6 +25,22 @@ __decorate([
     __metadata("design:type", String)
 ], SubmitResearchDto.prototype, "language", void 0);
 __decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], SubmitResearchDto.prototype, "contactName", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUrl)({ require_protocol: true }),
+    __metadata("design:type", String)
+], SubmitResearchDto.prototype, "contactLinkedinUrl", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], SubmitResearchDto.prototype, "country", void 0);
+__decorate([
     (0, class_validator_1.IsEmail)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)

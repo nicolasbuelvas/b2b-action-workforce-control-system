@@ -4,6 +4,9 @@ export declare class ResearchSubmission {
     researchTaskId: string;
     researchTask: ResearchTask;
     language: string;
+    contactName?: string;
+    contactLinkedinUrl?: string;
+    country?: string;
     email: string;
     phone: string;
     techStack: string;

@@ -21,13 +21,15 @@ const company_entity_1 = require("./entities/company.entity");
 const research_task_entity_1 = require("./entities/research-task.entity");
 const research_submission_entity_1 = require("./entities/research-submission.entity");
 const user_category_entity_1 = require("../categories/entities/user-category.entity");
+const linkedin_profile_entity_1 = require("./entities/linkedin-profile.entity");
 let ResearchService = class ResearchService {
-    constructor(dataSource, companyRepo, researchRepo, submissionRepo, userCategoryRepo) {
+    constructor(dataSource, companyRepo, researchRepo, submissionRepo, userCategoryRepo, linkedinProfileRepo) {
         this.dataSource = dataSource;
         this.companyRepo = companyRepo;
         this.researchRepo = researchRepo;
         this.submissionRepo = submissionRepo;
         this.userCategoryRepo = userCategoryRepo;
+        this.linkedinProfileRepo = linkedinProfileRepo;
     }
     async getAvailableTasks(userId, targetType, categoryId) {
         const userCategories = await this.userCategoryRepo.find({
@@ -69,6 +71,18 @@ let ResearchService = class ResearchService {
                         domain: company.domain,
                         name: company.name,
                         country: company.country,
+                    };
+                }
+            }
+            else if (task.targetType === 'LINKEDIN') {
+                const profile = await this.linkedinProfileRepo.findOne({
+                    where: { id: task.targetId },
+                });
+                if (profile) {
+                    targetInfo = {
+                        domain: profile.url,
+                        name: profile.url,
+                        country: '',
                     };
                 }
             }
@@ -143,9 +157,31 @@ let ResearchService = class ResearchService {
             if (task.status !== research_task_entity_1.ResearchStatus.IN_PROGRESS) {
                 throw new common_1.BadRequestException('Task must be claimed before submission');
             }
+            if (task.targetType === 'LINKEDIN') {
+                if (!dto.contactName || !dto.contactName.trim()) {
+                    throw new common_1.BadRequestException('Contact name is required');
+                }
+                if (!dto.contactLinkedinUrl || !dto.contactLinkedinUrl.trim()) {
+                    throw new common_1.BadRequestException('Contact LinkedIn link is required');
+                }
+                if (!dto.country || !dto.country.trim()) {
+                    throw new common_1.BadRequestException('Country is required');
+                }
+                if (!dto.language || !dto.language.trim()) {
+                    throw new common_1.BadRequestException('Language is required');
+                }
+            }
+            else {
+                if (dto.language && !dto.language.trim()) {
+                    throw new common_1.BadRequestException('Language is required');
+                }
+            }
             const submission = manager.create(research_submission_entity_1.ResearchSubmission, {
                 researchTaskId: task.id,
                 language: dto.language,
+                contactName: dto.contactName,
+                contactLinkedinUrl: dto.contactLinkedinUrl,
+                country: dto.country,
                 email: dto.email,
                 phone: dto.phone,
                 techStack: dto.techStack,
@@ -217,7 +253,9 @@ exports.ResearchService = ResearchService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(research_task_entity_1.ResearchTask)),
     __param(3, (0, typeorm_1.InjectRepository)(research_submission_entity_1.ResearchSubmission)),
     __param(4, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
+    __param(5, (0, typeorm_1.InjectRepository)(linkedin_profile_entity_1.LinkedInProfile)),
     __metadata("design:paramtypes", [typeorm_2.DataSource,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

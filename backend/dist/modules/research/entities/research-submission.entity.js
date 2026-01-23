@@ -33,6 +33,18 @@ __decorate([
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "language", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true, name: 'contact_name' }),
+    __metadata("design:type", String)
+], ResearchSubmission.prototype, "contactName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true, name: 'contact_linkedin_url' }),
+    __metadata("design:type", String)
+], ResearchSubmission.prototype, "contactLinkedinUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true, name: 'country' }),
+    __metadata("design:type", String)
+], ResearchSubmission.prototype, "country", void 0);
+__decorate([
     (0, typeorm_1.Column)({ nullable: true, name: 'email' }),
     __metadata("design:type", String)
 ], ResearchSubmission.prototype, "email", void 0);

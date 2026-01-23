@@ -5,13 +5,15 @@ import { ResearchSubmission } from './entities/research-submission.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
 import { CreateResearchDto } from './dto/create-research.dto';
 import { SubmitResearchDto } from './dto/submit-research.dto';
+import { LinkedInProfile } from './entities/linkedin-profile.entity';
 export declare class ResearchService {
     private readonly dataSource;
     private readonly companyRepo;
     private readonly researchRepo;
     private readonly submissionRepo;
     private readonly userCategoryRepo;
-    constructor(dataSource: DataSource, companyRepo: Repository<Company>, researchRepo: Repository<ResearchTask>, submissionRepo: Repository<ResearchSubmission>, userCategoryRepo: Repository<UserCategory>);
+    private readonly linkedinProfileRepo;
+    constructor(dataSource: DataSource, companyRepo: Repository<Company>, researchRepo: Repository<ResearchTask>, submissionRepo: Repository<ResearchSubmission>, userCategoryRepo: Repository<UserCategory>, linkedinProfileRepo: Repository<LinkedInProfile>);
     getAvailableTasks(userId: string, targetType: 'COMPANY' | 'LINKEDIN', categoryId?: string): Promise<any[]>;
     claimTask(taskId: string, userId: string): Promise<ResearchTask>;
     submitTaskData(dto: SubmitResearchDto, userId: string): Promise<{

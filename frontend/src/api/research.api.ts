@@ -18,8 +18,20 @@ export interface WebsiteResearchTask {
   status: 'unassigned' | 'in_progress' | 'submitted';
 }
 
+export interface LinkedinResearchTask extends WebsiteResearchTask {
+  // Reuse same shape; domain holds the LinkedIn profile URL for display
+}
+
 export interface SubmitResearchPayload {
   taskId: string;
+  language: string;
+}
+
+export interface SubmitLinkedinResearchPayload {
+  taskId: string;
+  contactName: string;
+  contactLinkedinUrl: string;
+  country: string;
   language: string;
 }
 
@@ -41,7 +53,7 @@ export const researchApi = {
   getLinkedInTasks: async (categoryId?: string): Promise<any[]> => {
     const params = categoryId ? { categoryId } : {};
     const response = await axios.get('/research/tasks/linkedin', { params });
-    return response.data;
+    return response.data as LinkedinResearchTask[];
   },
 
   // Claim a task
@@ -52,6 +64,11 @@ export const researchApi = {
 
   // Submit research data for a task
   submitTask: async (data: SubmitResearchPayload): Promise<any> => {
+    const response = await axios.post('/research/tasks/submit', data);
+    return response.data;
+  },
+
+  submitLinkedinTask: async (data: SubmitLinkedinResearchPayload): Promise<any> => {
     const response = await axios.post('/research/tasks/submit', data);
     return response.data;
   },
