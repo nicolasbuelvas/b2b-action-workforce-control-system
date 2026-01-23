@@ -11,6 +11,6 @@ export declare class InquiryTask {
     targetId: string;
     categoryId: string;
     status: InquiryStatus;
-    assignedToUserId: string;
+    assignedToUserId: string | null;
     createdAt: Date;
 }

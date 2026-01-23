@@ -41,6 +41,18 @@ export default function WebsiteInquiryTasksPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
 
+  const getCurrentUserId = (): string | null => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return null;
+    try {
+      const payload = token.split('.')[1];
+      const decoded = JSON.parse(window.atob(payload));
+      return decoded.sub || null;
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
     const loadTasks = async () => {
       try {
@@ -60,8 +72,17 @@ export default function WebsiteInquiryTasksPage() {
   }, []);
 
   const handleTaskSelect = (task: InquiryTask) => {
+    const userId = getCurrentUserId();
+    const isAlreadyClaimed = task.status === 'IN_PROGRESS' && task.assignedToUserId === userId;
+    
     setSelectedTask(task);
-    setClaimedTaskId(null);
+    
+    if (isAlreadyClaimed) {
+      setClaimedTaskId(task.id);
+    } else {
+      setClaimedTaskId(null);
+    }
+    
     setClaiming(false);
     setTemplateIndex(0);
     setMessageTitle(OUTREACH_TEMPLATES[0].title);
@@ -78,10 +99,7 @@ export default function WebsiteInquiryTasksPage() {
     try {
       setClaiming(true);
       setSubmitError('');
-      const result = await inquiryApi.takeTask(
-        selectedTask.targetId,
-        selectedTask.categoryId,
-      );
+      const result = await inquiryApi.takeTask(selectedTask.id);
       setClaimedTaskId(result.id);
     } catch (err: any) {
       setSubmitError(err.message || 'Failed to claim task');
@@ -134,7 +152,7 @@ export default function WebsiteInquiryTasksPage() {
   };
 
   const handleSubmit = async () => {
-    if (!claimedTaskId || !proofFile || !messageTitle.trim() || !messageContent.trim()) return;
+    if (!claimedTaskId || !proofFile) return;
 
     try {
       setSubmitting(true);
@@ -160,7 +178,19 @@ export default function WebsiteInquiryTasksPage() {
   };
 
   const hasTasks = useMemo(() => tasks.length > 0, [tasks]);
-  const canSubmit = claimedTaskId && proofFile && messageTitle.trim().length > 0 && messageContent.trim().length > 0 && !submitting;
+  const canSubmit = claimedTaskId && proofFile && !submitting;
+
+  const getStatusColor = (task: InquiryTask): string => {
+    if (task.status === 'SUBMITTED') {
+      return '#22c55e'; // GREEN - Submitted
+    }
+
+    if (task.status === 'IN_PROGRESS') {
+      return '#eab308'; // YELLOW - In progress (claimed)
+    }
+
+    return '#ef4444'; // RED - Not claimed or other states
+  };
 
   return (
     <div className="inq-tasks-container">
@@ -201,6 +231,7 @@ export default function WebsiteInquiryTasksPage() {
                 className={`task-selector-card ${selectedTask?.id === task.id ? 'active' : ''}`}
                 onClick={() => handleTaskSelect(task)}
               >
+                <div className="priority-line" style={{ backgroundColor: getStatusColor(task), height: '4px' }} />
                 <div className="task-id-badge">RESEARCH</div>
                 <h4>{task.companyName || task.companyDomain}</h4>
                 <p className="task-category">{task.categoryName}</p>

@@ -23,6 +23,7 @@ import { ResearchTask, ResearchStatus } from '../research/entities/research-task
 import { ResearchSubmission } from '../research/entities/research-submission.entity';
 import { Company } from '../research/entities/company.entity';
 import { Category } from '../categories/entities/category.entity';
+import { UserCategory } from '../categories/entities/user-category.entity';
 
 @Injectable()
 export class InquiryService {
@@ -48,6 +49,9 @@ export class InquiryService {
     @InjectRepository(Category)
     private readonly categoryRepo: Repository<Category>,
 
+    @InjectRepository(UserCategory)
+    private readonly userCategoryRepo: Repository<UserCategory>,
+
     private readonly screenshotsService: ScreenshotsService,
     private readonly cooldownService: CooldownService,
   ) {}
@@ -58,6 +62,19 @@ export class InquiryService {
   async getAvailableTasks(userId: string, type: 'website' | 'linkedin') {
     const targetType = type === 'website' ? 'COMPANY' : 'LINKEDIN';
 
+    // Get user's assigned categories
+    const userCategories = await this.userCategoryRepo.find({
+      where: { userId },
+      select: ['categoryId'],
+    });
+
+    const categoryIds = userCategories.map(uc => uc.categoryId);
+
+    // If user has no categories, return empty
+    if (categoryIds.length === 0) {
+      return [];
+    }
+
     const completedResearch = await this.researchRepo.find({
       where: {
         status: ResearchStatus.COMPLETED,
@@ -67,8 +84,11 @@ export class InquiryService {
       take: 50,
     });
 
+    // Filter by user's categories and process tasks
     const tasksWithDetails = await Promise.all(
-      completedResearch.map(async (task) => {
+      completedResearch
+        .filter(task => categoryIds.includes(task.categoryId))
+        .map(async (task) => {
         let companyName = '';
         let companyDomain = '';
         let companyCountry = '';
@@ -107,12 +127,33 @@ export class InquiryService {
           where: { id: task.categoryId },
         });
 
+        // Check if inquiry task exists for this target/category combo
+        const inquiryTask = await this.taskRepo.findOne({
+          where: {
+            targetId: task.targetId,
+            categoryId: task.categoryId,
+          },
+        });
+
+        let taskStatus = InquiryStatus.PENDING;
+        let assignedToUserId = null;
+        if (inquiryTask) {
+          taskStatus = inquiryTask.status;
+          assignedToUserId = inquiryTask.assignedToUserId;
+        }
+
+        // Filter out tasks claimed by other users
+        if (inquiryTask && inquiryTask.assignedToUserId && inquiryTask.assignedToUserId !== userId) {
+          return null;
+        }
+
         return {
           id: task.id,
           targetId: task.targetId,
           categoryId: task.categoryId,
           categoryName: category?.name || '',
-          status: 'available',
+          status: taskStatus,
+          assignedToUserId,
           type: type,
           companyName,
           companyDomain,
@@ -123,36 +164,56 @@ export class InquiryService {
       }),
     );
 
-    return tasksWithDetails;
+    // Filter out null entries (tasks claimed by others)
+    return tasksWithDetails.filter(t => t !== null);
   }
 
   // ===============================
   // TAKE INQUIRY
   // ===============================
   async takeInquiry(
-    targetId: string,
-    categoryId: string,
+    researchTaskId: string,
     userId: string,
   ) {
-    const active = await this.taskRepo.findOne({
+    // Get the research task to get targetId and categoryId
+    const researchTask = await this.researchRepo.findOne({
+      where: { id: researchTaskId },
+    });
+
+    if (!researchTask) {
+      throw new BadRequestException('Research task not found');
+    }
+
+    // Check if an inquiry task already exists for this target/category combo
+    let task = await this.taskRepo.findOne({
       where: {
-        assignedToUserId: userId,
-        status: InquiryStatus.IN_PROGRESS,
+        targetId: researchTask.targetId,
+        categoryId: researchTask.categoryId,
       },
     });
 
-    if (active) {
-      throw new BadRequestException(
-        'User already has an active inquiry',
-      );
+    // If no inquiry task exists, create one
+    if (!task) {
+      task = this.taskRepo.create({
+        targetId: researchTask.targetId,
+        categoryId: researchTask.categoryId,
+        status: InquiryStatus.PENDING,
+      });
     }
 
-    const task = this.taskRepo.create({
-      targetId,
-      categoryId,
-      assignedToUserId: userId,
-      status: InquiryStatus.IN_PROGRESS,
-    });
+    // Check if already claimed
+    if (task.assignedToUserId && task.assignedToUserId !== userId) {
+      throw new BadRequestException('Task already claimed by another user');
+    }
+
+    // If already claimed by same user, return existing task
+    if (task.assignedToUserId === userId && task.status === InquiryStatus.IN_PROGRESS) {
+      return task;
+    }
+
+    // Claim the task
+    task.assignedToUserId = userId;
+    task.status = InquiryStatus.IN_PROGRESS;
 
     return this.taskRepo.save(task);
   }
@@ -185,7 +246,7 @@ export class InquiryService {
 
     const pending = await this.actionRepo.findOne({
       where: {
-        taskId: task.id,
+        inquiryTaskId: task.id,
         status: InquiryActionStatus.PENDING,
       },
     });
@@ -195,18 +256,6 @@ export class InquiryService {
         'There is already a pending action',
       );
     }
-
-    const lastApproved = await this.actionRepo.findOne({
-      where: {
-        taskId: task.id,
-        status: InquiryActionStatus.APPROVED,
-      },
-      order: { actionIndex: 'DESC' },
-    });
-
-    const nextIndex = lastApproved
-      ? lastApproved.actionIndex + 1
-      : 1;
 
     await this.cooldownService.enforceCooldown({
       userId,
@@ -222,8 +271,8 @@ export class InquiryService {
       );
 
     const action = await this.actionRepo.save({
-      taskId: task.id,
-      actionIndex: nextIndex,
+      inquiryTaskId: task.id,
+      actionIndex: 1,
       performedByUserId: userId,
       status: InquiryActionStatus.PENDING,
     });

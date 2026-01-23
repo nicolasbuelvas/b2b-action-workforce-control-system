@@ -44,7 +44,7 @@ export declare class AdminService {
     }>;
     getSystemLogs(): Promise<({
         id: string;
-        taskId: string;
+        inquiryTaskId: string;
         actionIndex: number;
         performedByUserId: string;
         status: InquiryActionStatus;

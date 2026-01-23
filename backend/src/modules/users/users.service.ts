@@ -102,6 +102,25 @@ export class UsersService {
       throw new Error('Unauthorized: User ID is required to access categories');
     }
     
+    // Get user to check role
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['roles'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Inquirer roles should not receive direct category assignments
+    const inquirerRoles = ['website_inquirer', 'linkedin_inquirer'];
+    const userRole = user.roles && user.roles.length > 0 ? user.roles[0].role?.name : null;
+    
+    if (userRole && inquirerRoles.includes(userRole)) {
+      console.log('[getUserCategories] User is inquirer role, returning empty categories');
+      return [];
+    }
+    
     const userCategories = await this.userCategoryRepo.find({
       where: { userId },
       relations: ['category'],

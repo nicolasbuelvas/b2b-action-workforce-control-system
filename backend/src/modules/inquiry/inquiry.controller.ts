@@ -38,12 +38,11 @@ export class InquiryController {
 
   @Post('take')
   takeInquiry(
-    @Body() body: { targetId: string; categoryId: string },
+    @Body() body: { inquiryTaskId: string },
     @CurrentUser('userId') userId: string,
   ) {
     return this.inquiryService.takeInquiry(
-      body.targetId,
-      body.categoryId,
+      body.inquiryTaskId,
       userId,
     );
   }

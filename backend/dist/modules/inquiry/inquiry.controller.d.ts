@@ -6,11 +6,10 @@ export declare class InquiryController {
     getWebsiteTasks(userId: string): Promise<any[]>;
     getLinkedInTasks(userId: string): Promise<any[]>;
     takeInquiry(body: {
-        targetId: string;
-        categoryId: string;
+        inquiryTaskId: string;
     }, userId: string): Promise<import("./entities/inquiry-task.entity").InquiryTask>;
     submitInquiry(dto: SubmitInquiryDto, file: any, userId: string): Promise<{
-        taskId: string;
+        inquiryTaskId: string;
         actionIndex: number;
         performedByUserId: string;
         status: import("./entities/inquiry-action.entity").InquiryActionStatus.PENDING;

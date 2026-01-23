@@ -25,8 +25,9 @@ const research_task_entity_1 = require("../research/entities/research-task.entit
 const research_submission_entity_1 = require("../research/entities/research-submission.entity");
 const company_entity_1 = require("../research/entities/company.entity");
 const category_entity_1 = require("../categories/entities/category.entity");
+const user_category_entity_1 = require("../categories/entities/user-category.entity");
 let InquiryService = class InquiryService {
-    constructor(actionRepo, taskRepo, outreachRepo, researchRepo, submissionRepo, companyRepo, categoryRepo, screenshotsService, cooldownService) {
+    constructor(actionRepo, taskRepo, outreachRepo, researchRepo, submissionRepo, companyRepo, categoryRepo, userCategoryRepo, screenshotsService, cooldownService) {
         this.actionRepo = actionRepo;
         this.taskRepo = taskRepo;
         this.outreachRepo = outreachRepo;
@@ -34,11 +35,20 @@ let InquiryService = class InquiryService {
         this.submissionRepo = submissionRepo;
         this.companyRepo = companyRepo;
         this.categoryRepo = categoryRepo;
+        this.userCategoryRepo = userCategoryRepo;
         this.screenshotsService = screenshotsService;
         this.cooldownService = cooldownService;
     }
     async getAvailableTasks(userId, type) {
         const targetType = type === 'website' ? 'COMPANY' : 'LINKEDIN';
+        const userCategories = await this.userCategoryRepo.find({
+            where: { userId },
+            select: ['categoryId'],
+        });
+        const categoryIds = userCategories.map(uc => uc.categoryId);
+        if (categoryIds.length === 0) {
+            return [];
+        }
         const completedResearch = await this.researchRepo.find({
             where: {
                 status: research_task_entity_1.ResearchStatus.COMPLETED,
@@ -47,7 +57,9 @@ let InquiryService = class InquiryService {
             order: { createdAt: 'ASC' },
             take: 50,
         });
-        const tasksWithDetails = await Promise.all(completedResearch.map(async (task) => {
+        const tasksWithDetails = await Promise.all(completedResearch
+            .filter(task => categoryIds.includes(task.categoryId))
+            .map(async (task) => {
             let companyName = '';
             let companyDomain = '';
             let companyCountry = '';
@@ -83,12 +95,28 @@ let InquiryService = class InquiryService {
             const category = await this.categoryRepo.findOne({
                 where: { id: task.categoryId },
             });
+            const inquiryTask = await this.taskRepo.findOne({
+                where: {
+                    targetId: task.targetId,
+                    categoryId: task.categoryId,
+                },
+            });
+            let taskStatus = inquiry_task_entity_1.InquiryStatus.PENDING;
+            let assignedToUserId = null;
+            if (inquiryTask) {
+                taskStatus = inquiryTask.status;
+                assignedToUserId = inquiryTask.assignedToUserId;
+            }
+            if (inquiryTask && inquiryTask.assignedToUserId && inquiryTask.assignedToUserId !== userId) {
+                return null;
+            }
             return {
                 id: task.id,
                 targetId: task.targetId,
                 categoryId: task.categoryId,
                 categoryName: category?.name || '',
-                status: 'available',
+                status: taskStatus,
+                assignedToUserId,
                 type: type,
                 companyName,
                 companyDomain,
@@ -97,24 +125,36 @@ let InquiryService = class InquiryService {
                 createdAt: task.createdAt,
             };
         }));
-        return tasksWithDetails;
+        return tasksWithDetails.filter(t => t !== null);
     }
-    async takeInquiry(targetId, categoryId, userId) {
-        const active = await this.taskRepo.findOne({
+    async takeInquiry(researchTaskId, userId) {
+        const researchTask = await this.researchRepo.findOne({
+            where: { id: researchTaskId },
+        });
+        if (!researchTask) {
+            throw new common_1.BadRequestException('Research task not found');
+        }
+        let task = await this.taskRepo.findOne({
             where: {
-                assignedToUserId: userId,
-                status: inquiry_task_entity_1.InquiryStatus.IN_PROGRESS,
+                targetId: researchTask.targetId,
+                categoryId: researchTask.categoryId,
             },
         });
-        if (active) {
-            throw new common_1.BadRequestException('User already has an active inquiry');
+        if (!task) {
+            task = this.taskRepo.create({
+                targetId: researchTask.targetId,
+                categoryId: researchTask.categoryId,
+                status: inquiry_task_entity_1.InquiryStatus.PENDING,
+            });
         }
-        const task = this.taskRepo.create({
-            targetId,
-            categoryId,
-            assignedToUserId: userId,
-            status: inquiry_task_entity_1.InquiryStatus.IN_PROGRESS,
-        });
+        if (task.assignedToUserId && task.assignedToUserId !== userId) {
+            throw new common_1.BadRequestException('Task already claimed by another user');
+        }
+        if (task.assignedToUserId === userId && task.status === inquiry_task_entity_1.InquiryStatus.IN_PROGRESS) {
+            return task;
+        }
+        task.assignedToUserId = userId;
+        task.status = inquiry_task_entity_1.InquiryStatus.IN_PROGRESS;
         return this.taskRepo.save(task);
     }
     async submitInquiry(dto, screenshotBuffer, userId) {
@@ -132,23 +172,13 @@ let InquiryService = class InquiryService {
         }
         const pending = await this.actionRepo.findOne({
             where: {
-                taskId: task.id,
+                inquiryTaskId: task.id,
                 status: inquiry_action_entity_1.InquiryActionStatus.PENDING,
             },
         });
         if (pending) {
             throw new common_1.BadRequestException('There is already a pending action');
         }
-        const lastApproved = await this.actionRepo.findOne({
-            where: {
-                taskId: task.id,
-                status: inquiry_action_entity_1.InquiryActionStatus.APPROVED,
-            },
-            order: { actionIndex: 'DESC' },
-        });
-        const nextIndex = lastApproved
-            ? lastApproved.actionIndex + 1
-            : 1;
         await this.cooldownService.enforceCooldown({
             userId,
             targetId: task.targetId,
@@ -157,8 +187,8 @@ let InquiryService = class InquiryService {
         });
         const screenshotHash = await this.screenshotsService.processScreenshot(screenshotBuffer, userId);
         const action = await this.actionRepo.save({
-            taskId: task.id,
-            actionIndex: nextIndex,
+            inquiryTaskId: task.id,
+            actionIndex: 1,
             performedByUserId: userId,
             status: inquiry_action_entity_1.InquiryActionStatus.PENDING,
         });
@@ -187,7 +217,9 @@ exports.InquiryService = InquiryService = __decorate([
     __param(4, (0, typeorm_1.InjectRepository)(research_submission_entity_1.ResearchSubmission)),
     __param(5, (0, typeorm_1.InjectRepository)(company_entity_1.Company)),
     __param(6, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
+    __param(7, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

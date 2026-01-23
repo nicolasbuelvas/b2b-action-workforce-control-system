@@ -20,6 +20,7 @@ const research_task_entity_1 = require("../research/entities/research-task.entit
 const research_submission_entity_1 = require("../research/entities/research-submission.entity");
 const company_entity_1 = require("../research/entities/company.entity");
 const category_entity_1 = require("../categories/entities/category.entity");
+const user_category_entity_1 = require("../categories/entities/user-category.entity");
 let InquiryModule = class InquiryModule {
 };
 exports.InquiryModule = InquiryModule;
@@ -34,6 +35,7 @@ exports.InquiryModule = InquiryModule = __decorate([
                 research_submission_entity_1.ResearchSubmission,
                 company_entity_1.Company,
                 category_entity_1.Category,
+                user_category_entity_1.UserCategory,
             ]),
             screenshots_module_1.ScreenshotsModule,
             cooldown_module_1.CooldownModule,

@@ -6,7 +6,7 @@ export declare enum InquiryActionStatus {
 }
 export declare class InquiryAction {
     id: string;
-    taskId: string;
+    inquiryTaskId: string;
     actionIndex: number;
     performedByUserId: string;
     status: InquiryActionStatus;

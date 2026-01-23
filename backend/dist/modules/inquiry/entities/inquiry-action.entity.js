@@ -26,15 +26,15 @@ __decorate([
     __metadata("design:type", String)
 ], InquiryAction.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'taskId' }),
+    (0, typeorm_1.Column)({ name: 'taskid' }),
     __metadata("design:type", String)
-], InquiryAction.prototype, "taskId", void 0);
+], InquiryAction.prototype, "inquiryTaskId", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'actionindex' }),
     __metadata("design:type", Number)
 ], InquiryAction.prototype, "actionIndex", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'performedbyuserid' }),
     __metadata("design:type", String)
 ], InquiryAction.prototype, "performedByUserId", void 0);
 __decorate([
@@ -46,11 +46,11 @@ __decorate([
     __metadata("design:type", String)
 ], InquiryAction.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)(),
+    (0, typeorm_1.CreateDateColumn)({ name: 'createdat' }),
     __metadata("design:type", Date)
 ], InquiryAction.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ name: 'reviewedat', nullable: true }),
     __metadata("design:type", Date)
 ], InquiryAction.prototype, "reviewedAt", void 0);
 exports.InquiryAction = InquiryAction = __decorate([

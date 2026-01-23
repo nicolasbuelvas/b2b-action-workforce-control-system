@@ -14,6 +14,7 @@ import { ResearchTask } from '../research/entities/research-task.entity';
 import { ResearchSubmission } from '../research/entities/research-submission.entity';
 import { Company } from '../research/entities/company.entity';
 import { Category } from '../categories/entities/category.entity';
+import { UserCategory } from '../categories/entities/user-category.entity';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { Category } from '../categories/entities/category.entity';
       ResearchSubmission,
       Company,
       Category,
+      UserCategory,
     ]),
     ScreenshotsModule,
     CooldownModule,

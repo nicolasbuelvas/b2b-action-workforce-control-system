@@ -17,13 +17,13 @@ export class InquiryAction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'taskId' })
-  taskId: string;
+  @Column({ name: 'taskid' })
+  inquiryTaskId: string;
 
-  @Column()
+  @Column({ name: 'actionindex' })
   actionIndex: number;
 
-  @Column()
+  @Column({ name: 'performedbyuserid' })
   performedByUserId: string;
 
   @Column({
@@ -33,9 +33,9 @@ export class InquiryAction {
   })
   status: InquiryActionStatus;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'createdat' })
   createdAt: Date;
 
-  @Column({ nullable: true })
+  @Column({ name: 'reviewedat', nullable: true })
   reviewedAt: Date | null;
 }

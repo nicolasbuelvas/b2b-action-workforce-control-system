@@ -32,8 +32,8 @@ export class InquiryTask {
   })
   status: InquiryStatus;
 
-  @Column()
-  assignedToUserId: string;
+  @Column({ nullable: true })
+  assignedToUserId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

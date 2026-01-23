@@ -32,7 +32,7 @@ let InquiryController = class InquiryController {
         return this.inquiryService.getAvailableTasks(userId, 'linkedin');
     }
     takeInquiry(body, userId) {
-        return this.inquiryService.takeInquiry(body.targetId, body.categoryId, userId);
+        return this.inquiryService.takeInquiry(body.inquiryTaskId, userId);
     }
     submitInquiry(dto, file, userId) {
         return this.inquiryService.submitInquiry(dto, file.buffer, userId);

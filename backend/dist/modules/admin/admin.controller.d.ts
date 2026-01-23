@@ -39,7 +39,7 @@ export declare class AdminController {
     }>;
     getSystemLogs(): Promise<({
         id: string;
-        taskId: string;
+        inquiryTaskId: string;
         actionIndex: number;
         performedByUserId: string;
         status: import("../inquiry/entities/inquiry-action.entity").InquiryActionStatus;

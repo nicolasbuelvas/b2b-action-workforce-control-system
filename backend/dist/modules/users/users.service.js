@@ -118,6 +118,19 @@ let UsersService = class UsersService {
             console.error('[getUserCategories] SECURITY VIOLATION: userId is invalid:', userId);
             throw new Error('Unauthorized: User ID is required to access categories');
         }
+        const user = await this.userRepo.findOne({
+            where: { id: userId },
+            relations: ['roles'],
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const inquirerRoles = ['website_inquirer', 'linkedin_inquirer'];
+        const userRole = user.roles && user.roles.length > 0 ? user.roles[0].role?.name : null;
+        if (userRole && inquirerRoles.includes(userRole)) {
+            console.log('[getUserCategories] User is inquirer role, returning empty categories');
+            return [];
+        }
         const userCategories = await this.userCategoryRepo.find({
             where: { userId },
             relations: ['category'],
