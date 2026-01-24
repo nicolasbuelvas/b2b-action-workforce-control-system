@@ -111,6 +111,9 @@ let InquiryService = class InquiryService {
             if (inquiryTask && inquiryTask.assignedToUserId && inquiryTask.assignedToUserId !== userId) {
                 return null;
             }
+            if (inquiryTask && inquiryTask.status === inquiry_task_entity_1.InquiryStatus.COMPLETED) {
+                return null;
+            }
             return {
                 id: task.id,
                 targetId: task.targetId,
@@ -265,6 +268,10 @@ let InquiryService = class InquiryService {
                 console.error('[SERVICE-SUBMIT] ERROR: Cooldown recording failed:', err.message);
                 throw err;
             }
+            console.log('[SERVICE-SUBMIT] Finalizing task status...');
+            task.status = inquiry_task_entity_1.InquiryStatus.COMPLETED;
+            await manager.getRepository(inquiry_task_entity_1.InquiryTask).save(task);
+            console.log('[SERVICE-SUBMIT] Task status updated to COMPLETED');
             console.log('[SERVICE-SUBMIT] Transaction completed successfully');
             return {
                 action,

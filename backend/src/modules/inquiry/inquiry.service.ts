@@ -148,6 +148,11 @@ export class InquiryService {
           return null;
         }
 
+        // Filter out COMPLETED tasks (already submitted, moved to audit flow)
+        if (inquiryTask && inquiryTask.status === InquiryStatus.COMPLETED) {
+          return null;
+        }
+
         return {
           id: task.id,
           targetId: task.targetId,
@@ -165,7 +170,7 @@ export class InquiryService {
       }),
     );
 
-    // Filter out null entries (tasks claimed by others)
+    // Filter out null entries (tasks claimed by others or completed)
     return tasksWithDetails.filter(t => t !== null);
   }
 
@@ -361,6 +366,12 @@ export class InquiryService {
         console.error('[SERVICE-SUBMIT] ERROR: Cooldown recording failed:', err.message);
         throw err;
       }
+
+      // Update task status to COMPLETED (finalize the task)
+      console.log('[SERVICE-SUBMIT] Finalizing task status...');
+      task.status = InquiryStatus.COMPLETED;
+      await manager.getRepository(InquiryTask).save(task);
+      console.log('[SERVICE-SUBMIT] Task status updated to COMPLETED');
 
       console.log('[SERVICE-SUBMIT] Transaction completed successfully');
 
