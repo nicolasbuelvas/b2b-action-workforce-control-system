@@ -13,6 +13,10 @@ import { Category } from '../categories/entities/category.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
 import { Company } from '../research/entities/company.entity';
 import { User } from '../users/entities/user.entity';
+import { InquiryTask } from '../inquiry/entities/inquiry-task.entity';
+import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
+import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
+import { ScreenshotsModule } from '../screenshots/screenshots.module';
 
 @Module({
   imports: [
@@ -26,7 +30,11 @@ import { User } from '../users/entities/user.entity';
       UserCategory,
       Company,
       User,
+      InquiryTask,
+      InquiryAction,
+      OutreachRecord,
     ]),
+    ScreenshotsModule,
   ],
   controllers: [AuditController],
   providers: [AuditService],

@@ -30,4 +30,24 @@ export class AuditController {
       auditorUserId,
     );
   }
+
+  @Get('inquiry/pending')
+  @Roles('website_inquirer_auditor', 'linkedin_inquirer_auditor')
+  getPendingInquiry(@CurrentUser('userId') auditorUserId: string) {
+    return this.auditService.getPendingInquiry(auditorUserId);
+  }
+
+  @Post('inquiry/:id')
+  @Roles('website_inquirer_auditor', 'linkedin_inquirer_auditor')
+  auditInquiry(
+    @Param('id') inquiryTaskId: string,
+    @Body() dto: AuditResearchDto,
+    @CurrentUser('userId') auditorUserId: string,
+  ) {
+    return this.auditService.auditInquiry(
+      inquiryTaskId,
+      dto,
+      auditorUserId,
+    );
+  }
 }

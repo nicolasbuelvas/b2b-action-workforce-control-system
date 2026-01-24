@@ -341,6 +341,21 @@ export class InquiryService {
       });
       console.log('[SERVICE-SUBMIT] Action created:', action.id);
 
+      // Save screenshot file to disk (outside transaction for file I/O)
+      console.log('[SERVICE-SUBMIT] Saving screenshot file...');
+      try {
+        await this.screenshotsService.saveScreenshotFile(
+          screenshotBuffer,
+          action.id,
+          userId,
+          'image/png', // You may want to detect this from the buffer
+        );
+        console.log('[SERVICE-SUBMIT] Screenshot file saved');
+      } catch (err) {
+        console.error('[SERVICE-SUBMIT] ERROR: Screenshot file save failed:', err.message);
+        throw err;
+      }
+
       // Create outreach record in transaction
       console.log('[SERVICE-SUBMIT] Creating outreach record...');
       await manager.getRepository(OutreachRecord).save({

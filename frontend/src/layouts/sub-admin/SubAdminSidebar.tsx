@@ -39,36 +39,6 @@ export default function SubAdminSidebar() {
           Inquiry Review
         </NavLink>
 
-        <span className="sa-section">Operations</span>
-        <NavLink to="/sub-admin/categories" className="sa-link">
-          Categories & Rules
-        </NavLink>
-        <NavLink to="/sub-admin/disapproval-reasons" className="sa-link">
-          Disapproval Reasons
-        </NavLink>
-        <NavLink to="/sub-admin/templates" className="sa-link">
-          Message Templates
-        </NavLink>
-
-        <span className="sa-section">Analytics</span>
-        <NavLink to="/sub-admin/performance" className="sa-link">
-          Performance
-        </NavLink>
-        <NavLink to="/sub-admin/top-workers" className="sa-link">
-          Top Workers
-        </NavLink>
-        <NavLink to="/sub-admin/country-stats" className="sa-link">
-          Country Stats
-        </NavLink>
-
-        <span className="sa-section">Communication</span>
-        <NavLink to="/sub-admin/notices" className="sa-link">
-          Notices
-        </NavLink>
-        <NavLink to="/sub-admin/messages" className="sa-link">
-          Internal Messages
-        </NavLink>
-
       </nav>
     </aside>
   );

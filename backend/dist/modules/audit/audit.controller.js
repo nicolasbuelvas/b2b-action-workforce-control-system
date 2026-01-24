@@ -30,6 +30,12 @@ let AuditController = class AuditController {
     auditResearch(researchTaskId, dto, auditorUserId) {
         return this.auditService.auditResearch(researchTaskId, dto, auditorUserId);
     }
+    getPendingInquiry(auditorUserId) {
+        return this.auditService.getPendingInquiry(auditorUserId);
+    }
+    auditInquiry(inquiryTaskId, dto, auditorUserId) {
+        return this.auditService.auditInquiry(inquiryTaskId, dto, auditorUserId);
+    }
 };
 exports.AuditController = AuditController;
 __decorate([
@@ -50,6 +56,24 @@ __decorate([
     __metadata("design:paramtypes", [String, audit_research_dto_1.AuditResearchDto, String]),
     __metadata("design:returntype", void 0)
 ], AuditController.prototype, "auditResearch", null);
+__decorate([
+    (0, common_1.Get)('inquiry/pending'),
+    (0, roles_decorator_1.Roles)('website_inquirer_auditor', 'linkedin_inquirer_auditor'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AuditController.prototype, "getPendingInquiry", null);
+__decorate([
+    (0, common_1.Post)('inquiry/:id'),
+    (0, roles_decorator_1.Roles)('website_inquirer_auditor', 'linkedin_inquirer_auditor'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, audit_research_dto_1.AuditResearchDto, String]),
+    __metadata("design:returntype", void 0)
+], AuditController.prototype, "auditInquiry", null);
 exports.AuditController = AuditController = __decorate([
     (0, common_1.Controller)('audit'),
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),

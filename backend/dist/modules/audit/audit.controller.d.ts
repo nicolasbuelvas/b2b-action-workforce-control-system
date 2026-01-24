@@ -19,4 +19,25 @@ export declare class AuditController {
         submission: import("../research/entities/research-submission.entity").ResearchSubmission;
     }[]>;
     auditResearch(researchTaskId: string, dto: AuditResearchDto, auditorUserId: string): Promise<import("../research/entities/research-task.entity").ResearchTask>;
+    getPendingInquiry(auditorUserId: string): Promise<{
+        id: string;
+        categoryId: string;
+        categoryName: string;
+        assignedToUserId: string;
+        workerName: string;
+        workerEmail: string;
+        targetId: string;
+        companyName: any;
+        companyDomain: any;
+        companyCountry: any;
+        language: any;
+        actionType: string;
+        createdAt: Date;
+        actionCreatedAt: Date;
+        action: import("../inquiry/entities/inquiry-action.entity").InquiryAction;
+        outreach: import("../inquiry/entities/outreach-record.entity").OutreachRecord;
+        screenshotUrl: string;
+        isDuplicate: boolean;
+    }[]>;
+    auditInquiry(inquiryTaskId: string, dto: AuditResearchDto, auditorUserId: string): Promise<import("../inquiry/entities/inquiry-task.entity").InquiryTask>;
 }

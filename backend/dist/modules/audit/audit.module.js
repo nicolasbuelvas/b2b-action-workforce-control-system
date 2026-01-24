@@ -20,6 +20,10 @@ const category_entity_1 = require("../categories/entities/category.entity");
 const user_category_entity_1 = require("../categories/entities/user-category.entity");
 const company_entity_1 = require("../research/entities/company.entity");
 const user_entity_1 = require("../users/entities/user.entity");
+const inquiry_task_entity_1 = require("../inquiry/entities/inquiry-task.entity");
+const inquiry_action_entity_1 = require("../inquiry/entities/inquiry-action.entity");
+const outreach_record_entity_1 = require("../inquiry/entities/outreach-record.entity");
+const screenshots_module_1 = require("../screenshots/screenshots.module");
 let AuditModule = class AuditModule {
 };
 exports.AuditModule = AuditModule;
@@ -36,7 +40,11 @@ exports.AuditModule = AuditModule = __decorate([
                 user_category_entity_1.UserCategory,
                 company_entity_1.Company,
                 user_entity_1.User,
+                inquiry_task_entity_1.InquiryTask,
+                inquiry_action_entity_1.InquiryAction,
+                outreach_record_entity_1.OutreachRecord,
             ]),
+            screenshots_module_1.ScreenshotsModule,
         ],
         controllers: [audit_controller_1.AuditController],
         providers: [audit_service_1.AuditService],

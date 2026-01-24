@@ -10,13 +10,16 @@ exports.ScreenshotsModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const screenshot_hash_entity_1 = require("./entities/screenshot-hash.entity");
+const screenshot_entity_1 = require("./entities/screenshot.entity");
 const screenshots_service_1 = require("./screenshots.service");
+const screenshots_controller_1 = require("./screenshots.controller");
 let ScreenshotsModule = class ScreenshotsModule {
 };
 exports.ScreenshotsModule = ScreenshotsModule;
 exports.ScreenshotsModule = ScreenshotsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([screenshot_hash_entity_1.ScreenshotHash])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([screenshot_hash_entity_1.ScreenshotHash, screenshot_entity_1.Screenshot])],
+        controllers: [screenshots_controller_1.ScreenshotsController],
         providers: [screenshots_service_1.ScreenshotsService],
         exports: [screenshots_service_1.ScreenshotsService],
     })

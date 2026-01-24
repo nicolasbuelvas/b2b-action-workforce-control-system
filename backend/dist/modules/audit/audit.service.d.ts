@@ -8,6 +8,10 @@ import { Category } from '../categories/entities/category.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
 import { Company } from '../research/entities/company.entity';
 import { User } from '../users/entities/user.entity';
+import { InquiryTask } from '../inquiry/entities/inquiry-task.entity';
+import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
+import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
+import { ScreenshotsService } from '../screenshots/screenshots.service';
 export declare class AuditService {
     private readonly researchRepo;
     private readonly auditRepo;
@@ -17,7 +21,11 @@ export declare class AuditService {
     private readonly userCategoryRepo;
     private readonly companyRepo;
     private readonly userRepo;
-    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, companyRepo: Repository<Company>, userRepo: Repository<User>);
+    private readonly inquiryTaskRepo;
+    private readonly inquiryActionRepo;
+    private readonly outreachRepo;
+    private readonly screenshotsService;
+    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, companyRepo: Repository<Company>, userRepo: Repository<User>, inquiryTaskRepo: Repository<InquiryTask>, inquiryActionRepo: Repository<InquiryAction>, outreachRepo: Repository<OutreachRecord>, screenshotsService: ScreenshotsService);
     getPendingResearch(auditorUserId: string): Promise<{
         id: string;
         categoryId: string;
@@ -34,4 +42,25 @@ export declare class AuditService {
         submission: ResearchSubmission;
     }[]>;
     auditResearch(researchTaskId: string, dto: AuditResearchDto, auditorUserId: string): Promise<ResearchTask>;
+    getPendingInquiry(auditorUserId: string): Promise<{
+        id: string;
+        categoryId: string;
+        categoryName: string;
+        assignedToUserId: string;
+        workerName: string;
+        workerEmail: string;
+        targetId: string;
+        companyName: any;
+        companyDomain: any;
+        companyCountry: any;
+        language: any;
+        actionType: string;
+        createdAt: Date;
+        actionCreatedAt: Date;
+        action: InquiryAction;
+        outreach: OutreachRecord;
+        screenshotUrl: string;
+        isDuplicate: boolean;
+    }[]>;
+    auditInquiry(inquiryTaskId: string, dto: AuditResearchDto, auditorUserId: string): Promise<InquiryTask>;
 }

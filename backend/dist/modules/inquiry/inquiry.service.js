@@ -245,6 +245,15 @@ let InquiryService = class InquiryService {
                 status: inquiry_action_entity_1.InquiryActionStatus.PENDING,
             });
             console.log('[SERVICE-SUBMIT] Action created:', action.id);
+            console.log('[SERVICE-SUBMIT] Saving screenshot file...');
+            try {
+                await this.screenshotsService.saveScreenshotFile(screenshotBuffer, action.id, userId, 'image/png');
+                console.log('[SERVICE-SUBMIT] Screenshot file saved');
+            }
+            catch (err) {
+                console.error('[SERVICE-SUBMIT] ERROR: Screenshot file save failed:', err.message);
+                throw err;
+            }
             console.log('[SERVICE-SUBMIT] Creating outreach record...');
             await manager.getRepository(outreach_record_entity_1.OutreachRecord).save({
                 inquiryTaskId: task.id,

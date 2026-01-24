@@ -213,15 +213,19 @@ export default function WebsiteResearchTasksPage() {
 
       console.log('[SUBMIT] Task submitted successfully');
 
-
-
-      // Update task status to submitted and show confirmation
-      const updatedTasks = tasks.map(t =>
-        t.id === activeTask.id ? { ...t, status: 'submitted' as const } : t
-      );
-      setTasks(updatedTasks);
+      // IMMEDIATE UI UPDATE - Update task status to submitted and show confirmation
+      const updatedTask = { 
+        ...activeTask, 
+        status: 'submitted' as const,
+        name: formData.companyName, // Preserve submitted data
+        country: formData.country,
+      };
       
-      const updatedTask = { ...activeTask, status: 'submitted' as const };
+      const updatedTasks = tasks.map(t =>
+        t.id === activeTask.id ? updatedTask : t
+      );
+      
+      setTasks(updatedTasks);
       setActiveTask(updatedTask);
       setSubmissionConfirmed(true);
     } catch (err: any) {
@@ -513,11 +517,12 @@ export default function WebsiteResearchTasksPage() {
                 </div>
               )}
 
-              {/* SUBMITTED TASK - READ-ONLY VIEW */}
+              {/* SUBMITTED TASK - READ-ONLY VIEW WITH CONFIRMATION */}
               {activeTask.status === 'submitted' && (
                 <div className="editor-content">
-                  <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', marginBottom: '20px', color: '#1e40af' }}>
-                    ✓ This task has been submitted and is awaiting audit.
+                  <div style={{ background: '#d1fae5', padding: '20px', borderRadius: '8px', marginBottom: '20px', color: '#065f46', border: '2px solid #10b981' }}>
+                    <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>✅ Submission Successful</div>
+                    <p style={{ margin: 0, fontSize: '14px' }}>Your research has been submitted and is now awaiting audit review.</p>
                   </div>
                   
                   <div className="form-group">
@@ -525,34 +530,34 @@ export default function WebsiteResearchTasksPage() {
                     <input type="text" value={activeTask.domain} disabled style={{ background: '#f1f5f9' }} />
                   </div>
                   
-                  {activeTask.name && (
-                    <div className="form-group">
-                      <label>Company Name</label>
-                      <input type="text" value={activeTask.name} disabled style={{ background: '#f1f5f9' }} />
-                    </div>
-                  )}
+                  <div className="form-group">
+                    <label>Company Name</label>
+                    <input type="text" value={formData.companyName || activeTask.name || ''} disabled style={{ background: '#f1f5f9' }} />
+                  </div>
                   
                   <div className="form-group">
                     <label>Country</label>
-                    <input type="text" value={activeTask.country} disabled style={{ background: '#f1f5f9' }} />
+                    <input type="text" value={formData.country || activeTask.country || ''} disabled style={{ background: '#f1f5f9' }} />
+                  </div>
                   
-                                    {!submissionConfirmed && (
-                                      <div className="action-row" style={{ marginTop: '30px' }}>
-                                        <button 
-                                          className="btn-submit-task"
-                                          onClick={() => {
-                                            setSubmissionConfirmed(true);
-                                            const updatedTasks = tasks.filter(t => t.id !== activeTask.id);
-                                            setTasks(updatedTasks);
-                                            setActiveTask(null);
-                                            setFormData({ companyName: '', country: '', language: '' });
-                                          }}
-                                          style={{ width: '100%', padding: '12px', background: '#22c55e' }}
-                                        >
-                                          Understood
-                                        </button>
-                                      </div>
-                                    )}
+                  <div className="form-group">
+                    <label>Website Language</label>
+                    <input type="text" value={formData.language || ''} disabled style={{ background: '#f1f5f9' }} />
+                  </div>
+
+                  <div className="action-row" style={{ marginTop: '30px' }}>
+                    <button 
+                      className="btn-submit-task"
+                      onClick={() => {
+                        // Clear and move to next task
+                        setActiveTask(null);
+                        setFormData({ companyName: '', country: '', language: '' });
+                        setSubmissionConfirmed(false);
+                      }}
+                      style={{ width: '100%', padding: '12px', background: '#22c55e' }}
+                    >
+                      ✓ Done - Select Next Task
+                    </button>
                   </div>
                 </div>
               )}

@@ -56,12 +56,8 @@ import LinkedinEvidenceUploadsPage from '../pages/inquiry/linkedin/LinkedinEvide
 
 /* ===== AUDIT PAGES ===== */
 import WebsiteAuditorPendingPage from '../pages/audit-inquirer/website/WebsiteAuditorPendingPage';
-import WebsiteAuditorFlagsPage from '../pages/audit-inquirer/website/WebsiteAuditorFlagsPage';
-import WebsiteAuditorHistoryPage from '../pages/audit-inquirer/website/WebsiteAuditorHistoryPage';
 
 import LinkedinAuditorPendingPage from '../pages/audit-inquirer/linkedin/LinkedinAuditorPendingPage';
-import LinkedinAuditorFlagsPage from '../pages/audit-inquirer/linkedin/LinkedinAuditorFlagsPage';
-import LinkedinAuditorHistoryPage from '../pages/audit-inquirer/linkedin/LinkedinAuditorHistoryPage';
 
 import WebsiteResearchAuditorDashboard from '../pages/audit-researcher/website/WebsiteResearchAuditorDashboard';
 import WebsiteResearchAuditorPendingPage from '../pages/audit-researcher/website/WebsiteResearchAuditorPendingPage';
@@ -147,8 +143,6 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<WebsiteAuditorDashboard />} />
           <Route path="pending" element={<WebsiteAuditorPendingPage />} />
-          <Route path="flags" element={<WebsiteAuditorFlagsPage />} />
-          <Route path="history" element={<WebsiteAuditorHistoryPage />} />
         </Route>
       </Route>
 
@@ -158,8 +152,6 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<LinkedinAuditorDashboard />} />
           <Route path="pending" element={<LinkedinAuditorPendingPage />} />
-          <Route path="flags" element={<LinkedinAuditorFlagsPage />} />
-          <Route path="history" element={<LinkedinAuditorHistoryPage />} />
         </Route>
       </Route>
 
