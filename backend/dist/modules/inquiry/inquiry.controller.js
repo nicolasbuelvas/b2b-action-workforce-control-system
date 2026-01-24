@@ -16,7 +16,6 @@ exports.InquiryController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const inquiry_service_1 = require("./inquiry.service");
-const submit_inquiry_dto_1 = require("./dto/submit-inquiry.dto");
 const jwt_guard_1 = require("../../common/guards/jwt.guard");
 const roles_guard_1 = require("../../common/guards/roles.guard");
 const current_user_decorator_1 = require("../../common/decorators/current-user.decorator");
@@ -34,8 +33,17 @@ let InquiryController = class InquiryController {
     takeInquiry(body, userId) {
         return this.inquiryService.takeInquiry(body.inquiryTaskId, userId);
     }
-    submitInquiry(dto, file, userId) {
-        return this.inquiryService.submitInquiry(dto, file.buffer, userId);
+    submitInquiry(body, file, userId) {
+        console.log('[INQUIRY-SUBMIT] Body received:', body);
+        console.log('[INQUIRY-SUBMIT] Body keys:', Object.keys(body));
+        console.log('[INQUIRY-SUBMIT] File received:', file ? `${file.originalname} (${file.size} bytes)` : 'NO FILE');
+        console.log('[INQUIRY-SUBMIT] UserId:', userId);
+        const dto = {
+            inquiryTaskId: body.inquiryTaskId,
+            actionType: body.actionType,
+        };
+        console.log('[INQUIRY-SUBMIT] Constructed DTO:', dto);
+        return this.inquiryService.submitInquiry(dto, file?.buffer, userId);
     }
 };
 exports.InquiryController = InquiryController;
@@ -70,7 +78,7 @@ __decorate([
     __param(1, (0, common_1.UploadedFile)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)('userId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [submit_inquiry_dto_1.SubmitInquiryDto, Object, String]),
+    __metadata("design:paramtypes", [Object, Object, String]),
     __metadata("design:returntype", void 0)
 ], InquiryController.prototype, "submitInquiry", null);
 exports.InquiryController = InquiryController = __decorate([

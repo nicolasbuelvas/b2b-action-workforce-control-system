@@ -226,6 +226,12 @@ export class InquiryService {
     screenshotBuffer: Buffer,
     userId: string,
   ) {
+    console.log('[submitInquiry] Processing submission for taskId:', dto.inquiryTaskId);
+    
+    if (!screenshotBuffer) {
+      throw new BadRequestException('Screenshot is required');
+    }
+
     const task = await this.taskRepo.findOne({
       where: { id: dto.inquiryTaskId },
     });
@@ -290,6 +296,8 @@ export class InquiryService {
       categoryId: task.categoryId,
       actionType: dto.actionType,
     });
+
+    console.log('[submitInquiry] Submission successful, actionId:', action.id);
 
     return action;
   }

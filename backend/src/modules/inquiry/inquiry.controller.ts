@@ -50,13 +50,26 @@ export class InquiryController {
   @Post('submit')
   @UseInterceptors(FileInterceptor('screenshot'))
   submitInquiry(
-    @Body() dto: SubmitInquiryDto,
+    @Body() body: any,
     @UploadedFile() file: any,
     @CurrentUser('userId') userId: string,
   ) {
+    console.log('[INQUIRY-SUBMIT] Body received:', body);
+    console.log('[INQUIRY-SUBMIT] Body keys:', Object.keys(body));
+    console.log('[INQUIRY-SUBMIT] File received:', file ? `${file.originalname} (${file.size} bytes)` : 'NO FILE');
+    console.log('[INQUIRY-SUBMIT] UserId:', userId);
+    
+    // Manually construct the DTO from form fields
+    const dto: SubmitInquiryDto = {
+      inquiryTaskId: body.inquiryTaskId,
+      actionType: body.actionType as any,
+    };
+    
+    console.log('[INQUIRY-SUBMIT] Constructed DTO:', dto);
+    
     return this.inquiryService.submitInquiry(
       dto,
-      file.buffer,
+      file?.buffer,
       userId,
     );
   }

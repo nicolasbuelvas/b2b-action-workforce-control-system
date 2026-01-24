@@ -1,5 +1,4 @@
 import { InquiryService } from './inquiry.service';
-import { SubmitInquiryDto } from './dto/submit-inquiry.dto';
 export declare class InquiryController {
     private readonly inquiryService;
     constructor(inquiryService: InquiryService);
@@ -8,7 +7,7 @@ export declare class InquiryController {
     takeInquiry(body: {
         inquiryTaskId: string;
     }, userId: string): Promise<import("./entities/inquiry-task.entity").InquiryTask>;
-    submitInquiry(dto: SubmitInquiryDto, file: any, userId: string): Promise<{
+    submitInquiry(body: any, file: any, userId: string): Promise<{
         inquiryTaskId: string;
         actionIndex: number;
         performedByUserId: string;

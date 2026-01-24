@@ -54,9 +54,14 @@ export const inquiryApi = {
     formData.append('actionType', actionType);
     formData.append('screenshot', screenshot);
 
+    console.log('[submitAction] Sending to /inquiry/submit');
+    console.log('[submitAction] inquiryTaskId:', inquiryTaskId);
+    console.log('[submitAction] actionType:', actionType);
+    console.log('[submitAction] screenshot:', screenshot.name, `(${screenshot.size} bytes)`);
+
     const response = await axios.post('/inquiry/submit', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined,
       },
     });
     return response.data;

@@ -158,6 +158,10 @@ let InquiryService = class InquiryService {
         return this.taskRepo.save(task);
     }
     async submitInquiry(dto, screenshotBuffer, userId) {
+        console.log('[submitInquiry] Processing submission for taskId:', dto.inquiryTaskId);
+        if (!screenshotBuffer) {
+            throw new common_1.BadRequestException('Screenshot is required');
+        }
         const task = await this.taskRepo.findOne({
             where: { id: dto.inquiryTaskId },
         });
@@ -204,6 +208,7 @@ let InquiryService = class InquiryService {
             categoryId: task.categoryId,
             actionType: dto.actionType,
         });
+        console.log('[submitInquiry] Submission successful, actionId:', action.id);
         return action;
     }
 };
