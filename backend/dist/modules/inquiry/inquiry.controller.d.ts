@@ -8,9 +8,12 @@ export declare class InquiryController {
         inquiryTaskId: string;
     }, userId: string): Promise<import("./entities/inquiry-task.entity").InquiryTask>;
     submitInquiry(body: any, file: any, userId: string): Promise<{
-        inquiryTaskId: string;
-        actionIndex: number;
-        performedByUserId: string;
-        status: import("./entities/inquiry-action.entity").InquiryActionStatus.PENDING;
-    } & import("./entities/inquiry-action.entity").InquiryAction>;
+        action: {
+            inquiryTaskId: string;
+            actionIndex: number;
+            performedByUserId: string;
+            status: import("./entities/inquiry-action.entity").InquiryActionStatus.PENDING;
+        } & import("./entities/inquiry-action.entity").InquiryAction;
+        screenshotDuplicate: any;
+    }>;
 }

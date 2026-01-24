@@ -3,5 +3,9 @@ import { ScreenshotHash } from './entities/screenshot-hash.entity';
 export declare class ScreenshotsService {
     private readonly hashRepo;
     constructor(hashRepo: Repository<ScreenshotHash>);
-    processScreenshot(buffer: Buffer, userId: string, mimeType?: string): Promise<string>;
+    processScreenshot(buffer: Buffer, userId: string, mimeType?: string): Promise<{
+        screenshotId: string;
+        isDuplicate: boolean;
+        existingScreenshotId?: string;
+    }>;
 }

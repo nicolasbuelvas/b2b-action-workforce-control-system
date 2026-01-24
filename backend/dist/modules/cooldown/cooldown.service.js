@@ -51,27 +51,39 @@ let CooldownService = class CooldownService {
         });
     }
     async recordAction(params) {
-        const { userId, targetId, categoryId } = params;
+        const { userId, targetId, categoryId, actionType, manager } = params;
+        if (!actionType) {
+            console.error('[COOLDOWN] ERROR: actionType is required for cooldown record');
+            throw new common_1.BadRequestException('actionType is required for cooldown record');
+        }
         const category = await this.categoriesService.getById(categoryId);
         const cooldownRules = category.config?.cooldownRules || {};
         const cooldownDays = Math.min(...Object.values(cooldownRules).filter(v => typeof v === 'number')) || 30;
-        if (cooldownDays <= 0)
+        if (cooldownDays <= 0) {
+            console.log('[COOLDOWN] No cooldown configured, skipping');
             return;
-        let record = await this.cooldownRepo.findOne({
+        }
+        const repo = manager ? manager.getRepository(cooldown_record_entity_1.CooldownRecord) : this.cooldownRepo;
+        let record = await repo.findOne({
             where: { userId, targetId, categoryId },
         });
         if (!record) {
-            record = this.cooldownRepo.create({
+            record = repo.create({
                 userId,
                 targetId,
                 categoryId,
+                actionType,
                 cooldownStartedAt: new Date(),
             });
+            console.log('[COOLDOWN] Creating new cooldown record with actionType:', actionType);
         }
         else {
+            record.actionType = actionType;
             record.cooldownStartedAt = new Date();
+            console.log('[COOLDOWN] Updating cooldown record with actionType:', actionType);
         }
-        await this.cooldownRepo.save(record);
+        await repo.save(record);
+        console.log('[COOLDOWN] Cooldown record saved successfully');
     }
 };
 exports.CooldownService = CooldownService;

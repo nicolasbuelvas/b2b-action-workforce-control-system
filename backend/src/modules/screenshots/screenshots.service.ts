@@ -19,7 +19,7 @@ export class ScreenshotsService {
     buffer: Buffer,
     userId: string,
     mimeType?: string,
-  ): Promise<string> {
+  ): Promise<{ screenshotId: string; isDuplicate: boolean; existingScreenshotId?: string }> {
     if (!buffer || !buffer.length) {
       throw new BadRequestException({
         code: 'INVALID_SCREENSHOT',
@@ -29,24 +29,32 @@ export class ScreenshotsService {
 
     const hash = generateFileHash(buffer);
 
-    const exists = await this.hashRepo.findOne({
+    const existing = await this.hashRepo.findOne({
       where: { hash },
     });
 
-    if (exists) {
-      throw new BadRequestException({
-        code: 'DUPLICATE_SCREENSHOT',
-        message: 'Duplicate screenshot detected',
-      });
+    if (existing) {
+      // Duplicate detected - return info about existing screenshot
+      console.log('[SCREENSHOTS] Duplicate screenshot detected:', existing.id);
+      return {
+        screenshotId: existing.id,
+        isDuplicate: true,
+        existingScreenshotId: existing.id,
+      };
     }
 
-    await this.hashRepo.save({
+    const saved = await this.hashRepo.save({
       hash,
       uploadedByUserId: userId,
       fileSize: buffer.length,
       mimeType: mimeType ?? 'unknown',
     });
 
-    return hash;
+    console.log('[SCREENSHOTS] New screenshot saved:', saved.id);
+
+    return {
+      screenshotId: saved.id,
+      isDuplicate: false,
+    };
   }
 }

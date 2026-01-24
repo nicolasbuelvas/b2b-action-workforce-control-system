@@ -3,7 +3,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 
 import {
   InquiryAction,
@@ -54,6 +54,7 @@ export class InquiryService {
 
     private readonly screenshotsService: ScreenshotsService,
     private readonly cooldownService: CooldownService,
+    private readonly dataSource: DataSource,
   ) {}
 
   // ===============================
@@ -226,79 +227,152 @@ export class InquiryService {
     screenshotBuffer: Buffer,
     userId: string,
   ) {
-    console.log('[submitInquiry] Processing submission for taskId:', dto.inquiryTaskId);
-    
-    if (!screenshotBuffer) {
-      throw new BadRequestException('Screenshot is required');
+    console.log('[SERVICE-SUBMIT] ========== START =========');
+    console.log('[SERVICE-SUBMIT] User:', userId);
+    console.log('[SERVICE-SUBMIT] Task:', dto.inquiryTaskId);
+    console.log('[SERVICE-SUBMIT] Type:', dto.actionType);
+    console.log('[SERVICE-SUBMIT] Buffer size:', screenshotBuffer?.length || 0);
+
+    // Validate actionType is present and in allowed values
+    if (!dto.actionType) {
+      console.error('[SERVICE-SUBMIT] ERROR: actionType is required');
+      throw new BadRequestException('actionType is required');
     }
 
-    const task = await this.taskRepo.findOne({
-      where: { id: dto.inquiryTaskId },
-    });
-
-    if (!task) {
-      throw new BadRequestException('Inquiry task not found');
+    const validActionTypes = ['EMAIL', 'LINKEDIN', 'CALL'];
+    if (!validActionTypes.includes(dto.actionType)) {
+      console.error('[SERVICE-SUBMIT] ERROR: Invalid actionType:', dto.actionType);
+      throw new BadRequestException(`actionType must be one of: ${validActionTypes.join(', ')}`);
     }
 
-    if (task.assignedToUserId !== userId) {
-      throw new BadRequestException('Not your inquiry task');
+    // Validate buffer presence
+    if (!screenshotBuffer || screenshotBuffer.length === 0) {
+      console.error('[SERVICE-SUBMIT] ERROR: No buffer');
+      throw new BadRequestException('Screenshot buffer required');
     }
 
-    if (task.status !== InquiryStatus.IN_PROGRESS) {
-      throw new BadRequestException(
-        'Inquiry is not in progress',
-      );
-    }
+    // Start transaction
+    const result = await this.dataSource.transaction(async (manager) => {
+      console.log('[SERVICE-SUBMIT] Transaction started');
 
-    const pending = await this.actionRepo.findOne({
-      where: {
+      // Fetch task using transactional manager
+      console.log('[SERVICE-SUBMIT] Fetching task...');
+      const task = await manager.getRepository(InquiryTask).findOne({
+        where: { id: dto.inquiryTaskId },
+      });
+
+      if (!task) {
+        console.error('[SERVICE-SUBMIT] ERROR: Task not found');
+        throw new BadRequestException('Inquiry task not found');
+      }
+
+      console.log('[SERVICE-SUBMIT] Task found. Status:', task.status, 'Owner:', task.assignedToUserId);
+
+      // Validate ownership
+      if (task.assignedToUserId !== userId) {
+        console.error('[SERVICE-SUBMIT] ERROR: Not owner. Assigned to:', task.assignedToUserId);
+        throw new BadRequestException('Not your inquiry task');
+      }
+
+      // Validate status
+      if (task.status !== InquiryStatus.IN_PROGRESS) {
+        console.error('[SERVICE-SUBMIT] ERROR: Wrong status:', task.status);
+        throw new BadRequestException('Inquiry is not in progress');
+      }
+
+      // Check for existing pending action
+      console.log('[SERVICE-SUBMIT] Checking pending actions...');
+      const pending = await manager.getRepository(InquiryAction).findOne({
+        where: {
+          inquiryTaskId: task.id,
+          status: InquiryActionStatus.PENDING,
+        },
+      });
+
+      if (pending) {
+        console.error('[SERVICE-SUBMIT] ERROR: Pending action exists');
+        throw new BadRequestException('There is already a pending action');
+      }
+
+      // Enforce cooldown before any DB modifications
+      console.log('[SERVICE-SUBMIT] Enforcing cooldown...');
+      try {
+        await this.cooldownService.enforceCooldown({
+          userId,
+          targetId: task.targetId,
+          categoryId: task.categoryId,
+          actionType: dto.actionType,
+        });
+        console.log('[SERVICE-SUBMIT] Cooldown OK');
+      } catch (err) {
+        console.error('[SERVICE-SUBMIT] ERROR: Cooldown violation:', err.message);
+        throw err;
+      }
+
+      // Process screenshot (duplicate is allowed, returns isDuplicate flag)
+      console.log('[SERVICE-SUBMIT] Processing screenshot...');
+      let screenshotResult;
+      try {
+        screenshotResult = await this.screenshotsService.processScreenshot(
+          screenshotBuffer,
+          userId,
+        );
+        console.log('[SERVICE-SUBMIT] Screenshot result:', {
+          screenshotId: screenshotResult.screenshotId,
+          isDuplicate: screenshotResult.isDuplicate,
+        });
+      } catch (err) {
+        console.error('[SERVICE-SUBMIT] ERROR: Screenshot processing failed:', err.message);
+        throw err;
+      }
+
+      // Create action record in transaction
+      console.log('[SERVICE-SUBMIT] Creating action record...');
+      const action = await manager.getRepository(InquiryAction).save({
         inquiryTaskId: task.id,
+        actionIndex: 1,
+        performedByUserId: userId,
         status: InquiryActionStatus.PENDING,
-      },
-    });
+      });
+      console.log('[SERVICE-SUBMIT] Action created:', action.id);
 
-    if (pending) {
-      throw new BadRequestException(
-        'There is already a pending action',
-      );
-    }
-
-    await this.cooldownService.enforceCooldown({
-      userId,
-      targetId: task.targetId,
-      categoryId: task.categoryId,
-      actionType: dto.actionType,
-    });
-
-    const screenshotHash =
-      await this.screenshotsService.processScreenshot(
-        screenshotBuffer,
+      // Create outreach record in transaction
+      console.log('[SERVICE-SUBMIT] Creating outreach record...');
+      await manager.getRepository(OutreachRecord).save({
+        inquiryTaskId: task.id,
         userId,
-      );
+        actionType: dto.actionType,
+        inquiryActionId: action.id,
+      });
+      console.log('[SERVICE-SUBMIT] Outreach record created');
 
-    const action = await this.actionRepo.save({
-      inquiryTaskId: task.id,
-      actionIndex: 1,
-      performedByUserId: userId,
-      status: InquiryActionStatus.PENDING,
+      // Record cooldown action in transaction
+      console.log('[SERVICE-SUBMIT] Recording cooldown...');
+      try {
+        await this.cooldownService.recordAction({
+          userId,
+          targetId: task.targetId,
+          categoryId: task.categoryId,
+          actionType: dto.actionType,
+          manager, // Pass manager for transactional cooldown recording
+        });
+        console.log('[SERVICE-SUBMIT] Cooldown recorded');
+      } catch (err) {
+        console.error('[SERVICE-SUBMIT] ERROR: Cooldown recording failed:', err.message);
+        throw err;
+      }
+
+      console.log('[SERVICE-SUBMIT] Transaction completed successfully');
+
+      // Return action with screenshot info
+      return {
+        action,
+        screenshotDuplicate: screenshotResult.isDuplicate,
+      };
     });
 
-    await this.outreachRepo.save({
-      inquiryTaskId: task.id,
-      userId,
-      actionType: dto.actionType,
-      inquiryActionId: action.id,
-    });
+    console.log('[SERVICE-SUBMIT] ========== SUCCESS =========');
 
-    await this.cooldownService.recordAction({
-      userId,
-      targetId: task.targetId,
-      categoryId: task.categoryId,
-      actionType: dto.actionType,
-    });
-
-    console.log('[submitInquiry] Submission successful, actionId:', action.id);
-
-    return action;
+    return result;
   }
 }

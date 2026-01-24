@@ -30,22 +30,28 @@ let ScreenshotsService = class ScreenshotsService {
             });
         }
         const hash = (0, hash_util_1.generateFileHash)(buffer);
-        const exists = await this.hashRepo.findOne({
+        const existing = await this.hashRepo.findOne({
             where: { hash },
         });
-        if (exists) {
-            throw new common_1.BadRequestException({
-                code: 'DUPLICATE_SCREENSHOT',
-                message: 'Duplicate screenshot detected',
-            });
+        if (existing) {
+            console.log('[SCREENSHOTS] Duplicate screenshot detected:', existing.id);
+            return {
+                screenshotId: existing.id,
+                isDuplicate: true,
+                existingScreenshotId: existing.id,
+            };
         }
-        await this.hashRepo.save({
+        const saved = await this.hashRepo.save({
             hash,
             uploadedByUserId: userId,
             fileSize: buffer.length,
             mimeType: mimeType ?? 'unknown',
         });
-        return hash;
+        console.log('[SCREENSHOTS] New screenshot saved:', saved.id);
+        return {
+            screenshotId: saved.id,
+            isDuplicate: false,
+        };
     }
 };
 exports.ScreenshotsService = ScreenshotsService;

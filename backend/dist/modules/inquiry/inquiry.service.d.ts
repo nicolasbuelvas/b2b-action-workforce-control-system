@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { InquiryAction, InquiryActionStatus } from './entities/inquiry-action.entity';
 import { InquiryTask } from './entities/inquiry-task.entity';
 import { OutreachRecord } from './entities/outreach-record.entity';
@@ -21,13 +21,17 @@ export declare class InquiryService {
     private readonly userCategoryRepo;
     private readonly screenshotsService;
     private readonly cooldownService;
-    constructor(actionRepo: Repository<InquiryAction>, taskRepo: Repository<InquiryTask>, outreachRepo: Repository<OutreachRecord>, researchRepo: Repository<ResearchTask>, submissionRepo: Repository<ResearchSubmission>, companyRepo: Repository<Company>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, screenshotsService: ScreenshotsService, cooldownService: CooldownService);
+    private readonly dataSource;
+    constructor(actionRepo: Repository<InquiryAction>, taskRepo: Repository<InquiryTask>, outreachRepo: Repository<OutreachRecord>, researchRepo: Repository<ResearchTask>, submissionRepo: Repository<ResearchSubmission>, companyRepo: Repository<Company>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, screenshotsService: ScreenshotsService, cooldownService: CooldownService, dataSource: DataSource);
     getAvailableTasks(userId: string, type: 'website' | 'linkedin'): Promise<any[]>;
     takeInquiry(researchTaskId: string, userId: string): Promise<InquiryTask>;
     submitInquiry(dto: SubmitInquiryDto, screenshotBuffer: Buffer, userId: string): Promise<{
-        inquiryTaskId: string;
-        actionIndex: number;
-        performedByUserId: string;
-        status: InquiryActionStatus.PENDING;
-    } & InquiryAction>;
+        action: {
+            inquiryTaskId: string;
+            actionIndex: number;
+            performedByUserId: string;
+            status: InquiryActionStatus.PENDING;
+        } & InquiryAction;
+        screenshotDuplicate: any;
+    }>;
 }

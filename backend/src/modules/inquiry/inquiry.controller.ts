@@ -7,6 +7,7 @@ import {
   UploadedFile,
   UseInterceptors,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -49,28 +50,78 @@ export class InquiryController {
 
   @Post('submit')
   @UseInterceptors(FileInterceptor('screenshot'))
-  submitInquiry(
+  async submitInquiry(
     @Body() body: any,
     @UploadedFile() file: any,
     @CurrentUser('userId') userId: string,
   ) {
-    console.log('[INQUIRY-SUBMIT] Body received:', body);
-    console.log('[INQUIRY-SUBMIT] Body keys:', Object.keys(body));
-    console.log('[INQUIRY-SUBMIT] File received:', file ? `${file.originalname} (${file.size} bytes)` : 'NO FILE');
-    console.log('[INQUIRY-SUBMIT] UserId:', userId);
-    
-    // Manually construct the DTO from form fields
-    const dto: SubmitInquiryDto = {
-      inquiryTaskId: body.inquiryTaskId,
-      actionType: body.actionType as any,
-    };
-    
-    console.log('[INQUIRY-SUBMIT] Constructed DTO:', dto);
-    
-    return this.inquiryService.submitInquiry(
-      dto,
-      file?.buffer,
-      userId,
-    );
+    try {
+      console.log('[INQUIRY-SUBMIT] ========== REQUEST START =========');
+      console.log('[INQUIRY-SUBMIT] UserId:', userId);
+      console.log('[INQUIRY-SUBMIT] Body:', body);
+      console.log('[INQUIRY-SUBMIT] Body keys:', body ? Object.keys(body) : 'NO BODY');
+      console.log('[INQUIRY-SUBMIT] File:', file ? `${file.originalname} (${file.size} bytes)` : 'NO FILE');
+
+      // Validate file exists
+      if (!file) {
+        console.error('[INQUIRY-SUBMIT] ERROR: No file uploaded');
+        throw new BadRequestException('Screenshot file is required');
+      }
+
+      if (!file.buffer) {
+        console.error('[INQUIRY-SUBMIT] ERROR: File buffer missing');
+        throw new BadRequestException('Invalid file - buffer missing');
+      }
+
+      if (file.size === 0) {
+        console.error('[INQUIRY-SUBMIT] ERROR: File empty');
+        throw new BadRequestException('File cannot be empty');
+      }
+
+      // Validate body fields
+      if (!body || !body.inquiryTaskId) {
+        console.error('[INQUIRY-SUBMIT] ERROR: Missing inquiryTaskId');
+        throw new BadRequestException('inquiryTaskId is required');
+      }
+
+      if (!body.actionType) {
+        console.error('[INQUIRY-SUBMIT] ERROR: Missing actionType');
+        throw new BadRequestException('actionType is required');
+      }
+
+      // Validate UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(body.inquiryTaskId)) {
+        console.error('[INQUIRY-SUBMIT] ERROR: Invalid UUID:', body.inquiryTaskId);
+        throw new BadRequestException('inquiryTaskId must be a valid UUID');
+      }
+
+      // Validate actionType
+      const validTypes = ['EMAIL', 'LINKEDIN', 'CALL'];
+      if (!validTypes.includes(body.actionType)) {
+        console.error('[INQUIRY-SUBMIT] ERROR: Invalid actionType:', body.actionType);
+        throw new BadRequestException(`actionType must be one of: ${validTypes.join(', ')}`);
+      }
+
+      const dto: SubmitInquiryDto = {
+        inquiryTaskId: body.inquiryTaskId,
+        actionType: body.actionType,
+      };
+      console.log('[INQUIRY-SUBMIT] DTO constructed:', dto);
+
+      const result = await this.inquiryService.submitInquiry(
+        dto,
+        file.buffer,
+        userId,
+      );
+
+      console.log('[INQUIRY-SUBMIT] ========== REQUEST SUCCESS =========');
+      return result;
+    } catch (error: any) {
+      console.error('[INQUIRY-SUBMIT] ========== REQUEST FAILED =========');
+      console.error('[INQUIRY-SUBMIT] Error:', error.message);
+      console.error('[INQUIRY-SUBMIT] Stack:', error.stack);
+      throw error;
+    }
   }
 }

@@ -9,7 +9,7 @@ import {
 
 @Entity('cooldown_records')
 @Index(
-  ['userId', 'targetId', 'categoryId'],
+  ['userId', 'targetId', 'actionType', 'categoryId'],
   { unique: true },
 )
 export class CooldownRecord {
@@ -24,6 +24,12 @@ export class CooldownRecord {
 
   @Column()
   categoryId: string;
+
+  @Column()
+  actionType: string; // EMAIL | LINKEDIN | CALL
+
+  @Column({ type: 'int', default: 0 })
+  actionCount: number;
 
   @Column({ type: 'timestamptz', nullable: true })
   cooldownStartedAt: Date | null;

@@ -1,9 +1,10 @@
 import {
   Injectable,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 
 import { CooldownRecord } from './entities/cooldown-record.entity';
 import { CategoriesService } from '../categories/categories.service';
@@ -61,30 +62,48 @@ export class CooldownService {
     targetId: string;
     categoryId: string;
     actionType: string;
+    manager?: EntityManager;
   }) {
-    const { userId, targetId, categoryId } = params;
+    const { userId, targetId, categoryId, actionType, manager } = params;
+
+    // Validate actionType is present
+    if (!actionType) {
+      console.error('[COOLDOWN] ERROR: actionType is required for cooldown record');
+      throw new BadRequestException('actionType is required for cooldown record');
+    }
 
     const category = await this.categoriesService.getById(categoryId);
     const cooldownRules = category.config?.cooldownRules || {};
     const cooldownDays = Math.min(...Object.values(cooldownRules).filter(v => typeof v === 'number')) || 30;
 
-    if (cooldownDays <= 0) return;
+    if (cooldownDays <= 0) {
+      console.log('[COOLDOWN] No cooldown configured, skipping');
+      return;
+    }
 
-    let record = await this.cooldownRepo.findOne({
+    // Use manager if provided (transaction context), otherwise use direct repo
+    const repo = manager ? manager.getRepository(CooldownRecord) : this.cooldownRepo;
+
+    let record = await repo.findOne({
       where: { userId, targetId, categoryId },
     });
 
     if (!record) {
-      record = this.cooldownRepo.create({
+      record = repo.create({
         userId,
         targetId,
         categoryId,
+        actionType, // Ensure actionType is saved
         cooldownStartedAt: new Date(),
       });
+      console.log('[COOLDOWN] Creating new cooldown record with actionType:', actionType);
     } else {
+      record.actionType = actionType; // Update actionType if record exists
       record.cooldownStartedAt = new Date();
+      console.log('[COOLDOWN] Updating cooldown record with actionType:', actionType);
     }
 
-    await this.cooldownRepo.save(record);
+    await repo.save(record);
+    console.log('[COOLDOWN] Cooldown record saved successfully');
   }
 }

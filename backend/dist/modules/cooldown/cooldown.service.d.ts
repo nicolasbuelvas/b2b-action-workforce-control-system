@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { CooldownRecord } from './entities/cooldown-record.entity';
 import { CategoriesService } from '../categories/categories.service';
 export declare class CooldownService {
@@ -16,5 +16,6 @@ export declare class CooldownService {
         targetId: string;
         categoryId: string;
         actionType: string;
+        manager?: EntityManager;
     }): Promise<void>;
 }

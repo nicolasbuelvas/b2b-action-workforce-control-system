@@ -43,6 +43,7 @@ export default function WebsiteInquiryTasksPage() {
   const [fileError, setFileError] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
+  const [duplicateWarning, setDuplicateWarning] = useState<string>('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -144,6 +145,7 @@ export default function WebsiteInquiryTasksPage() {
     setPreviewUrl('');
     setFileError('');
     setSubmitError('');
+    setDuplicateWarning('');
   };
 
   const handleClaimTask = async () => {
@@ -210,11 +212,20 @@ export default function WebsiteInquiryTasksPage() {
     try {
       setSubmitting(true);
       setSubmitError('');
-      await inquiryApi.submitAction(
+      setDuplicateWarning('');
+      
+      const response = await inquiryApi.submitAction(
         claimedTaskId,
         'EMAIL',
         proofFile,
       );
+      
+      // Check if response indicates duplicate screenshot
+      if (response?.screenshotDuplicate) {
+        setDuplicateWarning('Screenshot accepted (duplicate). Auditor will see duplicate flag.');
+      }
+      
+      // Clear form and remove task from list
       setTasks(tasks.filter(t => t.id !== selectedTask?.id));
       setSelectedTask(null);
       setClaimedTaskId(null);
@@ -223,8 +234,11 @@ export default function WebsiteInquiryTasksPage() {
       setMessageTitle('');
       setMessageContent('');
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to submit inquiry');
+      // Show backend error message if available, otherwise show generic message
+      const errorMessage = err?.response?.data?.message || err.message || 'Failed to submit inquiry';
+      setSubmitError(errorMessage);
       console.error('Error submitting inquiry:', err);
+      // Do not clear task state - allow user to retry with different file
     } finally {
       setSubmitting(false);
     }
@@ -486,6 +500,20 @@ export default function WebsiteInquiryTasksPage() {
                     </div>
 
                     {submitError && <div className="submit-error">{submitError}</div>}
+                    
+                    {duplicateWarning && (
+                      <div className="submit-warning" style={{
+                        background: '#fef3c7',
+                        border: '1px solid #fcd34d',
+                        borderRadius: '6px',
+                        padding: '12px 16px',
+                        marginBottom: '16px',
+                        color: '#92400e',
+                        fontSize: '14px',
+                      }}>
+                        ⚠️ {duplicateWarning}
+                      </div>
+                    )}
 
                     <div className="action-buttons">
                       <button
