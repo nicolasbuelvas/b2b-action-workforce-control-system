@@ -14,6 +14,7 @@ const inquiry_controller_1 = require("./inquiry.controller");
 const inquiry_action_entity_1 = require("./entities/inquiry-action.entity");
 const inquiry_task_entity_1 = require("./entities/inquiry-task.entity");
 const outreach_record_entity_1 = require("./entities/outreach-record.entity");
+const inquiry_submission_snapshot_entity_1 = require("./entities/inquiry-submission-snapshot.entity");
 const screenshots_module_1 = require("../screenshots/screenshots.module");
 const cooldown_module_1 = require("../cooldown/cooldown.module");
 const research_task_entity_1 = require("../research/entities/research-task.entity");
@@ -31,6 +32,7 @@ exports.InquiryModule = InquiryModule = __decorate([
                 inquiry_action_entity_1.InquiryAction,
                 inquiry_task_entity_1.InquiryTask,
                 outreach_record_entity_1.OutreachRecord,
+                inquiry_submission_snapshot_entity_1.InquirySubmissionSnapshot,
                 research_task_entity_1.ResearchTask,
                 research_submission_entity_1.ResearchSubmission,
                 company_entity_1.Company,

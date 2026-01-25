@@ -5,5 +5,7 @@ export type UserRole =
   | 'linkedin_researcher'
   | 'website_inquirer'
   | 'linkedin_inquirer'
-  | 'website_auditor'
-  | 'linkedin_auditor';
+  | 'website_inquirer_auditor'
+  | 'linkedin_inquirer_auditor'
+  | 'website_research_auditor'
+  | 'linkedin_research_auditor';

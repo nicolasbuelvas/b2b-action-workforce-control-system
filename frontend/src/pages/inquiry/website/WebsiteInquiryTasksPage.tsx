@@ -109,14 +109,27 @@ export default function WebsiteInquiryTasksPage() {
       setLoading(true);
       setError(null);
       const data = await inquiryApi.getWebsiteTasks();
+      const currentUserId = getCurrentUserId();
       
       // Filter by selected category (client-side for consistency)
       // Backend already filters by inquirer's categories
-      const filtered = selectedCategory
+      const categoryFiltered = selectedCategory
         ? (data || []).filter(t => t.categoryId === selectedCategory)
         : (data || []);
+
+      // Visibility rule: show only PENDING tasks or IN_PROGRESS tasks owned by current user
+      const visibilityFiltered = categoryFiltered.filter(task =>
+        task.status === 'PENDING' ||
+        (task.status === 'IN_PROGRESS' && currentUserId && task.assignedToUserId === currentUserId)
+      );
       
-      setTasks(filtered);
+      setTasks(visibilityFiltered);
+
+      // If the currently selected task is no longer visible, clear selection
+      if (selectedTask && !visibilityFiltered.some(t => t.id === selectedTask.id)) {
+        setSelectedTask(null);
+        setClaimedTaskId(null);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load tasks');
       console.error('Error loading tasks:', err);

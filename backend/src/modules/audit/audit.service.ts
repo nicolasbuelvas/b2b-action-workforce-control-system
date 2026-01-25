@@ -21,6 +21,7 @@ import { User } from '../users/entities/user.entity';
 import { InquiryTask, InquiryStatus } from '../inquiry/entities/inquiry-task.entity';
 import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
 import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
+import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
 
 @Injectable()
@@ -58,6 +59,9 @@ export class AuditService {
 
     @InjectRepository(OutreachRecord)
     private readonly outreachRepo: Repository<OutreachRecord>,
+
+    @InjectRepository(InquirySubmissionSnapshot)
+    private readonly snapshotRepo: Repository<InquirySubmissionSnapshot>,
 
     private readonly screenshotsService: ScreenshotsService,
   ) {}
@@ -199,14 +203,20 @@ export class AuditService {
 
     const enriched = await Promise.all(
       tasks.map(async task => {
-        const [action, category, worker, researchTask] = await Promise.all([
+        // SNAPSHOT IS THE SOURCE OF TRUTH
+        const snapshot = await this.snapshotRepo.findOne({
+          where: { inquiryTaskId: task.id },
+          order: { createdAt: 'DESC' },
+        });
+
+        // Fetch related data for worker and category info only
+        const [action, category, worker] = await Promise.all([
           this.inquiryActionRepo.findOne({
             where: { inquiryTaskId: task.id },
             order: { createdAt: 'DESC' },
           }),
           this.categoryRepo.findOne({ where: { id: task.categoryId } }),
           this.userRepo.findOne({ where: { id: task.assignedToUserId } }),
-          this.researchRepo.findOne({ where: { id: task.targetId } }),
         ]);
 
         const outreach = action
@@ -215,46 +225,18 @@ export class AuditService {
             })
           : null;
 
-        // Fetch company data and research submission for context
-        let company = null;
-        let researchSubmission = null;
-        if (researchTask) {
-          if (researchTask.targetType === 'COMPANY') {
-            company = await this.companyRepo.findOne({ where: { id: researchTask.targetId } });
-          }
-          researchSubmission = await this.submissionRepo.findOne({
-            where: { researchTaskId: researchTask.id },
-            order: { createdAt: 'DESC' },
-          });
-        }
-
         return {
           task,
           action,
           outreach,
           category,
           worker,
-          researchTask,
-          company,
-          researchSubmission,
+          snapshot, // Include snapshot (source of truth)
         };
       }),
     );
 
-    // Fetch screenshot metadata for all actions
-    const enrichedWithScreenshots = await Promise.all(
-      enriched.map(async item => {
-        let screenshot = null;
-        let isDuplicate = false;
-        if (item.action) {
-          screenshot = await this.screenshotsService.getScreenshotByActionId(item.action.id);
-          isDuplicate = screenshot?.isDuplicate ?? false;
-        }
-        return { ...item, screenshot, isDuplicate };
-      }),
-    );
-
-    return enrichedWithScreenshots.map(item => ({
+    return enriched.map(item => ({
       id: item.task.id,
       categoryId: item.task.categoryId,
       categoryName: item.category?.name || '',
@@ -262,17 +244,18 @@ export class AuditService {
       workerName: item.worker?.name || '',
       workerEmail: item.worker?.email || '',
       targetId: item.task.targetId,
-      companyName: item.company?.name || '',
-      companyDomain: item.company?.domain || '',
-      companyCountry: item.company?.country || '',
-      language: item.researchSubmission?.language || '',
+      // Use snapshot as source of truth for context
+      companyName: item.snapshot?.companyName || '',
+      companyDomain: item.snapshot?.companyUrl || '',
+      companyCountry: item.snapshot?.country || '',
+      language: item.snapshot?.language || '',
       actionType: item.outreach?.actionType || 'UNKNOWN',
       createdAt: item.task.createdAt,
       actionCreatedAt: item.action?.createdAt || null,
       action: item.action,
       outreach: item.outreach,
-      screenshotUrl: item.screenshot ? `/api/screenshots/${item.action?.id}` : null,
-      isDuplicate: item.isDuplicate,
+      screenshotUrl: item.snapshot?.screenshotPath ? `/api/screenshots/${item.action?.id}` : null,
+      isDuplicate: item.snapshot?.isDuplicate || false, // From snapshot
     }));
   }
 
@@ -296,6 +279,19 @@ export class AuditService {
     if (task.assignedToUserId === auditorUserId) {
       throw new ForbiddenException(
         'Auditor cannot audit own submission',
+      );
+    }
+
+    // Fetch snapshot to check duplicate status
+    const snapshot = await this.snapshotRepo.findOne({
+      where: { inquiryTaskId: task.id },
+      order: { createdAt: 'DESC' },
+    });
+
+    // CRITICAL: If snapshot shows duplicate, prevent approval
+    if (snapshot?.isDuplicate && dto.decision === 'APPROVED') {
+      throw new BadRequestException(
+        'Cannot approve submission with duplicate screenshot. Please reject with reason "Duplicate Screenshot".',
       );
     }
 

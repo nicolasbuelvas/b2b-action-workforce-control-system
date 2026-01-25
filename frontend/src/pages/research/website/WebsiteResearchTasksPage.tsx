@@ -549,7 +549,8 @@ export default function WebsiteResearchTasksPage() {
                     <button 
                       className="btn-submit-task"
                       onClick={() => {
-                        // Clear and move to next task
+                        // Clear and move to next task; remove from local list immediately
+                        setTasks(prev => prev.filter(t => t.id !== activeTask.id));
                         setActiveTask(null);
                         setFormData({ companyName: '', country: '', language: '' });
                         setSubmissionConfirmed(false);

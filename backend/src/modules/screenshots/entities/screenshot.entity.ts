@@ -8,6 +8,7 @@ import {
 
 @Entity('screenshots')
 @Index(['actionId'], { unique: true })
+@Index(['hash', 'actionId'])
 export class Screenshot {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -8,6 +8,7 @@ export default function WebsiteAuditorPendingPage() {
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState<PendingInquirySubmission[]>([]);
   const [allSubmissions, setAllSubmissions] = useState<PendingInquirySubmission[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -40,6 +41,7 @@ export default function WebsiteAuditorPendingPage() {
       : allSubmissions;
 
     setSubmissions(filtered);
+    setCurrentIndex(0);
   }, [selectedCategory, allSubmissions, loadingCategories, categories]);
 
   const loadCategories = async () => {
@@ -85,6 +87,7 @@ export default function WebsiteAuditorPendingPage() {
         : data;
 
       setSubmissions(filtered);
+      setCurrentIndex(0);
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load submissions');
@@ -96,7 +99,11 @@ export default function WebsiteAuditorPendingPage() {
   const handleApprove = async (taskId: string) => {
     try {
       await auditApi.auditInquiry(taskId, { decision: 'APPROVED' });
-      setSubmissions(prev => prev.filter(s => s.id !== taskId));
+      setSubmissions(prev => {
+        const next = prev.filter(s => s.id !== taskId);
+        setCurrentIndex(idx => Math.min(idx, Math.max(next.length - 1, 0)));
+        return next;
+      });
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to approve submission');
     }
@@ -109,7 +116,11 @@ export default function WebsiteAuditorPendingPage() {
         payload.rejectionReasonId = rejectionReasonId;
       }
       await auditApi.auditInquiry(taskId, payload);
-      setSubmissions(prev => prev.filter(s => s.id !== taskId));
+      setSubmissions(prev => {
+        const next = prev.filter(s => s.id !== taskId);
+        setCurrentIndex(idx => Math.min(idx, Math.max(next.length - 1, 0)));
+        return next;
+      });
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to reject submission');
     }
@@ -196,23 +207,38 @@ export default function WebsiteAuditorPendingPage() {
 
           {!loading && submissions.length > 0 && (
             <>
-              <header className="wb-pending-header">
+              <header className="wb-pending-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h1>Website Inquiry Audits</h1>
                   <p>{submissions.length} pending submission{submissions.length !== 1 ? 's' : ''}</p>
                 </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <button
+                    onClick={() => setCurrentIndex(prev => (prev > 0 ? prev - 1 : prev))}
+                    disabled={currentIndex === 0}
+                    className="btn-nav"
+                  >
+                    ← Previous
+                  </button>
+                  <span style={{ fontWeight: 600 }}>{currentIndex + 1} / {submissions.length}</span>
+                  <button
+                    onClick={() => setCurrentIndex(prev => (prev < submissions.length - 1 ? prev + 1 : prev))}
+                    disabled={currentIndex >= submissions.length - 1}
+                    className="btn-nav"
+                  >
+                    Next →
+                  </button>
+                </div>
               </header>
 
-              <div className="submissions-grid">
-                {submissions.map(submission => (
-                  <SubmissionCard
-                    key={submission.id}
-                    submission={submission}
-                    onApprove={handleApprove}
-                    onReject={handleReject}
-                    formatTimeAgo={formatTimeAgo}
-                  />
-                ))}
+              <div className="submissions-grid" style={{ gridTemplateColumns: '1fr' }}>
+                <SubmissionCard
+                  key={submissions[currentIndex].id}
+                  submission={submissions[currentIndex]}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                  formatTimeAgo={formatTimeAgo}
+                />
               </div>
             </>
           )}
@@ -249,9 +275,18 @@ function SubmissionCard({
 
   if (!submission) return null;
 
+  // Read context directly from API response (PendingInquirySubmission structure)
+  const companyName = submission.companyName || '—';
+  const companyLink = submission.companyDomain || '—';
+  const companyCountry = submission.companyCountry || '—';
+  const researchLanguage = submission.language || '—';
+
+  const isDuplicate = submission?.isDuplicate === true;
+  const screenshotUrl = submission.screenshotUrl;
+
   const allValidationsChecked = Object.values(validationChecks).every(v => v);
-  const canApprove = allValidationsChecked && !suspicious && !submission.isDuplicate;
-  const canReject = rejectionReason || suspiciousReason || submission.isDuplicate;
+  const canApprove = allValidationsChecked && !suspicious;
+  const canReject = rejectionReason || suspiciousReason || isDuplicate;
 
   const handleApproveClick = async () => {
     if (!canApprove) return;
@@ -267,8 +302,8 @@ function SubmissionCard({
     if (!canReject) return;
     setSubmitting(true);
     try {
-      // Force DUPLICATE reason if system detected duplicate
-      const reasonId = submission.isDuplicate ? 'DUPLICATE' : (rejectionReason || suspiciousReason);
+      // Use selected reason or suspicious flag, auditor chooses
+      const reasonId = rejectionReason || suspiciousReason;
       await onReject(submission.id, reasonId);
     } finally {
       setSubmitting(false);
@@ -292,26 +327,30 @@ function SubmissionCard({
           <h3>Context</h3>
           <div className="info-row">
             <label>Company Name:</label>
-            <span className="info-value">{submission.companyName}</span>
+            <span className="info-value">{companyName}</span>
           </div>
           <div className="info-row">
             <label>Company Link:</label>
-            <a 
-              href={`https://${submission.companyDomain}`} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="company-link"
-            >
-              {submission.companyDomain}
-            </a>
+            {companyLink && companyLink !== '—' ? (
+              <a 
+                href={`https://${companyLink}`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="company-link"
+              >
+                {companyLink}
+              </a>
+            ) : (
+              <span className="info-value">—</span>
+            )}
           </div>
           <div className="info-row">
             <label>Country:</label>
-            <span className="info-value">{submission.companyCountry}</span>
+            <span className="info-value">{companyCountry}</span>
           </div>
           <div className="info-row">
             <label>Language:</label>
-            <span className="info-value">{submission.language}</span>
+            <span className="info-value">{researchLanguage}</span>
           </div>
         </section>
 
@@ -356,43 +395,29 @@ function SubmissionCard({
         {/* SYSTEM DUPLICATE DETECTION */}
         <section className="info-section">
           <h3>Duplicate Detection (System)</h3>
-          <div className="checkbox-group">
-            <label 
-              className="checkbox-item" 
-              style={{
-                background: submission.isDuplicate ? '#fee2e2' : '#d1fae5',
-                padding: '12px',
-                borderRadius: '6px',
-                border: submission.isDuplicate ? '2px solid #dc2626' : '2px solid #10b981',
-                cursor: 'not-allowed',
-                opacity: 1
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={!submission.isDuplicate}
-                disabled
-                style={{ cursor: 'not-allowed' }}
-              />
-              <span style={{ 
-                fontWeight: '600',
-                color: submission.isDuplicate ? '#dc2626' : '#059669'
-              }}>
-                {submission.isDuplicate ? '☒ Screenshot is DUPLICATED (System Detected)' : '☑ Screenshot is NOT duplicated'}
-              </span>
-            </label>
-          </div>
-          {submission.isDuplicate && (
+          {isDuplicate && (
             <div style={{ 
-              background: '#fef2f2', 
+              background: '#fef3c7', 
               padding: '12px', 
               borderRadius: '6px', 
-              marginTop: '10px',
-              border: '1px solid #fca5a5',
-              color: '#991b1b',
+              marginBottom: '10px',
+              border: '2px solid #f59e0b',
+              color: '#92400e',
               fontSize: '13px'
             }}>
-              ⚠️ <strong>System Alert:</strong> This screenshot has been flagged as a duplicate. Approval is disabled. You must reject this submission.
+              ⚠️ <strong>Warning:</strong> This screenshot has been flagged as a potential duplicate by the system. Please verify before approving.
+            </div>
+          )}
+          {!isDuplicate && (
+            <div style={{ 
+              background: '#d1fae5', 
+              padding: '12px', 
+              borderRadius: '6px',
+              border: '2px solid #10b981',
+              color: '#059669',
+              fontSize: '13px'
+            }}>
+              ✓ Screenshot is NOT flagged as duplicate
             </div>
           )}
         </section>
@@ -447,57 +472,40 @@ function SubmissionCard({
           <div className="control-group">
             <label>Rejection Reason:</label>
             <select 
-              value={submission.isDuplicate ? 'DUPLICATE' : rejectionReason}
+              value={rejectionReason}
               onChange={(e) => {
-                if (!submission.isDuplicate) {
-                  setRejectionReason(e.target.value);
-                  if (e.target.value) setSuspiciousReason('');
-                }
+                setRejectionReason(e.target.value);
+                if (e.target.value) setSuspiciousReason('');
               }}
               className="rejection-select"
-              disabled={suspicious || submission.isDuplicate}
-              style={submission.isDuplicate ? { background: '#fee2e2', border: '2px solid #dc2626', cursor: 'not-allowed' } : {}}
+              disabled={suspicious}
             >
               <option value="">Select reason...</option>
               <option value="INVALID_DATA">Invalid Data</option>
               <option value="INCOMPLETE">Incomplete Submission</option>
-              <option value="DUPLICATE">Duplicate Screenshot</option>
+              {isDuplicate && <option value="DUPLICATE">Duplicate Screenshot (System Detected)</option>}
               <option value="WRONG_TARGET">Wrong Target</option>
               <option value="MANIPULATED">Manipulated Screenshot</option>
               <option value="OTHER">Other</option>
             </select>
-            {submission.isDuplicate && (
-              <small style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                Automatically set to "Duplicate" - cannot be changed
-              </small>
-            )}
           </div>
 
           <div className="control-group">
             <label>Flag as Suspicious:</label>
             <select
-              value={submission.isDuplicate ? 'POTENTIAL_FRAUD' : suspiciousReason}
+              value={suspiciousReason}
               onChange={(e) => {
-                if (!submission.isDuplicate) {
-                  setSuspiciousReason(e.target.value);
-                  if (e.target.value) setRejectionReason('');
-                }
+                setSuspiciousReason(e.target.value);
+                if (e.target.value) setRejectionReason('');
               }}
-              className={`suspicious-select ${(suspiciousReason || submission.isDuplicate) ? 'active' : ''}`}
-              disabled={submission.isDuplicate}
-              style={submission.isDuplicate ? { background: '#fee2e2', border: '2px solid #dc2626', cursor: 'not-allowed' } : {}}
+              className={`suspicious-select ${suspiciousReason ? 'active' : ''}`}
             >
               <option value="">Not suspicious</option>
               <option value="SUSPICIOUS_CONTACT">Suspicious Contact Pattern</option>
               <option value="SUSPICIOUS_DATA">Suspicious Data</option>
               <option value="REQUIRES_REVIEW">Requires Further Review</option>
-              <option value="POTENTIAL_FRAUD">Potential Fraud / Duplicate</option>
+              {isDuplicate && <option value="POTENTIAL_FRAUD">Potential Fraud / Duplicate</option>}
             </select>
-            {submission.isDuplicate && (
-              <small style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                Automatically flagged as suspicious - cannot be changed
-              </small>
-            )}
           </div>
         </section>
         </div>
@@ -505,9 +513,9 @@ function SubmissionCard({
         <div className="screenshot-panel">
           <h3>Screenshot</h3>
           <div className="screenshot-container">
-            {submission.screenshotUrl ? (
+            {screenshotUrl ? (
               <img 
-                src={submission.screenshotUrl} 
+                src={screenshotUrl} 
                 alt="Inquiry submission screenshot" 
                 className="screenshot-image"
               />
@@ -523,17 +531,15 @@ function SubmissionCard({
           onClick={handleRejectClick}
           disabled={!canReject || submitting}
           className="btn-reject"
-          title={!canReject ? 'Select a rejection reason' : (submission.isDuplicate ? 'Duplicate screenshot - must reject' : '')}
-          style={submission.isDuplicate ? { background: '#dc2626', fontWeight: '600' } : {}}
+          title={!canReject ? 'Select a rejection reason' : ''}
         >
-          {submitting ? 'Processing...' : (submission.isDuplicate ? '⚠️ Reject Duplicate' : 'Reject')}
+          {submitting ? 'Processing...' : 'Reject'}
         </button>
         <button 
           onClick={handleApproveClick}
           disabled={!canApprove || submitting}
           className="btn-approve"
-          title={!canApprove ? (submission.isDuplicate ? 'Cannot approve duplicate screenshot' : (suspicious ? 'Disable suspicious flag first' : 'Complete all validations')) : ''}
-          style={submission.isDuplicate ? { opacity: 0.3, cursor: 'not-allowed' } : {}}
+          title={!canApprove ? (suspicious ? 'Disable suspicious flag first' : 'Complete all validations') : ''}
         >
           {submitting ? 'Processing...' : 'Approve'}
         </button>

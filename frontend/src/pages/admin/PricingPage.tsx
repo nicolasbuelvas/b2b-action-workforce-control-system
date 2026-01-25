@@ -142,8 +142,10 @@ const roles: Role[] = [
   'LinkedIn Researcher',
   'Website Inquirer',
   'LinkedIn Inquirer',
-  'Website Auditor',
-  'LinkedIn Auditor',
+  'Website Inquirer Auditor',
+  'LinkedIn Inquirer Auditor',
+  'Website Research Auditor',
+  'LinkedIn Research Auditor',
 ];
 
 const PricingPage: React.FC = () => {
@@ -153,7 +155,16 @@ const PricingPage: React.FC = () => {
   const [topBonusRules, setTopBonusRules] = useState<TopBonusRule[]>([]);
   const [paymentOverview, setPaymentOverview] = useState<WorkerPaymentOverview[]>([]);
   const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>([]);
-  const [topWorkers, setTopWorkers] = useState<Record<Role, TopWorker[]>>({});
+  const [topWorkers, setTopWorkers] = useState<Record<Role, TopWorker[]>>({
+    'Website Researcher': [],
+    'LinkedIn Researcher': [],
+    'Website Inquirer': [],
+    'LinkedIn Inquirer': [],
+    'Website Inquirer Auditor': [],
+    'LinkedIn Inquirer Auditor': [],
+    'Website Research Auditor': [],
+    'LinkedIn Research Auditor': [],
+  });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterRole, setFilterRole] = useState<Role | ''>('');
@@ -180,7 +191,16 @@ const PricingPage: React.FC = () => {
         setTopBonusRules(topBonuses);
         setPaymentOverview(overview);
         setPaymentRecords(records);
-        const topWorkersObj: Record<Role, TopWorker[]> = {};
+        const topWorkersObj: Record<Role, TopWorker[]> = {
+          'Website Researcher': [],
+          'LinkedIn Researcher': [],
+          'Website Inquirer': [],
+          'LinkedIn Inquirer': [],
+          'Website Inquirer Auditor': [],
+          'LinkedIn Inquirer Auditor': [],
+          'Website Research Auditor': [],
+          'LinkedIn Research Auditor': [],
+        };
         roles.forEach((role, idx) => {
           topWorkersObj[role] = topWorkersArr[idx];
         });

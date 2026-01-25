@@ -113,10 +113,10 @@ export default function LinkedinInquiryTasksPage() {
               </div>
 
               <div className="workflow-stepper">
-                {Array.from({ length: selectedTask.totalSteps }).map((_, i) => {
+                {Array.from({ length: selectedTask.totalSteps ?? 0 }).map((_, i) => {
                   const stepNumber = i + 1;
-                  const isCompleted = stepNumber <= selectedTask.stepsCompleted;
-                  const isCurrent = stepNumber === selectedTask.stepsCompleted + 1;
+                  const isCompleted = stepNumber <= (selectedTask.stepsCompleted ?? 0);
+                  const isCurrent = stepNumber === (selectedTask.stepsCompleted ?? 0) + 1;
 
                   return (
                     <div

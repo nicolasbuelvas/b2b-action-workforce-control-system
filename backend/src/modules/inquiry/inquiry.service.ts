@@ -14,6 +14,7 @@ import {
   InquiryStatus,
 } from './entities/inquiry-task.entity';
 import { OutreachRecord } from './entities/outreach-record.entity';
+import { InquirySubmissionSnapshot } from './entities/inquiry-submission-snapshot.entity';
 
 import { ScreenshotsService } from '../screenshots/screenshots.service';
 import { CooldownService } from '../cooldown/cooldown.service';
@@ -36,6 +37,9 @@ export class InquiryService {
 
     @InjectRepository(OutreachRecord)
     private readonly outreachRepo: Repository<OutreachRecord>,
+
+    @InjectRepository(InquirySubmissionSnapshot)
+    private readonly snapshotRepo: Repository<InquirySubmissionSnapshot>,
 
     @InjectRepository(ResearchTask)
     private readonly researchRepo: Repository<ResearchTask>,
@@ -203,6 +207,7 @@ export class InquiryService {
       task = this.taskRepo.create({
         targetId: researchTask.targetId,
         categoryId: researchTask.categoryId,
+        researchTaskId, // Store research task ID directly
         status: InquiryStatus.PENDING,
       });
     }
@@ -381,6 +386,69 @@ export class InquiryService {
         console.error('[SERVICE-SUBMIT] ERROR: Cooldown recording failed:', err.message);
         throw err;
       }
+
+      // Capture context and save snapshot (for auditor's source of truth)
+      console.log('[SERVICE-SUBMIT] Capturing context for snapshot...');
+      let snapshotData = {
+        researchTaskId: null as string | null,
+        companyName: null as string | null,
+        companyUrl: null as string | null,
+        country: null as string | null,
+        language: null as string | null,
+      };
+
+      // Fetch research context if available
+      const researchTask = await manager.getRepository(ResearchTask).findOne({
+        where: { targetId: task.targetId, categoryId: task.categoryId },
+      });
+
+      if (researchTask) {
+        snapshotData.researchTaskId = researchTask.id;
+        // Get company info if company target
+        if (researchTask.targetType === 'COMPANY') {
+          const company = await manager.getRepository(Company).findOne({
+            where: { id: researchTask.targetId },
+          });
+          if (company) {
+            snapshotData.companyName = company.name;
+            snapshotData.companyUrl = company.domain;
+            snapshotData.country = company.country;
+          }
+        }
+
+        // Get research submission for language/country override
+        const submission = await manager.getRepository(ResearchSubmission).findOne({
+          where: { researchTaskId: researchTask.id },
+          order: { createdAt: 'DESC' },
+        });
+
+        if (submission) {
+          snapshotData.country = submission.country || snapshotData.country;
+          snapshotData.language = submission.language;
+        }
+      }
+
+      // Get screenshot info
+      const screenshot = await this.screenshotsService.getScreenshotByActionId(action.id);
+      const screenshotPath = screenshot?.filePath || null;
+      const screenshotHash = screenshot?.hash || null;
+      const isDuplicate = screenshot?.isDuplicate || false;
+
+      // Save snapshot (immutable source of truth for auditor)
+      console.log('[SERVICE-SUBMIT] Saving snapshot...');
+      await manager.getRepository(InquirySubmissionSnapshot).save({
+        inquiryTaskId: task.id,
+        inquiryActionId: action.id,
+        researchTaskId: snapshotData.researchTaskId,
+        companyName: snapshotData.companyName,
+        companyUrl: snapshotData.companyUrl,
+        country: snapshotData.country,
+        language: snapshotData.language,
+        screenshotPath,
+        screenshotHash,
+        isDuplicate,
+      });
+      console.log('[SERVICE-SUBMIT] Snapshot saved');
 
       // Update task status to COMPLETED (finalize the task)
       console.log('[SERVICE-SUBMIT] Finalizing task status...');

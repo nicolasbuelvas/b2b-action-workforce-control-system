@@ -10,6 +10,7 @@ export declare class InquiryTask {
     id: string;
     targetId: string;
     categoryId: string;
+    researchTaskId: string | null;
     status: InquiryStatus;
     assignedToUserId: string | null;
     createdAt: Date;

@@ -11,6 +11,7 @@ import { User } from '../users/entities/user.entity';
 import { InquiryTask } from '../inquiry/entities/inquiry-task.entity';
 import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
 import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
+import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
 export declare class AuditService {
     private readonly researchRepo;
@@ -24,8 +25,9 @@ export declare class AuditService {
     private readonly inquiryTaskRepo;
     private readonly inquiryActionRepo;
     private readonly outreachRepo;
+    private readonly snapshotRepo;
     private readonly screenshotsService;
-    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, companyRepo: Repository<Company>, userRepo: Repository<User>, inquiryTaskRepo: Repository<InquiryTask>, inquiryActionRepo: Repository<InquiryAction>, outreachRepo: Repository<OutreachRecord>, screenshotsService: ScreenshotsService);
+    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, companyRepo: Repository<Company>, userRepo: Repository<User>, inquiryTaskRepo: Repository<InquiryTask>, inquiryActionRepo: Repository<InquiryAction>, outreachRepo: Repository<OutreachRecord>, snapshotRepo: Repository<InquirySubmissionSnapshot>, screenshotsService: ScreenshotsService);
     getPendingResearch(auditorUserId: string): Promise<{
         id: string;
         categoryId: string;
@@ -50,10 +52,10 @@ export declare class AuditService {
         workerName: string;
         workerEmail: string;
         targetId: string;
-        companyName: any;
-        companyDomain: any;
-        companyCountry: any;
-        language: any;
+        companyName: string;
+        companyDomain: string;
+        companyCountry: string;
+        language: string;
         actionType: string;
         createdAt: Date;
         actionCreatedAt: Date;

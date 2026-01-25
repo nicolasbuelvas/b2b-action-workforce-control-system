@@ -23,6 +23,7 @@ const user_entity_1 = require("../users/entities/user.entity");
 const inquiry_task_entity_1 = require("../inquiry/entities/inquiry-task.entity");
 const inquiry_action_entity_1 = require("../inquiry/entities/inquiry-action.entity");
 const outreach_record_entity_1 = require("../inquiry/entities/outreach-record.entity");
+const inquiry_submission_snapshot_entity_1 = require("../inquiry/entities/inquiry-submission-snapshot.entity");
 const screenshots_module_1 = require("../screenshots/screenshots.module");
 let AuditModule = class AuditModule {
 };
@@ -43,6 +44,7 @@ exports.AuditModule = AuditModule = __decorate([
                 inquiry_task_entity_1.InquiryTask,
                 inquiry_action_entity_1.InquiryAction,
                 outreach_record_entity_1.OutreachRecord,
+                inquiry_submission_snapshot_entity_1.InquirySubmissionSnapshot,
             ]),
             screenshots_module_1.ScreenshotsModule,
         ],

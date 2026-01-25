@@ -27,9 +27,10 @@ const user_entity_1 = require("../users/entities/user.entity");
 const inquiry_task_entity_1 = require("../inquiry/entities/inquiry-task.entity");
 const inquiry_action_entity_1 = require("../inquiry/entities/inquiry-action.entity");
 const outreach_record_entity_1 = require("../inquiry/entities/outreach-record.entity");
+const inquiry_submission_snapshot_entity_1 = require("../inquiry/entities/inquiry-submission-snapshot.entity");
 const screenshots_service_1 = require("../screenshots/screenshots.service");
 let AuditService = class AuditService {
-    constructor(researchRepo, auditRepo, submissionRepo, flaggedRepo, categoryRepo, userCategoryRepo, companyRepo, userRepo, inquiryTaskRepo, inquiryActionRepo, outreachRepo, screenshotsService) {
+    constructor(researchRepo, auditRepo, submissionRepo, flaggedRepo, categoryRepo, userCategoryRepo, companyRepo, userRepo, inquiryTaskRepo, inquiryActionRepo, outreachRepo, snapshotRepo, screenshotsService) {
         this.researchRepo = researchRepo;
         this.auditRepo = auditRepo;
         this.submissionRepo = submissionRepo;
@@ -41,6 +42,7 @@ let AuditService = class AuditService {
         this.inquiryTaskRepo = inquiryTaskRepo;
         this.inquiryActionRepo = inquiryActionRepo;
         this.outreachRepo = outreachRepo;
+        this.snapshotRepo = snapshotRepo;
         this.screenshotsService = screenshotsService;
     }
     async getPendingResearch(auditorUserId) {
@@ -143,52 +145,33 @@ let AuditService = class AuditService {
             .orderBy('task.createdAt', 'ASC')
             .getMany();
         const enriched = await Promise.all(tasks.map(async (task) => {
-            const [action, category, worker, researchTask] = await Promise.all([
+            const snapshot = await this.snapshotRepo.findOne({
+                where: { inquiryTaskId: task.id },
+                order: { createdAt: 'DESC' },
+            });
+            const [action, category, worker] = await Promise.all([
                 this.inquiryActionRepo.findOne({
                     where: { inquiryTaskId: task.id },
                     order: { createdAt: 'DESC' },
                 }),
                 this.categoryRepo.findOne({ where: { id: task.categoryId } }),
                 this.userRepo.findOne({ where: { id: task.assignedToUserId } }),
-                this.researchRepo.findOne({ where: { id: task.targetId } }),
             ]);
             const outreach = action
                 ? await this.outreachRepo.findOne({
                     where: { inquiryActionId: action.id },
                 })
                 : null;
-            let company = null;
-            let researchSubmission = null;
-            if (researchTask) {
-                if (researchTask.targetType === 'COMPANY') {
-                    company = await this.companyRepo.findOne({ where: { id: researchTask.targetId } });
-                }
-                researchSubmission = await this.submissionRepo.findOne({
-                    where: { researchTaskId: researchTask.id },
-                    order: { createdAt: 'DESC' },
-                });
-            }
             return {
                 task,
                 action,
                 outreach,
                 category,
                 worker,
-                researchTask,
-                company,
-                researchSubmission,
+                snapshot,
             };
         }));
-        const enrichedWithScreenshots = await Promise.all(enriched.map(async (item) => {
-            let screenshot = null;
-            let isDuplicate = false;
-            if (item.action) {
-                screenshot = await this.screenshotsService.getScreenshotByActionId(item.action.id);
-                isDuplicate = screenshot?.isDuplicate ?? false;
-            }
-            return { ...item, screenshot, isDuplicate };
-        }));
-        return enrichedWithScreenshots.map(item => ({
+        return enriched.map(item => ({
             id: item.task.id,
             categoryId: item.task.categoryId,
             categoryName: item.category?.name || '',
@@ -196,17 +179,17 @@ let AuditService = class AuditService {
             workerName: item.worker?.name || '',
             workerEmail: item.worker?.email || '',
             targetId: item.task.targetId,
-            companyName: item.company?.name || '',
-            companyDomain: item.company?.domain || '',
-            companyCountry: item.company?.country || '',
-            language: item.researchSubmission?.language || '',
+            companyName: item.snapshot?.companyName || '',
+            companyDomain: item.snapshot?.companyUrl || '',
+            companyCountry: item.snapshot?.country || '',
+            language: item.snapshot?.language || '',
             actionType: item.outreach?.actionType || 'UNKNOWN',
             createdAt: item.task.createdAt,
             actionCreatedAt: item.action?.createdAt || null,
             action: item.action,
             outreach: item.outreach,
-            screenshotUrl: item.screenshot ? `/api/screenshots/${item.action?.id}` : null,
-            isDuplicate: item.isDuplicate,
+            screenshotUrl: item.snapshot?.screenshotPath ? `/api/screenshots/${item.action?.id}` : null,
+            isDuplicate: item.snapshot?.isDuplicate || false,
         }));
     }
     async auditInquiry(inquiryTaskId, dto, auditorUserId) {
@@ -221,6 +204,13 @@ let AuditService = class AuditService {
         }
         if (task.assignedToUserId === auditorUserId) {
             throw new common_1.ForbiddenException('Auditor cannot audit own submission');
+        }
+        const snapshot = await this.snapshotRepo.findOne({
+            where: { inquiryTaskId: task.id },
+            order: { createdAt: 'DESC' },
+        });
+        if (snapshot?.isDuplicate && dto.decision === 'APPROVED') {
+            throw new common_1.BadRequestException('Cannot approve submission with duplicate screenshot. Please reject with reason "Duplicate Screenshot".');
         }
         task.status =
             dto.decision === 'APPROVED'
@@ -251,7 +241,9 @@ exports.AuditService = AuditService = __decorate([
     __param(8, (0, typeorm_1.InjectRepository)(inquiry_task_entity_1.InquiryTask)),
     __param(9, (0, typeorm_1.InjectRepository)(inquiry_action_entity_1.InquiryAction)),
     __param(10, (0, typeorm_1.InjectRepository)(outreach_record_entity_1.OutreachRecord)),
+    __param(11, (0, typeorm_1.InjectRepository)(inquiry_submission_snapshot_entity_1.InquirySubmissionSnapshot)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

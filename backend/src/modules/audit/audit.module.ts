@@ -16,6 +16,7 @@ import { User } from '../users/entities/user.entity';
 import { InquiryTask } from '../inquiry/entities/inquiry-task.entity';
 import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
 import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
+import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsModule } from '../screenshots/screenshots.module';
 
 @Module({
@@ -33,6 +34,7 @@ import { ScreenshotsModule } from '../screenshots/screenshots.module';
       InquiryTask,
       InquiryAction,
       OutreachRecord,
+      InquirySubmissionSnapshot,
     ]),
     ScreenshotsModule,
   ],

@@ -27,10 +27,10 @@ export declare class AuditController {
         workerName: string;
         workerEmail: string;
         targetId: string;
-        companyName: any;
-        companyDomain: any;
-        companyCountry: any;
-        language: any;
+        companyName: string;
+        companyDomain: string;
+        companyCountry: string;
+        language: string;
         actionType: string;
         createdAt: Date;
         actionCreatedAt: Date;

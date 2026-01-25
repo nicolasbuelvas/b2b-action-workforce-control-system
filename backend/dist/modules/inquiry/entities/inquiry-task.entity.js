@@ -36,6 +36,10 @@ __decorate([
     __metadata("design:type", String)
 ], InquiryTask.prototype, "categoryId", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'research_task_id', nullable: true }),
+    __metadata("design:type", String)
+], InquiryTask.prototype, "researchTaskId", void 0);
+__decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: InquiryStatus,
@@ -52,6 +56,7 @@ __decorate([
     __metadata("design:type", Date)
 ], InquiryTask.prototype, "createdAt", void 0);
 exports.InquiryTask = InquiryTask = __decorate([
-    (0, typeorm_1.Entity)('inquiry_tasks')
+    (0, typeorm_1.Entity)('inquiry_tasks'),
+    (0, typeorm_1.Index)(['researchTaskId'])
 ], InquiryTask);
 //# sourceMappingURL=inquiry-task.entity.js.map

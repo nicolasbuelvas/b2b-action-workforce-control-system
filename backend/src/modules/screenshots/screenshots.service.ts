@@ -84,11 +84,12 @@ export class ScreenshotsService {
   ): Promise<Screenshot> {
     const hash = generateFileHash(buffer);
     
-    // Check for duplicate
+    // Check for duplicate: hash exists AND is from a different action
     const existingHash = await this.hashRepo.findOne({
       where: { hash },
     });
 
+    // Only mark as duplicate if hash was seen before (different action will have already saved this hash)
     const isDuplicate = !!existingHash;
 
     // Determine file extension from mime type
@@ -101,28 +102,29 @@ export class ScreenshotsService {
     fs.writeFileSync(fullPath, buffer);
     console.log('[SCREENSHOTS] File saved:', fullPath);
 
-    // Save hash if new
+    // Save hash if new (first occurrence)
     if (!existingHash) {
       await this.hashRepo.save({
         hash,
         uploadedByUserId: userId,
         fileSize: buffer.length,
-        mimeType,
+        mimeType, // Store actual mimeType, not 'unknown'
       });
+      console.log('[SCREENSHOTS] New hash registered:', hash);
     }
 
     // Save screenshot metadata
     const screenshot = await this.screenshotRepo.save({
       actionId,
       filePath: relativePath,
-      mimeType,
+      mimeType, // Store actual mimeType
       fileSize: buffer.length,
       hash,
-      isDuplicate,
+      isDuplicate, // Will be false on first occurrence, true on subsequent
       uploadedByUserId: userId,
     });
 
-    console.log('[SCREENSHOTS] Screenshot metadata saved:', screenshot.id);
+    console.log('[SCREENSHOTS] Screenshot metadata saved:', screenshot.id, 'isDuplicate:', isDuplicate);
     return screenshot;
   }
 

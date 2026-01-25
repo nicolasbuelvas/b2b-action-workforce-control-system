@@ -517,6 +517,8 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.btn-done {
   background: #f1f5f9;
   color: #475569;
   border: none;

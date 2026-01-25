@@ -19,6 +19,7 @@ const typeorm_2 = require("typeorm");
 const inquiry_action_entity_1 = require("./entities/inquiry-action.entity");
 const inquiry_task_entity_1 = require("./entities/inquiry-task.entity");
 const outreach_record_entity_1 = require("./entities/outreach-record.entity");
+const inquiry_submission_snapshot_entity_1 = require("./entities/inquiry-submission-snapshot.entity");
 const screenshots_service_1 = require("../screenshots/screenshots.service");
 const cooldown_service_1 = require("../cooldown/cooldown.service");
 const research_task_entity_1 = require("../research/entities/research-task.entity");
@@ -27,10 +28,11 @@ const company_entity_1 = require("../research/entities/company.entity");
 const category_entity_1 = require("../categories/entities/category.entity");
 const user_category_entity_1 = require("../categories/entities/user-category.entity");
 let InquiryService = class InquiryService {
-    constructor(actionRepo, taskRepo, outreachRepo, researchRepo, submissionRepo, companyRepo, categoryRepo, userCategoryRepo, screenshotsService, cooldownService, dataSource) {
+    constructor(actionRepo, taskRepo, outreachRepo, snapshotRepo, researchRepo, submissionRepo, companyRepo, categoryRepo, userCategoryRepo, screenshotsService, cooldownService, dataSource) {
         this.actionRepo = actionRepo;
         this.taskRepo = taskRepo;
         this.outreachRepo = outreachRepo;
+        this.snapshotRepo = snapshotRepo;
         this.researchRepo = researchRepo;
         this.submissionRepo = submissionRepo;
         this.companyRepo = companyRepo;
@@ -148,6 +150,7 @@ let InquiryService = class InquiryService {
             task = this.taskRepo.create({
                 targetId: researchTask.targetId,
                 categoryId: researchTask.categoryId,
+                researchTaskId,
                 status: inquiry_task_entity_1.InquiryStatus.PENDING,
             });
         }
@@ -277,6 +280,56 @@ let InquiryService = class InquiryService {
                 console.error('[SERVICE-SUBMIT] ERROR: Cooldown recording failed:', err.message);
                 throw err;
             }
+            console.log('[SERVICE-SUBMIT] Capturing context for snapshot...');
+            let snapshotData = {
+                researchTaskId: null,
+                companyName: null,
+                companyUrl: null,
+                country: null,
+                language: null,
+            };
+            const researchTask = await manager.getRepository(research_task_entity_1.ResearchTask).findOne({
+                where: { targetId: task.targetId, categoryId: task.categoryId },
+            });
+            if (researchTask) {
+                snapshotData.researchTaskId = researchTask.id;
+                if (researchTask.targetType === 'COMPANY') {
+                    const company = await manager.getRepository(company_entity_1.Company).findOne({
+                        where: { id: researchTask.targetId },
+                    });
+                    if (company) {
+                        snapshotData.companyName = company.name;
+                        snapshotData.companyUrl = company.domain;
+                        snapshotData.country = company.country;
+                    }
+                }
+                const submission = await manager.getRepository(research_submission_entity_1.ResearchSubmission).findOne({
+                    where: { researchTaskId: researchTask.id },
+                    order: { createdAt: 'DESC' },
+                });
+                if (submission) {
+                    snapshotData.country = submission.country || snapshotData.country;
+                    snapshotData.language = submission.language;
+                }
+            }
+            const screenshot = await this.screenshotsService.getScreenshotByActionId(action.id);
+            const screenshotPath = screenshot?.filePath || null;
+            const screenshotHash = screenshot?.hash || null;
+            const isDuplicate = screenshot?.isDuplicate || false;
+            console.log('[SERVICE-SUBMIT] Saving snapshot...');
+            await manager.getRepository(inquiry_submission_snapshot_entity_1.InquirySubmissionSnapshot).save({
+                inquiryTaskId: task.id,
+                inquiryActionId: action.id,
+                researchTaskId: snapshotData.researchTaskId,
+                companyName: snapshotData.companyName,
+                companyUrl: snapshotData.companyUrl,
+                country: snapshotData.country,
+                language: snapshotData.language,
+                screenshotPath,
+                screenshotHash,
+                isDuplicate,
+            });
+            console.log('[SERVICE-SUBMIT] Snapshot saved');
             console.log('[SERVICE-SUBMIT] Finalizing task status...');
             task.status = inquiry_task_entity_1.InquiryStatus.COMPLETED;
             await manager.getRepository(inquiry_task_entity_1.InquiryTask).save(task);
@@ -297,12 +350,14 @@ exports.InquiryService = InquiryService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(inquiry_action_entity_1.InquiryAction)),
     __param(1, (0, typeorm_1.InjectRepository)(inquiry_task_entity_1.InquiryTask)),
     __param(2, (0, typeorm_1.InjectRepository)(outreach_record_entity_1.OutreachRecord)),
-    __param(3, (0, typeorm_1.InjectRepository)(research_task_entity_1.ResearchTask)),
-    __param(4, (0, typeorm_1.InjectRepository)(research_submission_entity_1.ResearchSubmission)),
-    __param(5, (0, typeorm_1.InjectRepository)(company_entity_1.Company)),
-    __param(6, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
-    __param(7, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
+    __param(3, (0, typeorm_1.InjectRepository)(inquiry_submission_snapshot_entity_1.InquirySubmissionSnapshot)),
+    __param(4, (0, typeorm_1.InjectRepository)(research_task_entity_1.ResearchTask)),
+    __param(5, (0, typeorm_1.InjectRepository)(research_submission_entity_1.ResearchSubmission)),
+    __param(6, (0, typeorm_1.InjectRepository)(company_entity_1.Company)),
+    __param(7, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
+    __param(8, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

@@ -118,6 +118,7 @@ let ScreenshotsService = class ScreenshotsService {
                 fileSize: buffer.length,
                 mimeType,
             });
+            console.log('[SCREENSHOTS] New hash registered:', hash);
         }
         const screenshot = await this.screenshotRepo.save({
             actionId,
@@ -128,7 +129,7 @@ let ScreenshotsService = class ScreenshotsService {
             isDuplicate,
             uploadedByUserId: userId,
         });
-        console.log('[SCREENSHOTS] Screenshot metadata saved:', screenshot.id);
+        console.log('[SCREENSHOTS] Screenshot metadata saved:', screenshot.id, 'isDuplicate:', isDuplicate);
         return screenshot;
     }
     async getScreenshotByActionId(actionId) {

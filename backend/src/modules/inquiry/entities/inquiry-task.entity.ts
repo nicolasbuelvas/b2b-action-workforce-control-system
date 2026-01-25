@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Index,
 } from 'typeorm';
 
 export enum InquiryStatus {
@@ -15,6 +16,7 @@ export enum InquiryStatus {
 }
 
 @Entity('inquiry_tasks')
+@Index(['researchTaskId'])
 export class InquiryTask {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -24,6 +26,9 @@ export class InquiryTask {
 
   @Column()
   categoryId: string;
+
+  @Column({ name: 'research_task_id', nullable: true })
+  researchTaskId: string | null;
 
   @Column({
     type: 'enum',
