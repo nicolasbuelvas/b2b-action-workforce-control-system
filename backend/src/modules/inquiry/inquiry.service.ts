@@ -354,6 +354,7 @@ export class InquiryService {
           action.id,
           userId,
           'image/png', // You may want to detect this from the buffer
+          screenshotResult.isDuplicate, // Enforce single source of truth
         );
         console.log('[SERVICE-SUBMIT] Screenshot file saved');
       } catch (err) {
@@ -432,6 +433,7 @@ export class InquiryService {
       const screenshot = await this.screenshotsService.getScreenshotByActionId(action.id);
       const screenshotPath = screenshot?.filePath || null;
       const screenshotHash = screenshot?.hash || null;
+      // Use the isDuplicate persisted from processScreenshot() through screenshot metadata
       const isDuplicate = screenshot?.isDuplicate || false;
 
       // Save snapshot (immutable source of truth for auditor)

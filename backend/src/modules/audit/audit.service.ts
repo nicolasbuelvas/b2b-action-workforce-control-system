@@ -288,12 +288,8 @@ export class AuditService {
       order: { createdAt: 'DESC' },
     });
 
-    // CRITICAL: If snapshot shows duplicate, prevent approval
-    if (snapshot?.isDuplicate && dto.decision === 'APPROVED') {
-      throw new BadRequestException(
-        'Cannot approve submission with duplicate screenshot. Please reject with reason "Duplicate Screenshot".',
-      );
-    }
+    // Duplicate is NON-BLOCKING: allow approval or rejection.
+    // If rejecting and duplicate was detected, annotate reason accordingly.
 
     task.status =
       dto.decision === 'APPROVED'
@@ -305,7 +301,7 @@ export class AuditService {
         userId: task.assignedToUserId,
         targetId: inquiryTaskId,
         actionType: 'INQUIRY',
-        reason: 'MANUAL_REJECTION',
+        reason: snapshot?.isDuplicate ? 'Duplicate (System Detected)' : 'MANUAL_REJECTION',
       });
     }
 

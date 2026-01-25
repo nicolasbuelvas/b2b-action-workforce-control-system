@@ -81,16 +81,11 @@ export class ScreenshotsService {
     actionId: string,
     userId: string,
     mimeType: string,
+    isDuplicateFromProcessing: boolean,
   ): Promise<Screenshot> {
+    // Recompute hash for file metadata, but DO NOT re-evaluate duplicate here.
+    // The only source of truth for duplicate is processScreenshot().
     const hash = generateFileHash(buffer);
-    
-    // Check for duplicate: hash exists AND is from a different action
-    const existingHash = await this.hashRepo.findOne({
-      where: { hash },
-    });
-
-    // Only mark as duplicate if hash was seen before (different action will have already saved this hash)
-    const isDuplicate = !!existingHash;
 
     // Determine file extension from mime type
     const ext = mimeType === 'image/png' ? 'png' : 'jpg';
@@ -102,16 +97,7 @@ export class ScreenshotsService {
     fs.writeFileSync(fullPath, buffer);
     console.log('[SCREENSHOTS] File saved:', fullPath);
 
-    // Save hash if new (first occurrence)
-    if (!existingHash) {
-      await this.hashRepo.save({
-        hash,
-        uploadedByUserId: userId,
-        fileSize: buffer.length,
-        mimeType, // Store actual mimeType, not 'unknown'
-      });
-      console.log('[SCREENSHOTS] New hash registered:', hash);
-    }
+    // Do NOT write to ScreenshotHash here; processScreenshot() handled hash registry.
 
     // Save screenshot metadata
     const screenshot = await this.screenshotRepo.save({
@@ -120,11 +106,11 @@ export class ScreenshotsService {
       mimeType, // Store actual mimeType
       fileSize: buffer.length,
       hash,
-      isDuplicate, // Will be false on first occurrence, true on subsequent
+      // Use the duplicate value determined by processScreenshot()
+      isDuplicate: isDuplicateFromProcessing,
       uploadedByUserId: userId,
     });
-
-    console.log('[SCREENSHOTS] Screenshot metadata saved:', screenshot.id, 'isDuplicate:', isDuplicate);
+    console.log('[SCREENSHOTS] Screenshot metadata saved:', screenshot.id, 'isDuplicate:', isDuplicateFromProcessing);
     return screenshot;
   }
 

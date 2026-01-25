@@ -250,7 +250,7 @@ let InquiryService = class InquiryService {
             console.log('[SERVICE-SUBMIT] Action created:', action.id);
             console.log('[SERVICE-SUBMIT] Saving screenshot file...');
             try {
-                await this.screenshotsService.saveScreenshotFile(screenshotBuffer, action.id, userId, 'image/png');
+                await this.screenshotsService.saveScreenshotFile(screenshotBuffer, action.id, userId, 'image/png', screenshotResult.isDuplicate);
                 console.log('[SERVICE-SUBMIT] Screenshot file saved');
             }
             catch (err) {

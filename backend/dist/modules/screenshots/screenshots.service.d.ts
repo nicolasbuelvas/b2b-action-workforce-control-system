@@ -12,6 +12,6 @@ export declare class ScreenshotsService {
         isDuplicate: boolean;
         existingScreenshotId?: string;
     }>;
-    saveScreenshotFile(buffer: Buffer, actionId: string, userId: string, mimeType: string): Promise<Screenshot>;
+    saveScreenshotFile(buffer: Buffer, actionId: string, userId: string, mimeType: string, isDuplicateFromProcessing: boolean): Promise<Screenshot>;
     getScreenshotByActionId(actionId: string): Promise<Screenshot | null>;
 }

@@ -99,37 +99,24 @@ let ScreenshotsService = class ScreenshotsService {
             isDuplicate: false,
         };
     }
-    async saveScreenshotFile(buffer, actionId, userId, mimeType) {
+    async saveScreenshotFile(buffer, actionId, userId, mimeType, isDuplicateFromProcessing) {
         const hash = (0, hash_util_1.generateFileHash)(buffer);
-        const existingHash = await this.hashRepo.findOne({
-            where: { hash },
-        });
-        const isDuplicate = !!existingHash;
         const ext = mimeType === 'image/png' ? 'png' : 'jpg';
         const filename = `${actionId}.${ext}`;
         const relativePath = `${this.uploadsDir}/${filename}`;
         const fullPath = path.join(process.cwd(), relativePath);
         fs.writeFileSync(fullPath, buffer);
         console.log('[SCREENSHOTS] File saved:', fullPath);
-        if (!existingHash) {
-            await this.hashRepo.save({
-                hash,
-                uploadedByUserId: userId,
-                fileSize: buffer.length,
-                mimeType,
-            });
-            console.log('[SCREENSHOTS] New hash registered:', hash);
-        }
         const screenshot = await this.screenshotRepo.save({
             actionId,
             filePath: relativePath,
             mimeType,
             fileSize: buffer.length,
             hash,
-            isDuplicate,
+            isDuplicate: isDuplicateFromProcessing,
             uploadedByUserId: userId,
         });
-        console.log('[SCREENSHOTS] Screenshot metadata saved:', screenshot.id, 'isDuplicate:', isDuplicate);
+        console.log('[SCREENSHOTS] Screenshot metadata saved:', screenshot.id, 'isDuplicate:', isDuplicateFromProcessing);
         return screenshot;
     }
     async getScreenshotByActionId(actionId) {
