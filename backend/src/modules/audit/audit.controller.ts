@@ -50,4 +50,26 @@ export class AuditController {
       auditorUserId,
     );
   }
+
+  @Get('linkedin-inquiry/pending')
+  @Roles('linkedin_inquirer_auditor')
+  getPendingLinkedInInquiry(@CurrentUser('userId') auditorUserId: string) {
+    return this.auditService.getPendingLinkedInInquiry(auditorUserId);
+  }
+
+  @Post('linkedin-inquiry/:taskId/actions/:actionId')
+  @Roles('linkedin_inquirer_auditor')
+  auditLinkedInInquiry(
+    @Param('taskId') inquiryTaskId: string,
+    @Param('actionId') actionId: string,
+    @Body() dto: AuditResearchDto,
+    @CurrentUser('userId') auditorUserId: string,
+  ) {
+    return this.auditService.auditLinkedInInquiry(
+      inquiryTaskId,
+      actionId,
+      dto,
+      auditorUserId,
+    );
+  }
 }

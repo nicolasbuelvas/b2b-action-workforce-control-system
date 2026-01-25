@@ -15,6 +15,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { ResearchModule } from './modules/research/research.module';
 import { InquiryModule } from './modules/inquiry/inquiry.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { LinkedInModule } from './modules/linkedin/linkedin.module';
 
 /* === SYSTEM MODULES === */
 import { CooldownModule } from './modules/cooldown/cooldown.module';
@@ -49,6 +50,7 @@ import { CategoryRulesModule } from './modules/category-rules/category-rules.mod
     ResearchModule,
     InquiryModule,
     AuditModule,
+    LinkedInModule,
 
     CooldownModule,
     ScreenshotsModule,

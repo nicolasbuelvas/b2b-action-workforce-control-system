@@ -13,6 +13,9 @@ import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
 import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
+import { LinkedInInquiryTask, LinkedInInquiryStatus } from '../linkedin/entities/linkedin-inquiry-task.entity';
+import { LinkedInActionStatus } from '../linkedin/entities/linkedin-action.entity';
+import { LinkedInSubmissionSnapshot } from '../linkedin/entities/linkedin-submission-snapshot.entity';
 export declare class AuditService {
     private readonly researchRepo;
     private readonly auditRepo;
@@ -65,4 +68,24 @@ export declare class AuditService {
         isDuplicate: boolean;
     }[]>;
     auditInquiry(inquiryTaskId: string, dto: AuditResearchDto, auditorUserId: string): Promise<InquiryTask>;
+    getPendingLinkedInInquiry(auditorUserId: string): Promise<{
+        id: string;
+        categoryId: string;
+        categoryName: string;
+        assignedToUserId: string;
+        workerName: string;
+        workerEmail: string;
+        targetId: string;
+        status: LinkedInInquiryStatus;
+        createdAt: Date;
+        actions: {
+            id: string;
+            actionType: import("../linkedin/entities/linkedin-action.entity").LinkedInActionType;
+            status: LinkedInActionStatus;
+            screenshotUrl: string;
+            isDuplicate: boolean;
+            snapshot: LinkedInSubmissionSnapshot;
+        }[];
+    }[]>;
+    auditLinkedInInquiry(inquiryTaskId: string, actionId: string, dto: AuditResearchDto, auditorUserId: string): Promise<LinkedInInquiryTask>;
 }

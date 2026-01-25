@@ -36,6 +36,12 @@ let AuditController = class AuditController {
     auditInquiry(inquiryTaskId, dto, auditorUserId) {
         return this.auditService.auditInquiry(inquiryTaskId, dto, auditorUserId);
     }
+    getPendingLinkedInInquiry(auditorUserId) {
+        return this.auditService.getPendingLinkedInInquiry(auditorUserId);
+    }
+    auditLinkedInInquiry(inquiryTaskId, actionId, dto, auditorUserId) {
+        return this.auditService.auditLinkedInInquiry(inquiryTaskId, actionId, dto, auditorUserId);
+    }
 };
 exports.AuditController = AuditController;
 __decorate([
@@ -74,6 +80,25 @@ __decorate([
     __metadata("design:paramtypes", [String, audit_research_dto_1.AuditResearchDto, String]),
     __metadata("design:returntype", void 0)
 ], AuditController.prototype, "auditInquiry", null);
+__decorate([
+    (0, common_1.Get)('linkedin-inquiry/pending'),
+    (0, roles_decorator_1.Roles)('linkedin_inquirer_auditor'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AuditController.prototype, "getPendingLinkedInInquiry", null);
+__decorate([
+    (0, common_1.Post)('linkedin-inquiry/:taskId/actions/:actionId'),
+    (0, roles_decorator_1.Roles)('linkedin_inquirer_auditor'),
+    __param(0, (0, common_1.Param)('taskId')),
+    __param(1, (0, common_1.Param)('actionId')),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, audit_research_dto_1.AuditResearchDto, String]),
+    __metadata("design:returntype", void 0)
+], AuditController.prototype, "auditLinkedInInquiry", null);
 exports.AuditController = AuditController = __decorate([
     (0, common_1.Controller)('audit'),
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),

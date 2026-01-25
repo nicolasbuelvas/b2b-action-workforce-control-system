@@ -19,6 +19,7 @@ const categories_module_1 = require("./modules/categories/categories.module");
 const research_module_1 = require("./modules/research/research.module");
 const inquiry_module_1 = require("./modules/inquiry/inquiry.module");
 const audit_module_1 = require("./modules/audit/audit.module");
+const linkedin_module_1 = require("./modules/linkedin/linkedin.module");
 const cooldown_module_1 = require("./modules/cooldown/cooldown.module");
 const screenshots_module_1 = require("./modules/screenshots/screenshots.module");
 const metrics_module_1 = require("./modules/metrics/metrics.module");
@@ -49,6 +50,7 @@ exports.AppModule = AppModule = __decorate([
             research_module_1.ResearchModule,
             inquiry_module_1.InquiryModule,
             audit_module_1.AuditModule,
+            linkedin_module_1.LinkedInModule,
             cooldown_module_1.CooldownModule,
             screenshots_module_1.ScreenshotsModule,
             metrics_module_1.MetricsModule,
