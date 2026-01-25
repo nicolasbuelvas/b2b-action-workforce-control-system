@@ -285,7 +285,8 @@ function SubmissionCard({
   const screenshotUrl = submission.screenshotUrl;
 
   const allValidationsChecked = Object.values(validationChecks).every(v => v);
-  const canApprove = allValidationsChecked && !suspicious;
+  // Block approval if duplicate is detected
+  const canApprove = allValidationsChecked && !suspicious && !isDuplicate;
   const canReject = rejectionReason || suspiciousReason || isDuplicate;
 
   const handleApproveClick = async () => {
@@ -397,15 +398,16 @@ function SubmissionCard({
           <h3>Duplicate Detection (System)</h3>
           {isDuplicate && (
             <div style={{ 
-              background: '#fef3c7', 
+              background: '#fee2e2', 
               padding: '12px', 
               borderRadius: '6px', 
               marginBottom: '10px',
-              border: '2px solid #f59e0b',
-              color: '#92400e',
-              fontSize: '13px'
+              border: '2px solid #dc2626',
+              color: '#991b1b',
+              fontSize: '13px',
+              fontWeight: '600'
             }}>
-              ⚠️ <strong>Warning:</strong> This screenshot has been flagged as a potential duplicate by the system. Please verify before approving.
+              🚫 <strong>System Alert: Duplicate.</strong> Approval disabled. This screenshot matches a previously submitted image. You must reject this submission.
             </div>
           )}
           {!isDuplicate && (
@@ -539,7 +541,7 @@ function SubmissionCard({
           onClick={handleApproveClick}
           disabled={!canApprove || submitting}
           className="btn-approve"
-          title={!canApprove ? (suspicious ? 'Disable suspicious flag first' : 'Complete all validations') : ''}
+          title={!canApprove ? (isDuplicate ? 'Cannot approve: Duplicate screenshot detected' : suspicious ? 'Disable suspicious flag first' : 'Complete all validations') : ''}
         >
           {submitting ? 'Processing...' : 'Approve'}
         </button>

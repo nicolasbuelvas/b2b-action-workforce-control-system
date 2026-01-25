@@ -288,8 +288,12 @@ export class AuditService {
       order: { createdAt: 'DESC' },
     });
 
-    // Duplicate is NON-BLOCKING: allow approval or rejection.
-    // If rejecting and duplicate was detected, annotate reason accordingly.
+    // CRITICAL: Block approval if snapshot shows duplicate screenshot
+    if (snapshot?.isDuplicate && dto.decision === 'APPROVED') {
+      throw new BadRequestException(
+        'Cannot approve submission with duplicate screenshot. Please reject with reason "Duplicate Screenshot".',
+      );
+    }
 
     task.status =
       dto.decision === 'APPROVED'

@@ -209,6 +209,9 @@ let AuditService = class AuditService {
             where: { inquiryTaskId: task.id },
             order: { createdAt: 'DESC' },
         });
+        if (snapshot?.isDuplicate && dto.decision === 'APPROVED') {
+            throw new common_1.BadRequestException('Cannot approve submission with duplicate screenshot. Please reject with reason "Duplicate Screenshot".');
+        }
         task.status =
             dto.decision === 'APPROVED'
                 ? inquiry_task_entity_1.InquiryStatus.APPROVED
