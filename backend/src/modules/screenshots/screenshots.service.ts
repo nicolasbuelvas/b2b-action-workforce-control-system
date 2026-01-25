@@ -93,9 +93,21 @@ export class ScreenshotsService {
     const relativePath = `${this.uploadsDir}/${filename}`;
     const fullPath = path.join(process.cwd(), relativePath);
 
+    // Ensure directory exists before writing file
+    const dirPath = path.dirname(fullPath);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+      console.log('[SCREENSHOTS] Created directory:', dirPath);
+    }
+
     // Write file to disk
-    fs.writeFileSync(fullPath, buffer);
-    console.log('[SCREENSHOTS] File saved:', fullPath);
+    try {
+      fs.writeFileSync(fullPath, buffer);
+      console.log('[SCREENSHOTS] File saved:', fullPath);
+    } catch (err) {
+      console.error('[SCREENSHOTS] ERROR writing file:', fullPath, err);
+      throw err;
+    }
 
     // Do NOT write to ScreenshotHash here; processScreenshot() handled hash registry.
 

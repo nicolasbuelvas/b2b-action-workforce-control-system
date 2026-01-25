@@ -24,24 +24,41 @@ export class ScreenshotsController {
     @Param('actionId') actionId: string,
     @Res() res: Response,
   ) {
-    const screenshot = await this.screenshotRepo.findOne({
-      where: { actionId },
-    });
+    try {
+      const screenshot = await this.screenshotRepo.findOne({
+        where: { actionId },
+      });
 
-    if (!screenshot) {
-      throw new NotFoundException('Screenshot not found');
+      if (!screenshot) {
+        console.error('[SCREENSHOTS-CTRL] Screenshot not found for actionId:', actionId);
+        throw new NotFoundException('Screenshot not found');
+      }
+
+      const filePath = path.join(process.cwd(), screenshot.filePath);
+
+      console.log('[SCREENSHOTS-CTRL] Retrieving screenshot:', {
+        actionId,
+        filePath,
+        mimeType: screenshot.mimeType,
+      });
+
+      if (!fs.existsSync(filePath)) {
+        console.error('[SCREENSHOTS-CTRL] File not found on disk:', filePath);
+        throw new NotFoundException('Screenshot file not found on disk');
+      }
+
+      res.setHeader('Content-Type', screenshot.mimeType || 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.on('error', (err) => {
+        console.error('[SCREENSHOTS-CTRL] Stream error:', err);
+        res.status(500).send('Error reading file');
+      });
+      fileStream.pipe(res);
+    } catch (err) {
+      console.error('[SCREENSHOTS-CTRL] Error:', err);
+      throw err;
     }
-
-    const filePath = path.join(process.cwd(), screenshot.filePath);
-
-    if (!fs.existsSync(filePath)) {
-      throw new NotFoundException('Screenshot file not found on disk');
-    }
-
-    res.setHeader('Content-Type', screenshot.mimeType);
-    res.setHeader('Cache-Control', 'public, max-age=31536000');
-    
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
   }
 }

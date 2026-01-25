@@ -284,6 +284,13 @@ function SubmissionCard({
   const isDuplicate = submission?.isDuplicate === true;
   const screenshotUrl = submission.screenshotUrl;
 
+  console.log('[WebsiteAuditor] Current submission:', {
+    id: submission.id,
+    screenshotUrl,
+    isDuplicate,
+    companyName: submission.companyName,
+  });
+
   const allValidationsChecked = Object.values(validationChecks).every(v => v);
   // Block approval if duplicate is detected
   const canApprove = allValidationsChecked && !suspicious && !isDuplicate;

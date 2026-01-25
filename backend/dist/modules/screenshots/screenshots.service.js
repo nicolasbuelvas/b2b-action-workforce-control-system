@@ -105,8 +105,19 @@ let ScreenshotsService = class ScreenshotsService {
         const filename = `${actionId}.${ext}`;
         const relativePath = `${this.uploadsDir}/${filename}`;
         const fullPath = path.join(process.cwd(), relativePath);
-        fs.writeFileSync(fullPath, buffer);
-        console.log('[SCREENSHOTS] File saved:', fullPath);
+        const dirPath = path.dirname(fullPath);
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+            console.log('[SCREENSHOTS] Created directory:', dirPath);
+        }
+        try {
+            fs.writeFileSync(fullPath, buffer);
+            console.log('[SCREENSHOTS] File saved:', fullPath);
+        }
+        catch (err) {
+            console.error('[SCREENSHOTS] ERROR writing file:', fullPath, err);
+            throw err;
+        }
         const screenshot = await this.screenshotRepo.save({
             actionId,
             filePath: relativePath,
