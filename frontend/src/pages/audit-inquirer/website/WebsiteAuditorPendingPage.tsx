@@ -527,6 +527,9 @@ function SubmissionCard({
                 src={screenshotUrl} 
                 alt="Inquiry submission screenshot" 
                 className="screenshot-image"
+                onClick={() => window.open(screenshotUrl, '_blank')}
+                style={{ cursor: 'pointer' }}
+                title="Click to open in new tab"
               />
             ) : (
               <div className="no-screenshot">No screenshot available</div>
