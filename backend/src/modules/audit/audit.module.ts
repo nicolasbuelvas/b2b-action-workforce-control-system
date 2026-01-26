@@ -18,6 +18,7 @@ import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
 import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsModule } from '../screenshots/screenshots.module';
+import { LinkedInProfile } from '../research/entities/linkedin-profile.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ScreenshotsModule } from '../screenshots/screenshots.module';
       InquiryAction,
       OutreachRecord,
       InquirySubmissionSnapshot,
+      LinkedInProfile,
     ]),
     ScreenshotsModule,
   ],

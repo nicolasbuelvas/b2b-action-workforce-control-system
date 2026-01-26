@@ -32,6 +32,7 @@ import {
   LinkedInActionStatus,
 } from '../linkedin/entities/linkedin-action.entity';
 import { LinkedInSubmissionSnapshot } from '../linkedin/entities/linkedin-submission-snapshot.entity';
+import { LinkedInProfile } from '../research/entities/linkedin-profile.entity';
 
 @Injectable()
 export class AuditService {
@@ -71,6 +72,9 @@ export class AuditService {
 
     @InjectRepository(InquirySubmissionSnapshot)
     private readonly snapshotRepo: Repository<InquirySubmissionSnapshot>,
+
+    @InjectRepository(LinkedInProfile)
+    private readonly linkedinProfileRepo: Repository<LinkedInProfile>,
 
     private readonly screenshotsService: ScreenshotsService,
   ) {}
@@ -113,12 +117,18 @@ export class AuditService {
           company = await this.companyRepo.findOne({ where: { id: task.targetId } });
         }
 
+        let linkedInProfile: LinkedInProfile | null = null;
+        if (task.targetType === 'LINKEDIN_PROFILE') {
+          linkedInProfile = await this.linkedinProfileRepo.findOne({ where: { id: task.targetId } });
+        }
+
         return {
           task,
           submission,
           category,
           company,
           worker,
+          linkedInProfile,
         };
       }),
     );
@@ -134,6 +144,10 @@ export class AuditService {
       companyName: item.company?.name || '',
       companyDomain: item.company?.domain || '',
       companyCountry: item.company?.country || '',
+      linkedInUrl: item.linkedInProfile?.url || (item.task.targetType === 'LINKEDIN' ? item.task.targetId : ''),
+      linkedInContactName: item.linkedInProfile?.contactName || item.submission?.contactName || '',
+      linkedInCountry: item.linkedInProfile?.country || item.submission?.country || '',
+      linkedInLanguage: item.linkedInProfile?.language || item.submission?.language || '',
       targetType: item.task.targetType,
       createdAt: item.task.createdAt,
       submission: item.submission,

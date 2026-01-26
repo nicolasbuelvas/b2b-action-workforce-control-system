@@ -11,7 +11,11 @@ export interface PendingResearchSubmission {
   companyName: string;
   companyDomain: string;
   companyCountry: string;
-  targetType: 'COMPANY' | 'LINKEDIN';
+  targetType: 'COMPANY' | 'LINKEDIN' | 'LINKEDIN_PROFILE';
+  linkedInUrl?: string;
+  linkedInContactName?: string;
+  linkedInCountry?: string;
+  linkedInLanguage?: string;
   createdAt: string;
   submission: {
     id: string;

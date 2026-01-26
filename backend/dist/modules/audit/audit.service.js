@@ -32,8 +32,9 @@ const screenshots_service_1 = require("../screenshots/screenshots.service");
 const linkedin_inquiry_task_entity_1 = require("../linkedin/entities/linkedin-inquiry-task.entity");
 const linkedin_action_entity_1 = require("../linkedin/entities/linkedin-action.entity");
 const linkedin_submission_snapshot_entity_1 = require("../linkedin/entities/linkedin-submission-snapshot.entity");
+const linkedin_profile_entity_1 = require("../research/entities/linkedin-profile.entity");
 let AuditService = class AuditService {
-    constructor(researchRepo, auditRepo, submissionRepo, flaggedRepo, categoryRepo, userCategoryRepo, companyRepo, userRepo, inquiryTaskRepo, inquiryActionRepo, outreachRepo, snapshotRepo, screenshotsService) {
+    constructor(researchRepo, auditRepo, submissionRepo, flaggedRepo, categoryRepo, userCategoryRepo, companyRepo, userRepo, inquiryTaskRepo, inquiryActionRepo, outreachRepo, snapshotRepo, linkedinProfileRepo, screenshotsService) {
         this.researchRepo = researchRepo;
         this.auditRepo = auditRepo;
         this.submissionRepo = submissionRepo;
@@ -46,6 +47,7 @@ let AuditService = class AuditService {
         this.inquiryActionRepo = inquiryActionRepo;
         this.outreachRepo = outreachRepo;
         this.snapshotRepo = snapshotRepo;
+        this.linkedinProfileRepo = linkedinProfileRepo;
         this.screenshotsService = screenshotsService;
     }
     async getPendingResearch(auditorUserId) {
@@ -76,12 +78,17 @@ let AuditService = class AuditService {
             if (task.targetType === 'COMPANY') {
                 company = await this.companyRepo.findOne({ where: { id: task.targetId } });
             }
+            let linkedInProfile = null;
+            if (task.targetType === 'LINKEDIN_PROFILE') {
+                linkedInProfile = await this.linkedinProfileRepo.findOne({ where: { id: task.targetId } });
+            }
             return {
                 task,
                 submission,
                 category,
                 company,
                 worker,
+                linkedInProfile,
             };
         }));
         return enriched.map(item => ({
@@ -95,6 +102,10 @@ let AuditService = class AuditService {
             companyName: item.company?.name || '',
             companyDomain: item.company?.domain || '',
             companyCountry: item.company?.country || '',
+            linkedInUrl: item.linkedInProfile?.url || (item.task.targetType === 'LINKEDIN' ? item.task.targetId : ''),
+            linkedInContactName: item.linkedInProfile?.contactName || item.submission?.contactName || '',
+            linkedInCountry: item.linkedInProfile?.country || item.submission?.country || '',
+            linkedInLanguage: item.linkedInProfile?.language || item.submission?.language || '',
             targetType: item.task.targetType,
             createdAt: item.task.createdAt,
             submission: item.submission,
@@ -345,7 +356,9 @@ exports.AuditService = AuditService = __decorate([
     __param(9, (0, typeorm_1.InjectRepository)(inquiry_action_entity_1.InquiryAction)),
     __param(10, (0, typeorm_1.InjectRepository)(outreach_record_entity_1.OutreachRecord)),
     __param(11, (0, typeorm_1.InjectRepository)(inquiry_submission_snapshot_entity_1.InquirySubmissionSnapshot)),
+    __param(12, (0, typeorm_1.InjectRepository)(linkedin_profile_entity_1.LinkedInProfile)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

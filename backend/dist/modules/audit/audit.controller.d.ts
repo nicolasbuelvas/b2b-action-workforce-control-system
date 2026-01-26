@@ -14,6 +14,10 @@ export declare class AuditController {
         companyName: any;
         companyDomain: any;
         companyCountry: any;
+        linkedInUrl: string;
+        linkedInContactName: string;
+        linkedInCountry: string;
+        linkedInLanguage: string;
         targetType: string;
         createdAt: Date;
         submission: import("../research/entities/research-submission.entity").ResearchSubmission;

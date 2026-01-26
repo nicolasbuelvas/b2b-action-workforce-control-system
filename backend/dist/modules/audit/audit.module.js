@@ -25,6 +25,7 @@ const inquiry_action_entity_1 = require("../inquiry/entities/inquiry-action.enti
 const outreach_record_entity_1 = require("../inquiry/entities/outreach-record.entity");
 const inquiry_submission_snapshot_entity_1 = require("../inquiry/entities/inquiry-submission-snapshot.entity");
 const screenshots_module_1 = require("../screenshots/screenshots.module");
+const linkedin_profile_entity_1 = require("../research/entities/linkedin-profile.entity");
 let AuditModule = class AuditModule {
 };
 exports.AuditModule = AuditModule;
@@ -45,6 +46,7 @@ exports.AuditModule = AuditModule = __decorate([
                 inquiry_action_entity_1.InquiryAction,
                 outreach_record_entity_1.OutreachRecord,
                 inquiry_submission_snapshot_entity_1.InquirySubmissionSnapshot,
+                linkedin_profile_entity_1.LinkedInProfile,
             ]),
             screenshots_module_1.ScreenshotsModule,
         ],

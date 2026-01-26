@@ -16,6 +16,7 @@ import { ScreenshotsService } from '../screenshots/screenshots.service';
 import { LinkedInInquiryTask, LinkedInInquiryStatus } from '../linkedin/entities/linkedin-inquiry-task.entity';
 import { LinkedInActionStatus } from '../linkedin/entities/linkedin-action.entity';
 import { LinkedInSubmissionSnapshot } from '../linkedin/entities/linkedin-submission-snapshot.entity';
+import { LinkedInProfile } from '../research/entities/linkedin-profile.entity';
 export declare class AuditService {
     private readonly researchRepo;
     private readonly auditRepo;
@@ -29,8 +30,9 @@ export declare class AuditService {
     private readonly inquiryActionRepo;
     private readonly outreachRepo;
     private readonly snapshotRepo;
+    private readonly linkedinProfileRepo;
     private readonly screenshotsService;
-    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, companyRepo: Repository<Company>, userRepo: Repository<User>, inquiryTaskRepo: Repository<InquiryTask>, inquiryActionRepo: Repository<InquiryAction>, outreachRepo: Repository<OutreachRecord>, snapshotRepo: Repository<InquirySubmissionSnapshot>, screenshotsService: ScreenshotsService);
+    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, companyRepo: Repository<Company>, userRepo: Repository<User>, inquiryTaskRepo: Repository<InquiryTask>, inquiryActionRepo: Repository<InquiryAction>, outreachRepo: Repository<OutreachRecord>, snapshotRepo: Repository<InquirySubmissionSnapshot>, linkedinProfileRepo: Repository<LinkedInProfile>, screenshotsService: ScreenshotsService);
     getPendingResearch(auditorUserId: string): Promise<{
         id: string;
         categoryId: string;
@@ -42,6 +44,10 @@ export declare class AuditService {
         companyName: any;
         companyDomain: any;
         companyCountry: any;
+        linkedInUrl: string;
+        linkedInContactName: string;
+        linkedInCountry: string;
+        linkedInLanguage: string;
         targetType: string;
         createdAt: Date;
         submission: ResearchSubmission;
