@@ -26,10 +26,10 @@ let ResearchController = class ResearchController {
         this.researchService = researchService;
     }
     getWebsiteTasks(userId, categoryId) {
-        return this.researchService.getAvailableTasks(userId, 'COMPANY', categoryId);
+        return this.researchService.getAvailableTasks(userId, ['COMPANY'], categoryId);
     }
     getLinkedInTasks(userId, categoryId) {
-        return this.researchService.getAvailableTasks(userId, 'LINKEDIN', categoryId);
+        return this.researchService.getAvailableTasks(userId, ['LINKEDIN_PROFILE', 'LINKEDIN'], categoryId);
     }
     claimTask(taskId, userId) {
         return this.researchService.claimTask(taskId, userId);

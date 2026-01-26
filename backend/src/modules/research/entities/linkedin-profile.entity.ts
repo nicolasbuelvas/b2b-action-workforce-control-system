@@ -18,6 +18,15 @@ export class LinkedInProfile {
   @Column()
   normalizedUrl: string;
 
+  @Column({ name: 'contact_name', nullable: true })
+  contactName?: string;
+
+  @Column({ nullable: true })
+  country?: string;
+
+  @Column({ nullable: true })
+  language?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }

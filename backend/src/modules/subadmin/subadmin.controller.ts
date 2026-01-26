@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   Patch,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -88,16 +89,33 @@ export class SubAdminController {
   @Post('research/website')
   async createWebsiteResearchTasks(
     @CurrentUser() user: UserPayload,
-    @Body() body: { categoryId: string; domains: string[] },
+    @Body() body: {
+      categoryId: string;
+      jobTypeId: string;
+      companyTypeId: string;
+      companyWebsite?: string;
+      companyName?: string;
+      country?: string;
+      language?: string;
+      tasks?: Array<{ companyWebsite: string; companyName?: string; country?: string; language?: string }>;
+    },
   ) {
-    if (!Array.isArray(body.domains) || body.domains.length === 0) {
-      throw new Error('domains must be a non-empty array');
+    if (!body.categoryId) {
+      throw new BadRequestException('categoryId is required');
+    }
+
+    if (!body.jobTypeId || !body.companyTypeId) {
+      throw new BadRequestException('jobTypeId and companyTypeId are required');
+    }
+
+    const hasTasks = (Array.isArray(body.tasks) && body.tasks.length > 0) || !!body.companyWebsite;
+    if (!hasTasks) {
+      throw new BadRequestException('Provide at least one companyWebsite');
     }
 
     return await this.subAdminService.createWebsiteResearchTasks(
       user.id,
-      body.categoryId,
-      body.domains,
+      body,
     );
   }
 
@@ -109,16 +127,33 @@ export class SubAdminController {
   @Post('research/linkedin')
   async createLinkedInResearchTasks(
     @CurrentUser() user: UserPayload,
-    @Body() body: { categoryId: string; profileUrls: string[] },
+    @Body() body: {
+      categoryId: string;
+      jobTypeId: string;
+      companyTypeId: string;
+      profileUrl?: string;
+      contactName?: string;
+      country?: string;
+      language?: string;
+      tasks?: Array<{ profileUrl: string; contactName?: string; country?: string; language?: string }>;
+    },
   ) {
-    if (!Array.isArray(body.profileUrls) || body.profileUrls.length === 0) {
-      throw new Error('profileUrls must be a non-empty array');
+    if (!body.categoryId) {
+      throw new BadRequestException('categoryId is required');
+    }
+
+    if (!body.jobTypeId || !body.companyTypeId) {
+      throw new BadRequestException('jobTypeId and companyTypeId are required');
+    }
+
+    const hasTasks = (Array.isArray(body.tasks) && body.tasks.length > 0) || !!body.profileUrl;
+    if (!hasTasks) {
+      throw new BadRequestException('Provide at least one profileUrl');
     }
 
     return await this.subAdminService.createLinkedInResearchTasks(
       user.id,
-      body.categoryId,
-      body.profileUrls,
+      body,
     );
   }
 

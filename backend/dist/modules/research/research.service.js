@@ -31,7 +31,7 @@ let ResearchService = class ResearchService {
         this.userCategoryRepo = userCategoryRepo;
         this.linkedinProfileRepo = linkedinProfileRepo;
     }
-    async getAvailableTasks(userId, targetType, categoryId) {
+    async getAvailableTasks(userId, targetTypes, categoryId) {
         const userCategories = await this.userCategoryRepo.find({
             where: { userId },
             select: ['categoryId'],
@@ -45,7 +45,7 @@ let ResearchService = class ResearchService {
         }
         let query = this.researchRepo
             .createQueryBuilder('task')
-            .where('task.targettype = :targetType', { targetType })
+            .where('task.targettype IN (:...targetTypes)', { targetTypes })
             .andWhere('task.status IN (:...statuses)', {
             statuses: [research_task_entity_1.ResearchStatus.PENDING, research_task_entity_1.ResearchStatus.IN_PROGRESS],
         })
@@ -73,6 +73,16 @@ let ResearchService = class ResearchService {
                         country: company.country,
                     };
                 }
+            }
+            else if (task.targetType === 'LINKEDIN_PROFILE') {
+                const profile = await this.linkedinProfileRepo.findOne({
+                    where: { id: task.targetId },
+                });
+                targetInfo = {
+                    domain: profile?.url || '',
+                    name: profile?.contactName || profile?.url || '',
+                    country: profile?.country || '',
+                };
             }
             else if (task.targetType === 'LINKEDIN') {
                 targetInfo = {

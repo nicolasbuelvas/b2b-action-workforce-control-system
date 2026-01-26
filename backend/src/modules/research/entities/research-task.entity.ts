@@ -24,6 +24,15 @@ export class ResearchTask {
   @Column({ name: 'targettype', type: 'varchar', nullable: true })
   targetType: string; // 'COMPANY' or 'LINKEDIN'
 
+  @Column({ name: 'job_type_id', type: 'uuid', nullable: true })
+  jobTypeId?: string;
+
+  @Column({ name: 'company_type_id', type: 'uuid', nullable: true })
+  companyTypeId?: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  language?: string;
+
   @Column({ type: 'varchar' })
   categoryId: string;
 

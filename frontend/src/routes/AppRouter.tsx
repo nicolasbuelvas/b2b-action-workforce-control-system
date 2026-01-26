@@ -45,6 +45,7 @@ import SubAdminDisapprovalReasons from '../pages/sub-admin/SubAdminDisapprovalRe
 import SubAdminNotices from '../pages/sub-admin/SubAdminNotices';
 import SubAdminUsers from '../pages/sub-admin/SubAdminUsers';
 import SubAdminDailyLimits from '../pages/sub-admin/SubAdminDailyLimits';
+import SubAdminCreateTasks from '../pages/sub-admin/SubAdminCreateTasks';
 
 import WebsiteResearcherDashboard from '../pages/research/website/WebsiteResearcherDashboard';
 import LinkedinResearcherDashboard from '../pages/research/linkedin/LinkedinResearcherDashboard';
@@ -123,6 +124,7 @@ export default function AppRouter() {
           <Route path="job-types" element={<SubAdminJobTypes />} />
           <Route path="disapproval-reasons" element={<SubAdminDisapprovalReasons />} />
           <Route path="daily-limits" element={<SubAdminDailyLimits />} />
+          <Route path="create-tasks" element={<SubAdminCreateTasks />} />
           
           {/* Research Tasks */}
           <Route path="research/website" element={<SubAdminWebsiteResearch />} />

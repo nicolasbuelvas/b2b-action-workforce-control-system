@@ -14,6 +14,7 @@ import { User } from '../users/entities/user.entity';
 import { CompanyType } from './entities/company-type.entity';
 import { JobType } from './entities/job-type.entity';
 import { DisapprovalReason } from './entities/disapproval-reason.entity';
+import { normalizeDomain, normalizeLinkedInUrl } from '../../common/utils/normalization.util';
 
 @Injectable()
 export class SubAdminService {
@@ -73,6 +74,30 @@ export class SubAdminService {
         `You do not have access to category ${categoryId}`,
       );
     }
+  }
+
+  /**
+   * Ensure job type and company type exist and are active
+   */
+  private async ensureTypes(jobTypeId: string, companyTypeId: string) {
+    if (!jobTypeId || !companyTypeId) {
+      throw new BadRequestException('jobTypeId and companyTypeId are required');
+    }
+
+    const [jobType, companyType] = await Promise.all([
+      this.jobTypeRepo.findOne({ where: { id: jobTypeId } }),
+      this.companyTypeRepo.findOne({ where: { id: companyTypeId } }),
+    ]);
+
+    if (!jobType || jobType.isActive === false) {
+      throw new BadRequestException('Job type is invalid or inactive');
+    }
+
+    if (!companyType || companyType.isActive === false) {
+      throw new BadRequestException('Company type is invalid or inactive');
+    }
+
+    return { jobType, companyType };
   }
 
   /**
@@ -177,9 +202,9 @@ export class SubAdminService {
 
     let query = this.researchTaskRepo
       .createQueryBuilder('task')
-      .leftJoin(LinkedInProfile, 'profile', 'task.targetId::uuid = profile.id')
+      .leftJoin(LinkedInProfile, 'profile', "task.targettype = 'LINKEDIN_PROFILE' AND profile.id::text = task.targetId")
       .leftJoin(Category, 'category', 'category.id = task.categoryId')
-      .where('task.targettype = :targetType', { targetType: 'LINKEDIN_PROFILE' })
+      .where('task.targettype IN (:...targetTypes)', { targetTypes: ['LINKEDIN_PROFILE', 'LINKEDIN'] })
       .andWhere('task.categoryId IN (:...categoryIds)', {
         categoryIds: filterCategoryIds,
       });
@@ -195,6 +220,7 @@ export class SubAdminService {
         'task.status as status',
         'task.createdAt as created_at',
         'profile.url as profile_url',
+        'task.targetId as target_id',
         'category.name as category_name',
       ])
       .orderBy('task.createdAt', 'DESC')
@@ -205,7 +231,7 @@ export class SubAdminService {
     // Transform to match frontend expectations
     const transformedTasks = rows.map((row: any) => ({
       id: row.id,
-      profileUrl: row.profile_url || '',
+      profileUrl: row.profile_url || row.target_id || '',
       companyName: 'LinkedIn Profile',
       country: 'N/A',
       category: row.category_name || 'Unknown',
@@ -276,39 +302,88 @@ export class SubAdminService {
    */
   async createWebsiteResearchTasks(
     userId: string,
-    categoryId: string,
-    domains: string[],
+    payload: {
+      categoryId: string;
+      jobTypeId: string;
+      companyTypeId: string;
+      companyWebsite?: string;
+      companyName?: string;
+      country?: string;
+      language?: string;
+      tasks?: Array<{
+        companyWebsite: string;
+        companyName?: string;
+        country?: string;
+        language?: string;
+      }>;
+    },
   ) {
-    // Validate access
+    const { categoryId, jobTypeId, companyTypeId } = payload;
     await this.validateCategoryAccess(userId, categoryId);
+    await this.ensureTypes(jobTypeId, companyTypeId);
 
-    const tasks = [];
+    const items = Array.isArray(payload.tasks) && payload.tasks.length > 0
+      ? payload.tasks
+      : [{
+          companyWebsite: payload.companyWebsite,
+          companyName: payload.companyName,
+          country: payload.country,
+          language: payload.language,
+        }];
 
-    for (const domain of domains) {
-      let company = await this.companyRepo.findOne({ where: { domain } });
+    if (!items.length) {
+      throw new BadRequestException('At least one task is required');
+    }
+
+    const createdTasks: ResearchTask[] = [];
+
+    for (const item of items) {
+      const rawDomain = item.companyWebsite?.trim();
+      if (!rawDomain) {
+        throw new BadRequestException('Company website is required');
+      }
+
+      const normalizedDomain = normalizeDomain(rawDomain);
+      const safeName = item.companyName?.trim() || 'Unknown';
+      const safeCountry = item.country?.trim() || 'Unknown';
+      const safeLanguage = item.language?.trim() || 'unknown';
+
+      let company = await this.companyRepo.findOne({ where: { normalizedDomain } });
 
       if (!company) {
         company = this.companyRepo.create({
-          domain,
-          normalizedDomain: domain.toLowerCase(),
-          name: domain,
-          country: 'Unknown',
+          domain: rawDomain,
+          normalizedDomain,
+          name: safeName,
+          country: safeCountry,
         });
-        company = await this.companyRepo.save(company);
+      } else {
+        // Improve stored data when provided
+        if (item.companyName && item.companyName.trim() && company.name === 'Unknown') {
+          company.name = safeName;
+        }
+        if (item.country && item.country.trim() && company.country === 'Unknown') {
+          company.country = safeCountry;
+        }
       }
+
+      company = await this.companyRepo.save(company);
 
       const task = this.researchTaskRepo.create({
         targetId: company.id,
         categoryId,
         targetType: 'COMPANY',
         status: ResearchStatus.PENDING,
+        jobTypeId,
+        companyTypeId,
+        language: safeLanguage,
       });
 
-      tasks.push(task);
+      createdTasks.push(task);
     }
 
-    await this.researchTaskRepo.save(tasks);
-    return tasks;
+    await this.researchTaskRepo.save(createdTasks);
+    return createdTasks;
   }
 
   /**
@@ -316,37 +391,92 @@ export class SubAdminService {
    */
   async createLinkedInResearchTasks(
     userId: string,
-    categoryId: string,
-    profileUrls: string[],
+    payload: {
+      categoryId: string;
+      jobTypeId: string;
+      companyTypeId: string;
+      profileUrl?: string;
+      contactName?: string;
+      country?: string;
+      language?: string;
+      tasks?: Array<{
+        profileUrl: string;
+        contactName?: string;
+        country?: string;
+        language?: string;
+      }>;
+    },
   ) {
-    // Validate access
+    const { categoryId, jobTypeId, companyTypeId } = payload;
     await this.validateCategoryAccess(userId, categoryId);
+    await this.ensureTypes(jobTypeId, companyTypeId);
 
-    const tasks = [];
+    const items = Array.isArray(payload.tasks) && payload.tasks.length > 0
+      ? payload.tasks
+      : [{
+          profileUrl: payload.profileUrl,
+          contactName: payload.contactName,
+          country: payload.country,
+          language: payload.language,
+        }];
 
-    for (const url of profileUrls) {
-      let profile = await this.linkedinProfileRepo.findOne({ where: { url } });
+    if (!items.length) {
+      throw new BadRequestException('At least one task is required');
+    }
+
+    const createdTasks: ResearchTask[] = [];
+
+    for (const item of items) {
+      const rawUrl = item.profileUrl?.trim();
+      if (!rawUrl) {
+        throw new BadRequestException('LinkedIn profile URL is required');
+      }
+
+      const normalizedUrl = normalizeLinkedInUrl(rawUrl);
+      const safeName = item.contactName?.trim() || 'Unknown';
+      const safeCountry = item.country?.trim() || 'Unknown';
+      const safeLanguage = item.language?.trim() || 'unknown';
+
+      let profile = await this.linkedinProfileRepo.findOne({ where: { normalizedUrl } });
 
       if (!profile) {
         profile = this.linkedinProfileRepo.create({
-          url,
-          normalizedUrl: url.toLowerCase(),
+          url: rawUrl,
+          normalizedUrl,
+          contactName: safeName,
+          country: safeCountry,
+          language: safeLanguage,
         });
-        profile = await this.linkedinProfileRepo.save(profile);
+      } else {
+        // Update only if existing data is missing
+        if (profile.contactName === null || profile.contactName === undefined || profile.contactName === 'Unknown') {
+          profile.contactName = safeName;
+        }
+        if (profile.country === null || profile.country === undefined || profile.country === 'Unknown') {
+          profile.country = safeCountry;
+        }
+        if (profile.language === null || profile.language === undefined || profile.language === 'unknown') {
+          profile.language = safeLanguage;
+        }
       }
+
+      profile = await this.linkedinProfileRepo.save(profile);
 
       const task = this.researchTaskRepo.create({
         targetId: profile.id,
         categoryId,
         targetType: 'LINKEDIN_PROFILE',
         status: ResearchStatus.PENDING,
+        jobTypeId,
+        companyTypeId,
+        language: safeLanguage,
       });
 
-      tasks.push(task);
+      createdTasks.push(task);
     }
 
-    await this.researchTaskRepo.save(tasks);
-    return tasks;
+    await this.researchTaskRepo.save(createdTasks);
+    return createdTasks;
   }
 
   /**

@@ -27,6 +27,40 @@ export interface Category {
   isActive: boolean;
 }
 
+export interface CompanyType {
+  id: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export interface JobType {
+  id: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export interface CreateWebsiteResearchTaskPayload {
+  categoryId: string;
+  jobTypeId: string;
+  companyTypeId: string;
+  companyWebsite: string;
+  companyName?: string;
+  country?: string;
+  language?: string;
+}
+
+export interface CreateLinkedInResearchTaskPayload {
+  categoryId: string;
+  jobTypeId: string;
+  companyTypeId: string;
+  profileUrl: string;
+  contactName?: string;
+  country?: string;
+  language?: string;
+}
+
 /**
  * Fetch categories accessible to sub-admin
  */
@@ -38,6 +72,18 @@ export async function getSubAdminCategories(): Promise<Category[]> {
     console.error('Failed to fetch sub-admin categories:', error);
     throw error;
   }
+}
+
+export async function getActiveCompanyTypes(): Promise<CompanyType[]> {
+  const response = await client.get('/subadmin/company-types');
+  const list: CompanyType[] = response.data || [];
+  return list.filter((item) => item.isActive !== false);
+}
+
+export async function getActiveJobTypes(): Promise<JobType[]> {
+  const response = await client.get('/subadmin/job-types');
+  const list: JobType[] = response.data || [];
+  return list.filter((item) => item.isActive !== false);
 }
 
 /**
@@ -88,13 +134,11 @@ export async function getLinkedInResearchTasks(
  * Create Website research tasks (bulk)
  */
 export async function createWebsiteResearchTasks(
-  categoryId: string,
-  domains: string[],
+  payload: CreateWebsiteResearchTaskPayload,
 ): Promise<any> {
   try {
     const response = await client.post('/subadmin/research/website', {
-      categoryId,
-      domains,
+      ...payload,
     });
     return response.data;
   } catch (error: any) {
@@ -107,13 +151,11 @@ export async function createWebsiteResearchTasks(
  * Create LinkedIn research tasks (bulk)
  */
 export async function createLinkedInResearchTasks(
-  categoryId: string,
-  profileUrls: string[],
+  payload: CreateLinkedInResearchTaskPayload,
 ): Promise<any> {
   try {
     const response = await client.post('/subadmin/research/linkedin', {
-      categoryId,
-      profileUrls,
+      ...payload,
     });
     return response.data;
   } catch (error: any) {

@@ -27,6 +27,18 @@ __decorate([
     __metadata("design:type", String)
 ], LinkedInProfile.prototype, "normalizedUrl", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'contact_name', nullable: true }),
+    __metadata("design:type", String)
+], LinkedInProfile.prototype, "contactName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], LinkedInProfile.prototype, "country", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], LinkedInProfile.prototype, "language", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], LinkedInProfile.prototype, "createdAt", void 0);

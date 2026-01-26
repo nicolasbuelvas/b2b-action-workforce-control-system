@@ -14,7 +14,7 @@ export declare class ResearchService {
     private readonly userCategoryRepo;
     private readonly linkedinProfileRepo;
     constructor(dataSource: DataSource, companyRepo: Repository<Company>, researchRepo: Repository<ResearchTask>, submissionRepo: Repository<ResearchSubmission>, userCategoryRepo: Repository<UserCategory>, linkedinProfileRepo: Repository<LinkedInProfile>);
-    getAvailableTasks(userId: string, targetType: 'COMPANY' | 'LINKEDIN', categoryId?: string): Promise<any[]>;
+    getAvailableTasks(userId: string, targetTypes: Array<'COMPANY' | 'LINKEDIN' | 'LINKEDIN_PROFILE'>, categoryId?: string): Promise<any[]>;
     claimTask(taskId: string, userId: string): Promise<ResearchTask>;
     submitTaskData(dto: SubmitResearchDto, userId: string): Promise<{
         taskId: string;

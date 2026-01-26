@@ -31,6 +31,9 @@ export default function SubAdminSidebar() {
         <NavLink to="/sub-admin/daily-limits" className="sa-link">
           Daily Limits
         </NavLink>
+        <NavLink to="/sub-admin/create-tasks" className="sa-link">
+          Create Tasks
+        </NavLink>
 
         <span className="sa-section">Research</span>
         <NavLink to="/sub-admin/research/website" className="sa-link">

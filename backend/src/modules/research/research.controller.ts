@@ -18,7 +18,7 @@ export class ResearchController {
     @CurrentUser('userId') userId: string,
     @Query('categoryId') categoryId?: string,
   ) {
-    return this.researchService.getAvailableTasks(userId, 'COMPANY', categoryId);
+    return this.researchService.getAvailableTasks(userId, ['COMPANY'], categoryId);
   }
 
   @Get('tasks/linkedin')
@@ -27,7 +27,7 @@ export class ResearchController {
     @CurrentUser('userId') userId: string,
     @Query('categoryId') categoryId?: string,
   ) {
-    return this.researchService.getAvailableTasks(userId, 'LINKEDIN', categoryId);
+    return this.researchService.getAvailableTasks(userId, ['LINKEDIN_PROFILE', 'LINKEDIN'], categoryId);
   }
 
   @Post('tasks/:taskId/claim')

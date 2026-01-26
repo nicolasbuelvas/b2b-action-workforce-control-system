@@ -9,6 +9,9 @@ export declare class ResearchTask {
     id: string;
     targetId: string;
     targetType: string;
+    jobTypeId?: string;
+    companyTypeId?: string;
+    language?: string;
     categoryId: string;
     status: ResearchStatus;
     assignedToUserId: string;

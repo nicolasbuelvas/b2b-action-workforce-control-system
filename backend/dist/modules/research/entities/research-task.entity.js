@@ -35,6 +35,18 @@ __decorate([
     __metadata("design:type", String)
 ], ResearchTask.prototype, "targetType", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'job_type_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], ResearchTask.prototype, "jobTypeId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'company_type_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], ResearchTask.prototype, "companyTypeId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', nullable: true }),
+    __metadata("design:type", String)
+], ResearchTask.prototype, "language", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'varchar' }),
     __metadata("design:type", String)
 ], ResearchTask.prototype, "categoryId", void 0);

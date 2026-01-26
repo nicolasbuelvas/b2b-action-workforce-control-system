@@ -43,7 +43,7 @@ export class ResearchService {
 
   async getAvailableTasks(
     userId: string,
-    targetType: 'COMPANY' | 'LINKEDIN',
+    targetTypes: Array<'COMPANY' | 'LINKEDIN' | 'LINKEDIN_PROFILE'>,
     categoryId?: string,
   ) {
     // First, get user's assigned categories
@@ -67,7 +67,7 @@ export class ResearchService {
     // Build query with optional categoryId filter
     let query = this.researchRepo
       .createQueryBuilder('task')
-      .where('task.targettype = :targetType', { targetType })
+      .where('task.targettype IN (:...targetTypes)', { targetTypes })
       .andWhere('task.status IN (:...statuses)', {
         statuses: [ResearchStatus.PENDING, ResearchStatus.IN_PROGRESS],
       })
@@ -106,8 +106,17 @@ export class ResearchService {
               country: company.country,
             };
           }
+        } else if (task.targetType === 'LINKEDIN_PROFILE') {
+          const profile = await this.linkedinProfileRepo.findOne({
+            where: { id: task.targetId },
+          });
+
+          targetInfo = {
+            domain: profile?.url || '',
+            name: profile?.contactName || profile?.url || '',
+            country: profile?.country || '',
+          };
         } else if (task.targetType === 'LINKEDIN') {
-          // For LINKEDIN tasks, targetId is already the URL; do not treat it as a UUID or join other tables
           targetInfo = {
             domain: task.targetId,
             name: task.targetId,
