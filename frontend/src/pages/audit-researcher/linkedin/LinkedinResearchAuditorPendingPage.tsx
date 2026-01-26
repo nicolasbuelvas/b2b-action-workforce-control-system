@@ -110,6 +110,20 @@ export default function LinkedinResearchAuditorPendingPage() {
     }
   };
 
+  const formatTimeAgo = (dateString: string): string => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffMins > 0) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    return 'Just now';
+  };
+
   const getDisplayUrl = (submission: PendingResearchSubmission) => {
     const fallback = submission.submission?.contactLinkedinUrl || submission.linkedInUrl || submission.targetId;
     if (!fallback) return '';
@@ -172,6 +186,7 @@ export default function LinkedinResearchAuditorPendingPage() {
                 submission={submission}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                formatTimeAgo={formatTimeAgo}
               />
             ))}
           </div>
@@ -185,9 +200,10 @@ type CardProps = {
   submission: PendingResearchSubmission;
   onApprove: (taskId: string) => void;
   onReject: (taskId: string, rejectionReasonId?: string) => void;
+  formatTimeAgo: (date: string) => string;
 };
 
-function LinkedInSubmissionCard({ submission, onApprove, onReject }: CardProps) {
+function LinkedInSubmissionCard({ submission, onApprove, onReject, formatTimeAgo }: CardProps) {
   const [checks, setChecks] = useState({
     profileUrl: false,
     contactName: false,
@@ -232,11 +248,13 @@ function LinkedInSubmissionCard({ submission, onApprove, onReject }: CardProps) 
     }
   };
 
+  const sub = submission.submission;
+
   return (
     <div className="submission-card">
       <div className="card-header">
         <span className="type-badge">LinkedIn Research</span>
-        <span className="time-badge">Pending</span>
+        <span className="time-badge">{sub ? formatTimeAgo(sub.createdAt) : 'Pending'}</span>
       </div>
       <div className="card-body">
         <section className="info-section">
@@ -249,10 +267,10 @@ function LinkedInSubmissionCard({ submission, onApprove, onReject }: CardProps) 
 
         <section className="info-section">
           <h3>Contact Details</h3>
-          <div className="info-row"><label>Contact Name:</label><span className="info-value">{submission.linkedInContactName || submission.submission?.contactName || 'Unknown'}</span></div>
-          <div className="info-row"><label>LinkedIn URL:</label><span className="info-value">{submission.submission?.contactLinkedinUrl || submission.linkedInUrl || 'N/A'}</span></div>
-          <div className="info-row"><label>Country:</label><span className="info-value">{submission.submission?.country || submission.linkedInCountry || 'N/A'}</span></div>
-          <div className="info-row"><label>Language:</label><span className="info-value">{submission.submission?.language || submission.linkedInLanguage || 'N/A'}</span></div>
+          <div className="info-row"><label>Contact Name:</label><span className="info-value">{sub?.contactName || submission.linkedInContactName || 'Unknown'}</span></div>
+          <div className="info-row"><label>LinkedIn URL:</label><span className="info-value">{sub?.contactLinkedinUrl || submission.linkedInUrl || 'N/A'}</span></div>
+          <div className="info-row"><label>Country:</label><span className="info-value">{sub?.country || submission.linkedInCountry || 'N/A'}</span></div>
+          <div className="info-row"><label>Language:</label><span className="info-value">{sub?.language || submission.linkedInLanguage || 'N/A'}</span></div>
         </section>
 
         <section className="info-section">
