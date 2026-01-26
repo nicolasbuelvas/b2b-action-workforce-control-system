@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getLinkedInResearchTasks } from '../../api/subadmin.api';
 import './SubAdminLinkedInResearch.css';
 
 type ResearchItem = {
@@ -13,8 +14,6 @@ type ResearchItem = {
   createdAt: string;
 };
 
-const API_BASE = '/api/subadmin/research/linkedin';
-
 export default function SubAdminLinkedInResearch(): JSX.Element {
   const [items, setItems] = useState<ResearchItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,26 +21,11 @@ export default function SubAdminLinkedInResearch(): JSX.Element {
   const [statusFilter, setStatusFilter] = useState<'all' | ResearchItem['status']>('all');
   const navigate = useNavigate();
 
-  const authHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const qs = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
-      const res = await fetch(`${API_BASE}${qs}`, {
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      });
-
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`API ${res.status}: ${txt}`);
-      }
-
-      const data = await res.json();
+      const data = await getLinkedInResearchTasks(undefined, statusFilter === 'all' ? undefined : statusFilter);
       setItems(Array.isArray(data) ? data : []);
     } catch (e: any) {
       console.error(e);
@@ -50,7 +34,7 @@ export default function SubAdminLinkedInResearch(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [authHeaders, statusFilter]);
+  }, [statusFilter]);
 
   useEffect(() => {
     fetchData();

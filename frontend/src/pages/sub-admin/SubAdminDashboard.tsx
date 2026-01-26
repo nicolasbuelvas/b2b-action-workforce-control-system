@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { client } from '../../api/client';
 import './SubAdminDashboard.css';
 
 type Stats = {
@@ -20,8 +21,6 @@ type AlertItem = {
   timestamp: string; // ISO
 };
 
-const API_BASE = '/api/subadmin'; // Ajusta si tu API difiere
-
 export default function SubAdminDashboardReal(): JSX.Element {
   const [stats, setStats] = useState<Stats | null>(null);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
@@ -31,36 +30,12 @@ export default function SubAdminDashboardReal(): JSX.Element {
   const [errorAlerts, setErrorAlerts] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
-  const safeJson = async (res: Response) => {
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      throw new Error('API did not return valid JSON');
-    }
-  };
-
   const fetchStats = useCallback(async () => {
     setLoadingStats(true);
     setErrorStats(null);
     try {
-      const res = await fetch(`${API_BASE}/stats`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Stats API ${res.status}: ${txt}`);
-      }
-      const data = await safeJson(res);
+      const response = await client.get('/subadmin/stats');
+      const data = response.data;
       // Map strict shape defensively
       setStats({
         totalSubmissions: Number(data.totalSubmissions ?? 0),
@@ -78,24 +53,16 @@ export default function SubAdminDashboardReal(): JSX.Element {
     } finally {
       setLoadingStats(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   const fetchAlerts = useCallback(async () => {
     setLoadingAlerts(true);
     setErrorAlerts(null);
     try {
-      const res = await fetch(`${API_BASE}/alerts?limit=8`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
+      const response = await client.get('/subadmin/alerts', {
+        params: { limit: 8 },
       });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Alerts API ${res.status}: ${txt}`);
-      }
-      const data = await safeJson(res);
+      const data = response.data;
       // Expecting array of alerts
       const items: AlertItem[] = (Array.isArray(data) ? data : []).map((a: any) => ({
         id: String(a.id ?? a._id ?? Math.random()),
@@ -112,7 +79,7 @@ export default function SubAdminDashboardReal(): JSX.Element {
     } finally {
       setLoadingAlerts(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   useEffect(() => {
     fetchStats();
@@ -211,13 +178,13 @@ export default function SubAdminDashboardReal(): JSX.Element {
           <div className="panel">
             <h3>Queued actions / Need attention</h3>
             <p className="muted">Items requiring manual review (backend-driven).</p>
-            <QueuedActionsList apiBase={API_BASE} authHeaders={getAuthHeaders} safeJson={safeJson} />
+            <QueuedActionsList />
           </div>
 
           <div className="panel">
             <h3>Top Pending Categories</h3>
             <p className="muted">Which categories are accumulating the most pending actions.</p>
-            <TopCategoriesList apiBase={API_BASE} authHeaders={getAuthHeaders} safeJson={safeJson} />
+            <TopCategoriesList />
           </div>
         </div>
 
@@ -264,15 +231,7 @@ export default function SubAdminDashboardReal(): JSX.Element {
    Helper small components
    --------------------- */
 
-function QueuedActionsList({
-  apiBase,
-  authHeaders,
-  safeJson
-}: {
-  apiBase: string;
-  authHeaders: () => Record<string, string>;
-  safeJson: (res: Response) => Promise<any>;
-}) {
+function QueuedActionsList() {
   const [items, setItems] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -282,14 +241,8 @@ function QueuedActionsList({
       setLoading(true);
       setErr(null);
       try {
-        const res = await fetch(`${apiBase}/queued-actions?limit=10`, {
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        });
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`queued-actions ${res.status}: ${txt}`);
-        }
-        const data = await safeJson(res);
+        const res = await client.get('/subadmin/queued-actions', { params: { limit: 10 } });
+        const data = res.data;
         if (!mounted) return;
         setItems(Array.isArray(data) ? data : []);
       } catch (e: any) {
@@ -300,7 +253,7 @@ function QueuedActionsList({
       }
     })();
     return () => { mounted = false; };
-  }, [apiBase, authHeaders, safeJson]);
+  }, []);
 
   if (loading) return <div className="loader">Loading queued actions…</div>;
   if (err) return <div className="error">Error: {err}</div>;
@@ -323,15 +276,7 @@ function QueuedActionsList({
   );
 }
 
-function TopCategoriesList({
-  apiBase,
-  authHeaders,
-  safeJson
-}: {
-  apiBase: string;
-  authHeaders: () => Record<string, string>;
-  safeJson: (res: Response) => Promise<any>;
-}) {
+function TopCategoriesList() {
   const [list, setList] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -339,14 +284,8 @@ function TopCategoriesList({
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${apiBase}/top-categories?limit=6`, {
-          headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        });
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(`top-categories ${res.status}: ${txt}`);
-        }
-        const data = await safeJson(res);
+        const res = await client.get('/subadmin/top-categories', { params: { limit: 6 } });
+        const data = res.data;
         if (!mounted) return;
         setList(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -357,7 +296,7 @@ function TopCategoriesList({
       }
     })();
     return () => { mounted = false; };
-  }, [apiBase, authHeaders, safeJson]);
+  }, []);
 
   if (loading) return <div className="loader">Loading categories…</div>;
   if (!list || list.length === 0) return <div className="empty">No category data.</div>;

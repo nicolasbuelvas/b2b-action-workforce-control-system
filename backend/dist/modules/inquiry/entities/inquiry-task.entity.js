@@ -9,8 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InquiryTask = exports.InquiryStatus = void 0;
+exports.InquiryTask = exports.InquiryPlatform = exports.InquiryStatus = void 0;
 const typeorm_1 = require("typeorm");
+const research_task_entity_1 = require("../../research/entities/research-task.entity");
 var InquiryStatus;
 (function (InquiryStatus) {
     InquiryStatus["PENDING"] = "PENDING";
@@ -20,6 +21,11 @@ var InquiryStatus;
     InquiryStatus["REJECTED"] = "REJECTED";
     InquiryStatus["FLAGGED"] = "FLAGGED";
 })(InquiryStatus || (exports.InquiryStatus = InquiryStatus = {}));
+var InquiryPlatform;
+(function (InquiryPlatform) {
+    InquiryPlatform["WEBSITE"] = "WEBSITE";
+    InquiryPlatform["LINKEDIN"] = "LINKEDIN";
+})(InquiryPlatform || (exports.InquiryPlatform = InquiryPlatform = {}));
 let InquiryTask = class InquiryTask {
 };
 exports.InquiryTask = InquiryTask;
@@ -36,9 +42,22 @@ __decorate([
     __metadata("design:type", String)
 ], InquiryTask.prototype, "categoryId", void 0);
 __decorate([
+    (0, typeorm_1.Column)({
+        type: 'enum',
+        enum: InquiryPlatform,
+        default: InquiryPlatform.WEBSITE,
+    }),
+    __metadata("design:type", String)
+], InquiryTask.prototype, "platform", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'research_task_id', nullable: true }),
     __metadata("design:type", String)
 ], InquiryTask.prototype, "researchTaskId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => research_task_entity_1.ResearchTask, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'research_task_id' }),
+    __metadata("design:type", research_task_entity_1.ResearchTask)
+], InquiryTask.prototype, "researchTask", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { client } from '../../api/client';
 import './SubAdminMessages.css';
 
 type InternalMessage = {
@@ -11,44 +12,18 @@ type InternalMessage = {
   priority?: 'high' | 'normal' | 'low';
 };
 
-const API_BASE = '/api/subadmin';
-
 export default function SubAdminMessages(): JSX.Element {
   const [messages, setMessages] = useState<InternalMessage[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<InternalMessage | null>(null);
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
-  const safeJson = async (res: Response) => {
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      throw new Error('API did not return valid JSON');
-    }
-  };
-
   const fetchMessages = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/messages`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Messages API ${res.status}: ${txt}`);
-      }
-      const data = await safeJson(res);
-      setMessages(Array.isArray(data) ? data : []);
+      const response = await client.get('/subadmin/messages');
+      setMessages(Array.isArray(response.data) ? response.data : []);
     } catch (e: any) {
       console.error('fetchMessages error', e);
       setError(e.message || 'Failed to load messages');
@@ -56,18 +31,12 @@ export default function SubAdminMessages(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   const markAsRead = async (msg: InternalMessage) => {
     if (msg.read) return;
     try {
-      await fetch(`${API_BASE}/messages/${msg.id}/read`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-      });
+      await client.patch(`/subadmin/messages/${msg.id}/read`);
       setMessages((prev) =>
         prev
           ? prev.map((m) => (m.id === msg.id ? { ...m, read: true } : m))

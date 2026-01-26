@@ -26,6 +26,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 /* === ADMIN === */
 import { AdminModule } from './modules/admin/admin.module';
 import { CategoryRulesModule } from './modules/category-rules/category-rules.module';
+import { SubAdminModule } from './modules/subadmin/subadmin.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { CategoryRulesModule } from './modules/category-rules/category-rules.mod
 
     AdminModule,
     CategoryRulesModule,
+    SubAdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

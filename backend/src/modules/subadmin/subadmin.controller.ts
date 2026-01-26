@@ -1,0 +1,608 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Param,
+  UseGuards,
+  Patch,
+} from '@nestjs/common';
+import { JwtGuard } from 'src/common/guards/jwt.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { SubAdminService } from './subadmin.service';
+import { ResearchStatus } from '../research/entities/research-task.entity';
+import { InquiryStatus, InquiryPlatform } from '../inquiry/entities/inquiry-task.entity';
+
+interface UserPayload {
+  id: string;
+  email: string;
+}
+
+@Controller('subadmin')
+@UseGuards(JwtGuard, RolesGuard)
+@Roles('sub_admin')
+export class SubAdminController {
+  constructor(private readonly subAdminService: SubAdminService) {}
+
+  /**
+   * GET /subadmin/categories
+   * Get categories accessible to current sub-admin
+   */
+  @Get('categories')
+  async getCategories(@CurrentUser() user: UserPayload) {
+    return await this.subAdminService.getUserCategories(user.id);
+  }
+
+  /**
+   * GET /subadmin/research/website
+   * Get Website research tasks with pagination
+   */
+  @Get('research/website')
+  async getWebsiteResearchTasks(
+    @CurrentUser() user: UserPayload,
+    @Query('categoryId') categoryId?: string,
+    @Query('status') status?: ResearchStatus,
+    @Query('limit') limit = 50,
+    @Query('offset') offset = 0,
+  ) {
+    const result = await this.subAdminService.getWebsiteResearchTasks(
+      user.id,
+      categoryId,
+      status,
+      Math.min(limit, 100), // Max 100 per request
+      offset,
+    );
+    return result.data;
+  }
+
+  /**
+   * GET /subadmin/research/linkedin
+   * Get LinkedIn research tasks with pagination
+   */
+  @Get('research/linkedin')
+  async getLinkedInResearchTasks(
+    @CurrentUser() user: UserPayload,
+    @Query('categoryId') categoryId?: string,
+    @Query('status') status?: ResearchStatus,
+    @Query('limit') limit = 50,
+    @Query('offset') offset = 0,
+  ) {
+    const result = await this.subAdminService.getLinkedInResearchTasks(
+      user.id,
+      categoryId,
+      status,
+      Math.min(limit, 100),
+      offset,
+    );
+    return result.data;
+  }
+
+  /**
+   * POST /subadmin/research/website
+   * Create Website research tasks (bulk)
+   * Body: { categoryId: string, domains: string[] }
+   */
+  @Post('research/website')
+  async createWebsiteResearchTasks(
+    @CurrentUser() user: UserPayload,
+    @Body() body: { categoryId: string; domains: string[] },
+  ) {
+    if (!Array.isArray(body.domains) || body.domains.length === 0) {
+      throw new Error('domains must be a non-empty array');
+    }
+
+    return await this.subAdminService.createWebsiteResearchTasks(
+      user.id,
+      body.categoryId,
+      body.domains,
+    );
+  }
+
+  /**
+   * POST /subadmin/research/linkedin
+   * Create LinkedIn research tasks (bulk)
+   * Body: { categoryId: string, profileUrls: string[] }
+   */
+  @Post('research/linkedin')
+  async createLinkedInResearchTasks(
+    @CurrentUser() user: UserPayload,
+    @Body() body: { categoryId: string; profileUrls: string[] },
+  ) {
+    if (!Array.isArray(body.profileUrls) || body.profileUrls.length === 0) {
+      throw new Error('profileUrls must be a non-empty array');
+    }
+
+    return await this.subAdminService.createLinkedInResearchTasks(
+      user.id,
+      body.categoryId,
+      body.profileUrls,
+    );
+  }
+
+  /**
+   * POST /subadmin/inquiry/website
+   * Create Website inquiry tasks (bulk)
+   * Body: { categoryId: string, targetUrls: string[] }
+   */
+  @Post('inquiry/website')
+  async createWebsiteInquiryTasks(
+    @CurrentUser() user: UserPayload,
+    @Body() body: { categoryId: string; targetUrls: string[] },
+  ) {
+    if (!Array.isArray(body.targetUrls) || body.targetUrls.length === 0) {
+      throw new Error('targetUrls must be a non-empty array');
+    }
+
+    return await this.subAdminService.createWebsiteInquiryTasks(
+      user.id,
+      body.categoryId,
+      body.targetUrls,
+    );
+  }
+
+  /**
+   * POST /subadmin/inquiry/linkedin
+   * Create LinkedIn inquiry tasks (bulk)
+   * Body: { categoryId: string, profileUrls: string[] }
+   */
+  @Post('inquiry/linkedin')
+  async createLinkedInInquiryTasks(
+    @CurrentUser() user: UserPayload,
+    @Body() body: { categoryId: string; profileUrls: string[] },
+  ) {
+    if (!Array.isArray(body.profileUrls) || body.profileUrls.length === 0) {
+      throw new Error('profileUrls must be a non-empty array');
+    }
+
+    return await this.subAdminService.createLinkedInInquiryTasks(
+      user.id,
+      body.categoryId,
+      body.profileUrls,
+    );
+  }
+
+  /**
+   * GET /subadmin/inquiry
+   * Get inquiry tasks with pagination and platform filter
+   */
+  @Get('inquiry')
+  async getInquiryTasks(
+    @CurrentUser() user: UserPayload,
+    @Query('categoryId') categoryId?: string,
+    @Query('platform') platform?: 'WEBSITE' | 'LINKEDIN',
+    @Query('status') status?: InquiryStatus,
+    @Query('limit') limit = 50,
+    @Query('offset') offset = 0,
+  ) {
+    const platformEnum: InquiryPlatform | undefined = platform
+      ? (Object.values(InquiryPlatform).includes(platform as InquiryPlatform) ? (platform as InquiryPlatform) : undefined)
+      : undefined;
+
+    return await this.subAdminService.getInquiryTasks(
+      user.id,
+      categoryId,
+      platformEnum,
+      status,
+      Math.min(limit, 100),
+      offset,
+    );
+  }
+
+  /**
+   * GET /subadmin/research/:taskId
+   * Get single research task with submission for review
+   */
+  @Get('research/:taskId')
+  async getResearchTaskForReview(
+    @CurrentUser() user: UserPayload,
+    @Param('taskId') taskId: string,
+  ) {
+    return await this.subAdminService.getResearchTaskWithSubmission(
+      user.id,
+      taskId,
+    );
+  }
+
+  /**
+   * GET /subadmin/inquiry/:taskId
+   * Get inquiry task with actions and snapshots for review
+   */
+  @Get('inquiry/:taskId')
+  async getInquiryTaskForReview(
+    @CurrentUser() user: UserPayload,
+    @Param('taskId') taskId: string,
+  ) {
+    return await this.subAdminService.getInquiryTaskForReview(user.id, taskId);
+  }
+
+  /**
+   * PATCH /subadmin/research/:taskId/approve
+   * Approve research task
+   */
+  @Patch('research/:taskId/approve')
+  async approveResearchTask(
+    @CurrentUser() user: UserPayload,
+    @Param('taskId') taskId: string,
+  ) {
+    return await this.subAdminService.approveResearchTask(user.id, taskId);
+  }
+
+  /**
+   * PATCH /subadmin/research/:taskId/reject
+   * Reject research task
+   */
+  @Patch('research/:taskId/reject')
+  async rejectResearchTask(
+    @CurrentUser() user: UserPayload,
+    @Param('taskId') taskId: string,
+    @Body() body?: { reason?: string },
+  ) {
+    return await this.subAdminService.rejectResearchTask(
+      user.id,
+      taskId,
+      body?.reason,
+    );
+  }
+
+  /**
+   * PATCH /subadmin/research/:taskId/flag
+   * Flag research task
+   */
+  @Patch('research/:taskId/flag')
+  async flagResearchTask(
+    @CurrentUser() user: UserPayload,
+    @Param('taskId') taskId: string,
+    @Body() body?: { reason?: string },
+  ) {
+    return await this.subAdminService.flagResearchTask(
+      user.id,
+      taskId,
+      body?.reason,
+    );
+  }
+
+  /**
+   * PATCH /subadmin/inquiry/:taskId/approve
+   * Approve inquiry task
+   */
+  @Patch('inquiry/:taskId/approve')
+  async approveInquiryTask(
+    @CurrentUser() user: UserPayload,
+    @Param('taskId') taskId: string,
+  ) {
+    return await this.subAdminService.approveInquiryTask(user.id, taskId);
+  }
+
+  /**
+   * PATCH /subadmin/inquiry/:taskId/reject
+   * Reject inquiry task
+   */
+  @Patch('inquiry/:taskId/reject')
+  async rejectInquiryTask(
+    @CurrentUser() user: UserPayload,
+    @Param('taskId') taskId: string,
+    @Body() body?: { reason?: string },
+  ) {
+    return await this.subAdminService.rejectInquiryTask(
+      user.id,
+      taskId,
+      body?.reason,
+    );
+  }
+
+  /**
+   * PATCH /subadmin/inquiry/:taskId/flag
+   * Flag inquiry task
+   */
+  @Patch('inquiry/:taskId/flag')
+  async flagInquiryTask(
+    @CurrentUser() user: UserPayload,
+    @Param('taskId') taskId: string,
+    @Body() body?: { reason?: string },
+  ) {
+    return await this.subAdminService.flagInquiryTask(
+      user.id,
+      taskId,
+      body?.reason,
+    );
+  }
+
+  /**
+   * GET /subadmin/pending/research
+   * Get all pending research tasks for review
+   */
+  @Get('pending/research')
+  async getPendingResearchTasks(
+    @CurrentUser() user: UserPayload,
+    @Query('limit') limit = 50,
+    @Query('offset') offset = 0,
+  ) {
+    const result = await this.subAdminService.getPendingResearchTasks(
+      user.id,
+      Math.min(limit, 100),
+      offset,
+    );
+    return result;
+  }
+
+  /**
+   * GET /subadmin/pending/inquiry
+   * Get all pending inquiry tasks for review
+   */
+  @Get('pending/inquiry')
+  async getPendingInquiryTasks(
+    @CurrentUser() user: UserPayload,
+    @Query('limit') limit = 50,
+    @Query('offset') offset = 0,
+  ) {
+    const result = await this.subAdminService.getPendingInquiryTasks(
+      user.id,
+      Math.min(limit, 100),
+      offset,
+    );
+    return result;
+  }
+
+  /**
+   * GET /subadmin/stats
+   * Get dashboard statistics for sub-admin
+   */
+  @Get('stats')
+  async getStats(@CurrentUser() user: UserPayload) {
+    return await this.subAdminService.getStats(user.id);
+  }
+
+  /**
+   * GET /subadmin/alerts
+   * Get alerts for sub-admin
+   */
+  @Get('alerts')
+  async getAlerts(
+    @CurrentUser() user: UserPayload,
+    @Query('limit') limit = 8,
+  ) {
+    return await this.subAdminService.getAlerts(user.id, Math.min(limit, 50));
+  }
+
+  /**
+   * GET /subadmin/queued-actions
+   * Get queued actions for sub-admin
+   */
+  @Get('queued-actions')
+  async getQueuedActions(
+    @CurrentUser() user: UserPayload,
+    @Query('limit') limit = 10,
+  ) {
+    return await this.subAdminService.getQueuedActions(user.id, Math.min(limit, 50));
+  }
+
+  /**
+   * GET /subadmin/top-categories
+   * Get top categories by activity
+   */
+  @Get('top-categories')
+  async getTopCategories(
+    @CurrentUser() user: UserPayload,
+    @Query('limit') limit = 6,
+  ) {
+    return await this.subAdminService.getTopCategories(user.id, Math.min(limit, 50));
+  }
+
+  /**
+   * GET /subadmin/pending/research
+   * Get all pending research tasks (list view)
+   */
+  @Get('review/research')
+  async getReviewResearchTasks(
+    @CurrentUser() user: UserPayload,
+    @Query('status') status?: ResearchStatus,
+    @Query('limit') limit = 50,
+    @Query('offset') offset = 0,
+  ) {
+    return await this.subAdminService.getPendingResearchTasks(
+      user.id,
+      Math.min(limit, 100),
+      offset,
+    );
+  }
+
+  /**
+   * GET /subadmin/review/inquiry
+   * Get all pending inquiry tasks (list view)
+   */
+  @Get('review/inquiry')
+  async getReviewInquiryTasks(
+    @CurrentUser() user: UserPayload,
+    @Query('status') status?: InquiryStatus,
+    @Query('limit') limit = 50,
+    @Query('offset') offset = 0,
+  ) {
+    return await this.subAdminService.getPendingInquiryTasks(
+      user.id,
+      Math.min(limit, 100),
+      offset,
+    );
+  }
+
+  /**
+   * GET /subadmin/messages
+   * Get messages for sub-admin
+   */
+  @Get('messages')
+  async getMessages(@CurrentUser() user: UserPayload) {
+    // Return empty array for now - can be implemented later
+    return [];
+  }
+
+  /**
+   * POST /subadmin/messages/:id/read
+   * Mark message as read
+   */
+  @Patch('messages/:id/read')
+  async markMessageRead(
+    @CurrentUser() user: UserPayload,
+    @Param('id') messageId: string,
+  ) {
+    // Return success for now
+    return { success: true };
+  }
+
+  /**
+   * GET /subadmin/performance
+   * Get performance metrics
+   */
+  @Get('performance')
+  async getPerformance(
+    @CurrentUser() user: UserPayload,
+    @Query('period') period = 'last7',
+  ) {
+    return await this.subAdminService.getPerformanceStats(user.id, period);
+  }
+
+  /**
+   * GET /subadmin/top-workers
+   * Get top workers by performance
+   */
+  @Get('top-workers')
+  async getTopWorkers(
+    @CurrentUser() user: UserPayload,
+    @Query('period') period = 'last7',
+  ) {
+    return await this.subAdminService.getTopWorkers(user.id, period);
+  }
+
+  /**
+   * GET /subadmin/templates
+   * Get message templates
+   */
+  @Get('templates')
+  async getTemplates(@CurrentUser() user: UserPayload) {
+    return [];
+  }
+
+  /**
+   * GET /subadmin/notices
+   * Get system notices
+   */
+  @Get('notices')
+  async getNotices(@CurrentUser() user: UserPayload) {
+    return [];
+  }
+
+  /**
+   * GET /subadmin/disapproval-reasons
+   * Get disapproval reasons
+   */
+  @Get('disapproval-reasons')
+  async getDisapprovalReasons(@CurrentUser() user: UserPayload) {
+    return await this.subAdminService.getDisapprovalReasons();
+  }
+
+  /**
+   * POST /subadmin/disapproval-reasons
+   * Create new disapproval reason
+   */
+  @Post('disapproval-reasons')
+  async createDisapprovalReason(
+    @CurrentUser() user: UserPayload,
+    @Body() body: { reason: string; description?: string; applicableTo: 'research' | 'inquiry' | 'both' },
+  ) {
+    return await this.subAdminService.createDisapprovalReason(body);
+  }
+
+  /**
+   * PATCH /subadmin/disapproval-reasons/:id
+   * Update disapproval reason
+   */
+  @Patch('disapproval-reasons/:id')
+  async updateDisapprovalReason(
+    @CurrentUser() user: UserPayload,
+    @Param('id') id: string,
+    @Body() body: { reason?: string; description?: string; applicableTo?: 'research' | 'inquiry' | 'both'; isActive?: boolean },
+  ) {
+    return await this.subAdminService.updateDisapprovalReason(id, body);
+  }
+
+  /**
+   * GET /subadmin/company-types
+   * Get all company types
+   */
+  @Get('company-types')
+  async getCompanyTypes(@CurrentUser() user: UserPayload) {
+    return await this.subAdminService.getCompanyTypes();
+  }
+
+  /**
+   * POST /subadmin/company-types
+   * Create new company type
+   */
+  @Post('company-types')
+  async createCompanyType(
+    @CurrentUser() user: UserPayload,
+    @Body() body: { name: string; description?: string },
+  ) {
+    return await this.subAdminService.createCompanyType(body);
+  }
+
+  /**
+   * PATCH /subadmin/company-types/:id
+   * Update company type
+   */
+  @Patch('company-types/:id')
+  async updateCompanyType(
+    @CurrentUser() user: UserPayload,
+    @Param('id') id: string,
+    @Body() body: { name?: string; description?: string; isActive?: boolean },
+  ) {
+    return await this.subAdminService.updateCompanyType(id, body);
+  }
+
+  /**
+   * GET /subadmin/job-types
+   * Get all job types
+   */
+  @Get('job-types')
+  async getJobTypes(@CurrentUser() user: UserPayload) {
+    return await this.subAdminService.getJobTypes();
+  }
+
+  /**
+   * POST /subadmin/job-types
+   * Create new job type
+   */
+  @Post('job-types')
+  async createJobType(
+    @CurrentUser() user: UserPayload,
+    @Body() body: { name: string; description?: string },
+  ) {
+    return await this.subAdminService.createJobType(body);
+  }
+
+  /**
+   * PATCH /subadmin/job-types/:id
+   * Update job type
+   */
+  @Patch('job-types/:id')
+  async updateJobType(
+    @CurrentUser() user: UserPayload,
+    @Param('id') id: string,
+    @Body() body: { name?: string; description?: string; isActive?: boolean },
+  ) {
+    return await this.subAdminService.updateJobType(id, body);
+  }
+
+  /**
+   * GET /subadmin/country-stats
+   * Get country statistics
+   */
+  @Get('country-stats')
+  async getCountryStats(
+    @CurrentUser() user: UserPayload,
+    @Query('period') period = 'last7',
+  ) {
+    return [];
+  }
+}

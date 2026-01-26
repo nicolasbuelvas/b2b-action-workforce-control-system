@@ -23,6 +23,29 @@ import LinkedinResearchAuditorLayout from '../layouts/audit-researcher/linkedin/
 import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
 import SubAdminDashboard from '../pages/sub-admin/SubAdminDashboard';
 
+/* ===== SUB-ADMIN PAGES ===== */
+import SubAdminWebsiteResearch from '../pages/sub-admin/WebsiteResearch';
+import SubAdminLinkedInResearch from '../pages/sub-admin/SubAdminLinkedInResearch';
+import SubAdminCreateResearchTasks from '../pages/sub-admin/SubAdminCreateResearchTasks';
+import SubAdminWebsiteInquiry from '../pages/sub-admin/SubAdminWebsiteInquiry';
+import SubAdminLinkedInInquiry from '../pages/sub-admin/SubAdminLinkedInInquiry';
+import SubAdminCreateInquiryTasks from '../pages/sub-admin/SubAdminCreateInquiryTasks';
+import WebsiteResearchReview from '../pages/sub-admin/WebsiteResearchReview';
+import LinkedInResearchReview from '../pages/sub-admin/LinkedInResearchReview';
+import WebsiteInquiryReview from '../pages/sub-admin/WebsiteInquiryReview';
+import LinkedInInquiryReview from '../pages/sub-admin/LinkedInInquiryReview';
+import SubAdminResearchReview from '../pages/sub-admin/SubAdminResearchReview';
+import SubAdminInquiryReview from '../pages/sub-admin/SubAdminInquiryReview';
+import SubAdminMessages from '../pages/sub-admin/SubAdminMessages';
+import SubAdminPerformance from '../pages/sub-admin/SubAdminPerformance';
+import SubAdminTopWorkers from '../pages/sub-admin/SubAdminTopWorkers';
+import SubAdminCompanyTypes from '../pages/sub-admin/SubAdminCompanyTypes';
+import SubAdminJobTypes from '../pages/sub-admin/SubAdminJobTypes';
+import SubAdminDisapprovalReasons from '../pages/sub-admin/SubAdminDisapprovalReasons';
+import SubAdminNotices from '../pages/sub-admin/SubAdminNotices';
+import SubAdminUsers from '../pages/sub-admin/SubAdminUsers';
+import SubAdminDailyLimits from '../pages/sub-admin/SubAdminDailyLimits';
+
 import WebsiteResearcherDashboard from '../pages/research/website/WebsiteResearcherDashboard';
 import LinkedinResearcherDashboard from '../pages/research/linkedin/LinkedinResearcherDashboard';
 
@@ -93,9 +116,43 @@ export default function AppRouter() {
         <Route path="/sub-admin" element={<SubAdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<SubAdminDashboard />} />
-          <Route path="categories" element={<CategoriesPage />} />
-          <Route path="category-rules" element={<CategoryRulesPage />} />
-          <Route path="role-performance" element={<RolePerformancePage />} />
+          
+          {/* Management */}
+          <Route path="users" element={<SubAdminUsers />} />
+          <Route path="company-types" element={<SubAdminCompanyTypes />} />
+          <Route path="job-types" element={<SubAdminJobTypes />} />
+          <Route path="disapproval-reasons" element={<SubAdminDisapprovalReasons />} />
+          <Route path="daily-limits" element={<SubAdminDailyLimits />} />
+          
+          {/* Research Tasks */}
+          <Route path="research/website" element={<SubAdminWebsiteResearch />} />
+          <Route path="research/linkedin" element={<SubAdminLinkedInResearch />} />
+          <Route path="research/create" element={<SubAdminCreateResearchTasks />} />
+          
+          {/* Inquiry Tasks */}
+          <Route path="inquiry/website" element={<SubAdminWebsiteInquiry />} />
+          <Route path="inquiry/linkedin" element={<SubAdminLinkedInInquiry />} />
+          <Route path="inquiry/create" element={<SubAdminCreateInquiryTasks />} />
+          
+          {/* Audit - List Pages (4 separate auditor types) */}
+          <Route path="audit/website-research" element={<SubAdminResearchReview />} />
+          <Route path="audit/linkedin-research" element={<SubAdminResearchReview />} />
+          <Route path="audit/website-inquiry" element={<SubAdminInquiryReview />} />
+          <Route path="audit/linkedin-inquiry" element={<SubAdminInquiryReview />} />
+          
+          {/* Review/Audit - Detail Pages */}
+          <Route path="review/research/website/:taskId" element={<WebsiteResearchReview />} />
+          <Route path="review/research/linkedin/:taskId" element={<LinkedInResearchReview />} />
+          <Route path="review/inquiry/website/:taskId" element={<WebsiteInquiryReview />} />
+          <Route path="review/inquiry/linkedin/:taskId" element={<LinkedInInquiryReview />} />
+          
+          {/* Performance & Analytics */}
+          <Route path="performance" element={<SubAdminPerformance />} />
+          <Route path="top-workers" element={<SubAdminTopWorkers />} />
+          
+          {/* Communication */}
+          <Route path="notices" element={<SubAdminNotices />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 

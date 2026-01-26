@@ -1,63 +1,50 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getInquiryTasks, getSubAdminCategories } from '../../api/subadmin.api';
 import './SubAdminWebsiteInquiry.css';
 
-type InquiryItem = {
+interface InquiryItem {
   id: string;
-  website: string;
+  targetId: string;
   category: string;
-  status: 'pending' | 'approved' | 'rejected' | 'flagged';
-  submittedBy: string;
-  submittedAt: string;
-};
+  status: 'pending' | 'in_progress' | 'completed' | 'approved' | 'rejected' | 'flagged';
+  createdAt: string;
+  [k: string]: any;
+}
 
-const API_BASE = '/api/subadmin';
+type Category = { id: string; name: string; isActive: boolean };
 
 export default function SubAdminWebsiteInquiry(): JSX.Element {
   const [items, setItems] = useState<InquiryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const navigate = useNavigate();
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+  // Load categories
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getSubAdminCategories();
+        setCategories(Array.isArray(data) ? data : []);
+      } catch (err: any) {
+        console.error('Failed to load categories:', err);
+      }
+    })();
   }, []);
 
-  const safeJson = async (res: Response) => {
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      throw new Error('Invalid JSON from API');
-    }
-  };
-
-  const fetchInquiries = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/inquiry/website`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Inquiry API ${res.status}: ${txt}`);
-      }
-      const data = await safeJson(res);
-      setItems(
-        (Array.isArray(data) ? data : []).map((i: any) => ({
-          id: String(i.id ?? i._id),
-          website: String(i.website ?? ''),
-          category: String(i.category ?? '—'),
-          status: i.status ?? 'pending',
-          submittedBy: String(i.submittedBy ?? '—'),
-          submittedAt: String(i.submittedAt ?? i.createdAt ?? new Date().toISOString()),
-        }))
+      const data = await getInquiryTasks(
+        categoryFilter === 'all' ? undefined : categoryFilter,
+        'WEBSITE',
+        statusFilter === 'all' ? undefined : statusFilter,
       );
+      setItems(Array.isArray(data) ? data : []);
     } catch (e: any) {
       console.error(e);
       setError(e.message || 'Failed to load website inquiries');
@@ -65,60 +52,71 @@ export default function SubAdminWebsiteInquiry(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders]);
+  }, [categoryFilter, statusFilter]);
 
   useEffect(() => {
-    fetchInquiries();
-  }, [fetchInquiries]);
+    fetchData();
+  }, [fetchData]);
 
   return (
-    <div className="subadmin-website-inquiry">
-      <header className="hdr">
+    <div className="sa-website-inquiry">
+      <header className="page-header">
         <div>
           <h1>Website Inquiry</h1>
           <p className="muted">
-            Incoming website inquiries awaiting validation or review.
+            All website inquiry tasks and their status.
           </p>
         </div>
-        <button className="refresh" onClick={fetchInquiries}>
-          Refresh
-        </button>
+
+        <div className="filters">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="all">Status: All</option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+
+          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+            <option value="all">Category: All</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          <button onClick={fetchData} disabled={loading}>Refresh</button>
+        </div>
       </header>
 
       {loading && <div className="loader">Loading inquiries…</div>}
       {error && <div className="error">Error: {error}</div>}
-
       {!loading && !error && items.length === 0 && (
-        <div className="empty">No website inquiries found.</div>
+        <div className="empty">No website inquiry tasks found.</div>
       )}
 
       {!loading && !error && items.length > 0 && (
-        <table className="inquiry-table">
+        <table className="sa-table">
           <thead>
             <tr>
-              <th>Website</th>
+              <th>Task ID</th>
               <th>Category</th>
               <th>Status</th>
-              <th>Submitted By</th>
-              <th>Submitted At</th>
-              <th></th>
+              <th>Created</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {items.map((i) => (
-              <tr key={i.id}>
-                <td>{i.website}</td>
-                <td>{i.category}</td>
+            {items.map((it) => (
+              <tr key={it.id}>
+                <td>{it.id.slice(0, 8)}</td>
+                <td>{it.category || '—'}</td>
                 <td>
-                  <span className={`status ${i.status}`}>{i.status}</span>
+                  <span className={`status ${it.status}`}>{it.status}</span>
                 </td>
-                <td>{i.submittedBy}</td>
-                <td>{new Date(i.submittedAt).toLocaleString()}</td>
-                <td className="actions">
+                <td>{new Date(it.createdAt).toLocaleString()}</td>
+                <td>
                   <button
-                    onClick={() =>
-                      navigate(`/sub-admin/review/inquiry?type=website&id=${i.id}`)
-                    }
+                    className="btn-view"
+                    onClick={() => navigate(`/sub-admin/review/inquiry/${it.id}`)}
                   >
                     Review
                   </button>

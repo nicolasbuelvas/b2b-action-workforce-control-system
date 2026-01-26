@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { client } from '../../api/client';
 import './SubAdminInquiryReview.css';
 
 type InquiryItem = {
@@ -12,47 +13,21 @@ type InquiryItem = {
   createdAt?: string;
 };
 
-const API_BASE = '/api/subadmin/review/inquiry';
-
 export default function SubAdminInquiryReview(): JSX.Element {
   const [items, setItems] = useState<InquiryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
-  const safeJson = async (res: Response) => {
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      throw new Error('API did not return valid JSON');
-    }
-  };
-
   const fetchInquiries = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}?status=pending&limit=50`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
+      const response = await client.get('/subadmin/review/inquiry', {
+        params: { status: 'pending', limit: 50 },
       });
-
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Inquiry API ${res.status}: ${txt}`);
-      }
-
-      const data = await safeJson(res);
-      setItems(Array.isArray(data) ? data : []);
+      const data = response.data;
+      setItems(Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error('fetchInquiries error', err);
       setError(err.message || 'Failed to load inquiries');
@@ -60,7 +35,7 @@ export default function SubAdminInquiryReview(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   useEffect(() => {
     fetchInquiries();
@@ -70,9 +45,9 @@ export default function SubAdminInquiryReview(): JSX.Element {
     <div className="inquiry-review-page">
       <header className="hdr">
         <div>
-          <h1>Inquiry Review</h1>
+          <h1>Inquiry Audit</h1>
           <p className="muted">
-            Review outbound inquiries before approval or rejection.
+            Audit outbound inquiries before approval or rejection.
           </p>
         </div>
 
@@ -122,7 +97,7 @@ export default function SubAdminInquiryReview(): JSX.Element {
                       navigate(`/sub-admin/review/inquiry/${it.id}`)
                     }
                   >
-                    Review
+                    Audit
                   </button>
                 </td>
               </tr>

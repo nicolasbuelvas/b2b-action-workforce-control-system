@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { client } from '../../api/client';
 import './SubAdminTopWorkers.css';
 
 type WorkerStats = {
@@ -12,41 +13,20 @@ type WorkerStats = {
   lastActiveAt: string;
 };
 
-const API_BASE = '/api/subadmin/top-workers';
-
 export default function SubAdminTopWorkers(): JSX.Element {
   const [period, setPeriod] = useState('last7');
   const [workers, setWorkers] = useState<WorkerStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
-  const safeJson = async (res: Response) => {
-    const txt = await res.text();
-    try {
-      return JSON.parse(txt);
-    } catch {
-      throw new Error('Invalid JSON from API');
-    }
-  };
-
   const fetchWorkers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}?period=${period}`, {
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      const response = await client.get('/subadmin/top-workers', {
+        params: { period },
       });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`API ${res.status}: ${txt}`);
-      }
-      const data = await safeJson(res);
-      setWorkers(Array.isArray(data) ? data : []);
+      setWorkers(Array.isArray(response.data) ? response.data : []);
     } catch (e: any) {
       console.error(e);
       setError(e.message || 'Failed to load top workers');
@@ -54,7 +34,7 @@ export default function SubAdminTopWorkers(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [period, getAuthHeaders]);
+  }, [period]);
 
   useEffect(() => {
     fetchWorkers();

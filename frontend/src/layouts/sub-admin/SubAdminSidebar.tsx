@@ -15,6 +15,23 @@ export default function SubAdminSidebar() {
           Dashboard
         </NavLink>
 
+        <span className="sa-section">Management</span>
+        <NavLink to="/sub-admin/users" className="sa-link">
+          Users
+        </NavLink>
+        <NavLink to="/sub-admin/company-types" className="sa-link">
+          Company Types
+        </NavLink>
+        <NavLink to="/sub-admin/job-types" className="sa-link">
+          Job Types
+        </NavLink>
+        <NavLink to="/sub-admin/disapproval-reasons" className="sa-link">
+          Disapproval Reasons
+        </NavLink>
+        <NavLink to="/sub-admin/daily-limits" className="sa-link">
+          Daily Limits
+        </NavLink>
+
         <span className="sa-section">Research</span>
         <NavLink to="/sub-admin/research/website" className="sa-link">
           Website Research
@@ -31,12 +48,34 @@ export default function SubAdminSidebar() {
           LinkedIn Inquiry
         </NavLink>
 
-        <span className="sa-section">Review / Audit</span>
-        <NavLink to="/sub-admin/review/research" className="sa-link">
-          Research Review
+        <span className="sa-section">Audit</span>
+        <NavLink to="/sub-admin/audit/website-research" className="sa-link">
+          Website Research Auditor
         </NavLink>
-        <NavLink to="/sub-admin/review/inquiry" className="sa-link">
-          Inquiry Review
+        <NavLink to="/sub-admin/audit/linkedin-research" className="sa-link">
+          LinkedIn Research Auditor
+        </NavLink>
+        <NavLink to="/sub-admin/audit/website-inquiry" className="sa-link">
+          Website Inquirer Auditor
+        </NavLink>
+        <NavLink to="/sub-admin/audit/linkedin-inquiry" className="sa-link">
+          LinkedIn Inquirer Auditor
+        </NavLink>
+
+        <span className="sa-section">Analytics</span>
+        <NavLink to="/sub-admin/performance" className="sa-link">
+          Performance
+        </NavLink>
+        <NavLink to="/sub-admin/top-workers" className="sa-link">
+          Top Workers
+        </NavLink>
+
+        <span className="sa-section">Communication</span>
+        <NavLink to="/sub-admin/notices" className="sa-link">
+          Notices
+        </NavLink>
+        <NavLink to="/sub-admin/messages" className="sa-link">
+          Messages
         </NavLink>
 
       </nav>

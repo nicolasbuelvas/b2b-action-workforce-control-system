@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { client } from '../../api/client';
 import './SubAdminCategoriesRules.css';
 
 type Category = {
@@ -18,8 +19,6 @@ type Rule = {
   action: 'approve' | 'reject' | 'flag';
 };
 
-const API_BASE = '/api/subadmin/categories';
-
 export default function SubAdminCategoriesRules(): JSX.Element {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selected, setSelected] = useState<Category | null>(null);
@@ -27,37 +26,19 @@ export default function SubAdminCategoriesRules(): JSX.Element {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
-  const safeJson = async (res: Response) => {
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      throw new Error('API did not return valid JSON');
-    }
-  };
-
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_BASE, {
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      });
-      if (!res.ok) throw new Error(`Categories ${res.status}`);
-      const data = await safeJson(res);
-      setCategories(Array.isArray(data) ? data : []);
+      const response = await client.get('/subadmin/categories');
+      setCategories(Array.isArray(response.data) ? response.data : []);
     } catch (e: any) {
       console.error(e);
       setError(e.message || 'Failed to load categories');
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   const fetchRules = useCallback(
     async (categoryId: string) => {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { client } from '../../api/client';
 import './SubAdminCountryStats.css';
 
 type CountryStat = {
@@ -11,44 +12,20 @@ type CountryStat = {
   activeWorkers: number;
 };
 
-const API_BASE = '/api/subadmin/country-stats';
-
 export default function SubAdminCountryStats(): JSX.Element {
   const [period, setPeriod] = useState('last7');
   const [countries, setCountries] = useState<CountryStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
-  const safeJson = async (res: Response) => {
-    const txt = await res.text();
-    try {
-      return JSON.parse(txt);
-    } catch {
-      throw new Error('Invalid JSON from API');
-    }
-  };
-
   const fetchCountryStats = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}?period=${period}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
+      const response = await client.get('/subadmin/country-stats', {
+        params: { period },
       });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`API ${res.status}: ${txt}`);
-      }
-      const data = await safeJson(res);
-      setCountries(Array.isArray(data) ? data : []);
+      setCountries(Array.isArray(response.data) ? response.data : []);
     } catch (e: any) {
       console.error(e);
       setError(e.message || 'Failed to load country stats');
@@ -56,7 +33,7 @@ export default function SubAdminCountryStats(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [period, getAuthHeaders]);
+  }, [period]);
 
   useEffect(() => {
     fetchCountryStats();

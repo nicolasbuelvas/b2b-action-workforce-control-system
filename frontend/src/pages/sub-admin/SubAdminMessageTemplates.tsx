@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { client } from '../../api/client';
 import './SubAdminMessageTemplates.css';
 
 type MessageTemplate = {
@@ -11,8 +12,6 @@ type MessageTemplate = {
   updatedAt: string;
 };
 
-const API_BASE = '/api/subadmin/templates';
-
 export default function SubAdminMessageTemplates(): JSX.Element {
   const [items, setItems] = useState<MessageTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,30 +19,12 @@ export default function SubAdminMessageTemplates(): JSX.Element {
 
   const [editing, setEditing] = useState<MessageTemplate | null>(null);
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
-  const safeJson = async (res: Response) => {
-    const txt = await res.text();
-    try {
-      return JSON.parse(txt);
-    } catch {
-      throw new Error('Invalid JSON from API');
-    }
-  };
-
   const loadTemplates = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_BASE, {
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      });
-      if (!res.ok) throw new Error(`GET ${res.status}`);
-      const data = await safeJson(res);
-      setItems(Array.isArray(data) ? data : []);
+      const response = await client.get('/subadmin/templates');
+      setItems(Array.isArray(response.data) ? response.data : []);
     } catch (e: any) {
       console.error(e);
       setError(e.message || 'Failed to load templates');
@@ -51,7 +32,7 @@ export default function SubAdminMessageTemplates(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   useEffect(() => {
     loadTemplates();

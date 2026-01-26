@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { client } from '../../api/client';
 import './SubAdminResearchReview.css';
 
 type ResearchItem = {
@@ -11,43 +12,21 @@ type ResearchItem = {
   createdAt?: string;
 };
 
-const API_BASE = '/api/subadmin/review/research';
-
 export default function SubAdminResearchReview(): JSX.Element {
   const [items, setItems] = useState<ResearchItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
-  const safeJson = async (res: Response) => {
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      throw new Error('Invalid JSON returned by API');
-    }
-  };
-
   const fetchResearch = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}?status=pending&limit=50`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
+      const response = await client.get('/subadmin/review/research', {
+        params: { status: 'pending', limit: 50 },
       });
-      if (!res.ok) {
-        throw new Error(`API ${res.status}`);
-      }
-      const data = await safeJson(res);
-      setItems(Array.isArray(data) ? data : []);
+      const data = response.data;
+      setItems(Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to load research items');
@@ -55,7 +34,7 @@ export default function SubAdminResearchReview(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   useEffect(() => {
     fetchResearch();
@@ -65,9 +44,9 @@ export default function SubAdminResearchReview(): JSX.Element {
     <div className="research-review-page">
       <header className="hdr">
         <div>
-          <h1>Research Review</h1>
+          <h1>Research Audit</h1>
           <p className="muted">
-            Review and validate completed research before it is used in inquiries.
+            Audit and validate completed research before it is used in inquiries.
           </p>
         </div>
         <button className="refresh" onClick={fetchResearch}>
@@ -114,7 +93,7 @@ export default function SubAdminResearchReview(): JSX.Element {
                       navigate(`/sub-admin/review/research/${it.id}`)
                     }
                   >
-                    Review
+                    Audit
                   </button>
                 </td>
               </tr>

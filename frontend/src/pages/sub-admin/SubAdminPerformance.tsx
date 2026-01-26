@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { client } from '../../api/client';
 import './SubAdminPerformance.css';
 
 type PerformanceStats = {
@@ -10,37 +11,20 @@ type PerformanceStats = {
   inquiryCount: number;
 };
 
-const API_BASE = '/api/subadmin/performance';
-
 export default function SubAdminPerformance(): JSX.Element {
   const [period, setPeriod] = useState('last7');
   const [stats, setStats] = useState<PerformanceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }, []);
-
-  const safeJson = async (res: Response) => {
-    const txt = await res.text();
-    try {
-      return JSON.parse(txt);
-    } catch {
-      throw new Error('Invalid JSON');
-    }
-  };
-
   const loadPerformance = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}?period=${period}`, {
-        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      const response = await client.get('/subadmin/performance', {
+        params: { period },
       });
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      const data = await safeJson(res);
+      const data = response.data;
       setStats({
         totalActions: Number(data.totalActions ?? 0),
         approved: Number(data.approved ?? 0),
@@ -56,7 +40,7 @@ export default function SubAdminPerformance(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, [period, getAuthHeaders]);
+  }, [period]);
 
   useEffect(() => {
     loadPerformance();
