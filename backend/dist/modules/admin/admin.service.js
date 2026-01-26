@@ -132,24 +132,6 @@ let AdminService = class AdminService {
             categories: dto.categoryIds,
         };
     }
-    async assignCategories(dto) {
-        const user = await this.userRepo.findOne({
-            where: { id: dto.userId },
-        });
-        if (!user) {
-            throw new common_1.NotFoundException('User not found');
-        }
-        await this.subAdminCategoryRepo.delete({ userId: dto.userId });
-        const assignments = dto.categoryIds.map(categoryId => ({
-            userId: dto.userId,
-            categoryId,
-        }));
-        await this.subAdminCategoryRepo.save(assignments);
-        return {
-            userId: user.id,
-            categories: dto.categoryIds,
-        };
-    }
     async getSystemLogs() {
         const recentActions = await this.inquiryActionRepo
             .createQueryBuilder('ia')

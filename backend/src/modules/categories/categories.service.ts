@@ -3,11 +3,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { Category } from './entities/category.entity';
 import { CategoryConfig } from './entities/category-config.entity';
-import { SubAdminCategory } from './entities/sub-admin-category.entity';
+import { UserCategory } from './entities/user-category.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class CategoriesService {
@@ -18,14 +19,35 @@ export class CategoriesService {
     @InjectRepository(CategoryConfig)
     private readonly categoryConfigRepo: Repository<CategoryConfig>,
 
-    @InjectRepository(SubAdminCategory)
-    private readonly subAdminCategoryRepo: Repository<SubAdminCategory>,
+    @InjectRepository(UserCategory)
+    private readonly userCategoryRepo: Repository<UserCategory>,
+
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
   ) {}
 
   async findAll() {
-    return this.categoryRepo.find({
-      relations: ['subAdminCategories', 'subAdminCategories.user'],
-    });
+    const [categories, subAdminAssignments] = await Promise.all([
+      this.categoryRepo.find({ relations: ['config'] }),
+      this.userCategoryRepo.find({
+        relations: ['user', 'user.roles', 'category'],
+      }),
+    ]);
+
+    // Build map of categoryId -> sub-admin assignments from user_categories
+    const subAdminByCategory = new Map<string, any[]>();
+    subAdminAssignments
+      .filter(uc => uc.user?.roles?.some(r => r.role?.name?.toLowerCase() === 'sub_admin'))
+      .forEach(uc => {
+        const list = subAdminByCategory.get(uc.categoryId) || [];
+        list.push({ userId: uc.userId, user: uc.user });
+        subAdminByCategory.set(uc.categoryId, list);
+      });
+
+    return categories.map(cat => ({
+      ...cat,
+      subAdminCategories: subAdminByCategory.get(cat.id) || [],
+    }));
   }
 
   async getById(id: string) {
@@ -64,7 +86,7 @@ export class CategoriesService {
       }
     }
 
-    // Handle sub-admin assignments safely
+    // Handle sub-admin assignments safely (user_categories table)
     if (data.subAdminIds !== undefined) {
       if (!Array.isArray(data.subAdminIds)) {
         throw new Error('subAdminIds must be an array');
@@ -95,21 +117,41 @@ export class CategoriesService {
       throw new Error('userIds must be an array');
     }
 
-    // Remove existing assignments
-    await this.subAdminCategoryRepo.delete({ categoryId });
+    // Fetch existing sub-admin assignments for this category from user_categories
+    const existing = await this.userCategoryRepo.find({
+      where: { categoryId },
+      relations: ['user', 'user.roles'],
+    });
+
+    const existingSubAdminUCs = existing.filter(uc =>
+      uc.user?.roles?.some(r => r.role?.name?.toLowerCase() === 'sub_admin'),
+    );
+
+    if (existingSubAdminUCs.length) {
+      await this.userCategoryRepo.delete({ id: In(existingSubAdminUCs.map(uc => uc.id)) });
+    }
 
     if (userIds.length === 0) {
-      // No sub-admins to add, return the category
       return this.getById(categoryId);
     }
 
-    // Add new assignments
-    const assignments = userIds.map(userId => ({
+    // Ensure users exist (optional strictness)
+    const users = await this.userRepo.find({
+      where: { id: In(userIds) },
+      relations: ['roles'],
+    });
+
+    const subAdminUsers = users.filter(u => u.roles?.some(r => r.role?.name?.toLowerCase() === 'sub_admin'));
+    const subAdminUserIds = subAdminUsers.map(u => u.id);
+
+    const assignments = subAdminUserIds.map(userId => ({
       userId,
       categoryId,
     }));
 
-    await this.subAdminCategoryRepo.save(assignments);
+    if (assignments.length) {
+      await this.userCategoryRepo.save(assignments);
+    }
 
     return this.getById(categoryId);
   }

@@ -18,8 +18,9 @@ import { ResearchStatus } from '../research/entities/research-task.entity';
 import { InquiryStatus, InquiryPlatform } from '../inquiry/entities/inquiry-task.entity';
 
 interface UserPayload {
-  id: string;
-  email: string;
+  id?: string;
+  userId?: string;
+  email?: string;
 }
 
 @Controller('subadmin')
@@ -34,7 +35,16 @@ export class SubAdminController {
    */
   @Get('categories')
   async getCategories(@CurrentUser() user: UserPayload) {
-    return await this.subAdminService.getUserCategories(user.id);
+    const userId = user?.id ?? user?.userId;
+    console.log('[subadmin.controller.getCategories] user:', user, 'resolvedUserId:', userId);
+
+    if (!userId) {
+      throw new Error('Invalid user payload: missing userId');
+    }
+
+    const categories = await this.subAdminService.getUserCategories(userId);
+    console.log('[subadmin.controller.getCategories] returning categories:', categories.length);
+    return categories;
   }
 
   /**

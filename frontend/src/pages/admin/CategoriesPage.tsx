@@ -6,7 +6,7 @@ import {
   updateCategory,
   deleteCategory,
   getUsers,
-  assignCategorySubAdmins, // <-- import the POST API
+  assignUserToCategories, // <-- Use assignUserToCategories instead
 } from '../../api/admin.api';
 import './categoriesPage.css';
 
@@ -209,17 +209,8 @@ export default function CategoriesPage() {
         prevIds.some((id, idx) => id !== nextIds[idx]);
 
       if (assignmentsChanged) {
-        try {
-          // Debug log for POST
-          console.debug('[Categories] POST /categories/:id/sub-admins payload:', {
-            categoryId: editingCategory.id,
-            subAdminIds: selectedSubAdminIds,
-          });
-          await assignCategorySubAdmins(editingCategory.id, selectedSubAdminIds);
-        } catch (err) {
-          console.error('Failed to assign sub-admins:', err);
-          alert('Category updated, but failed to assign sub-admins: ' + (err as any)?.message);
-        }
+        // Assignment from category view is disabled - use User Category Assignment page instead
+        alert('Note: To assign sub-admins to categories, please use the "User Category Assignment" page from the Admin menu');
       }
 
       await loadCategories();

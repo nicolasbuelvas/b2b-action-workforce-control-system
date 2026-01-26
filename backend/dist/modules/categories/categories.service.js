@@ -18,17 +18,34 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const category_entity_1 = require("./entities/category.entity");
 const category_config_entity_1 = require("./entities/category-config.entity");
-const sub_admin_category_entity_1 = require("./entities/sub-admin-category.entity");
+const user_category_entity_1 = require("./entities/user-category.entity");
+const user_entity_1 = require("../users/entities/user.entity");
 let CategoriesService = class CategoriesService {
-    constructor(categoryRepo, categoryConfigRepo, subAdminCategoryRepo) {
+    constructor(categoryRepo, categoryConfigRepo, userCategoryRepo, userRepo) {
         this.categoryRepo = categoryRepo;
         this.categoryConfigRepo = categoryConfigRepo;
-        this.subAdminCategoryRepo = subAdminCategoryRepo;
+        this.userCategoryRepo = userCategoryRepo;
+        this.userRepo = userRepo;
     }
     async findAll() {
-        return this.categoryRepo.find({
-            relations: ['subAdminCategories', 'subAdminCategories.user'],
+        const [categories, subAdminAssignments] = await Promise.all([
+            this.categoryRepo.find({ relations: ['config'] }),
+            this.userCategoryRepo.find({
+                relations: ['user', 'user.roles', 'category'],
+            }),
+        ]);
+        const subAdminByCategory = new Map();
+        subAdminAssignments
+            .filter(uc => uc.user?.roles?.some(r => r.role?.name?.toLowerCase() === 'sub_admin'))
+            .forEach(uc => {
+            const list = subAdminByCategory.get(uc.categoryId) || [];
+            list.push({ userId: uc.userId, user: uc.user });
+            subAdminByCategory.set(uc.categoryId, list);
         });
+        return categories.map(cat => ({
+            ...cat,
+            subAdminCategories: subAdminByCategory.get(cat.id) || [],
+        }));
     }
     async getById(id) {
         const category = await this.categoryRepo.findOne({
@@ -76,15 +93,30 @@ let CategoriesService = class CategoriesService {
         if (!Array.isArray(userIds)) {
             throw new Error('userIds must be an array');
         }
-        await this.subAdminCategoryRepo.delete({ categoryId });
+        const existing = await this.userCategoryRepo.find({
+            where: { categoryId },
+            relations: ['user', 'user.roles'],
+        });
+        const existingSubAdminUCs = existing.filter(uc => uc.user?.roles?.some(r => r.role?.name?.toLowerCase() === 'sub_admin'));
+        if (existingSubAdminUCs.length) {
+            await this.userCategoryRepo.delete({ id: (0, typeorm_2.In)(existingSubAdminUCs.map(uc => uc.id)) });
+        }
         if (userIds.length === 0) {
             return this.getById(categoryId);
         }
-        const assignments = userIds.map(userId => ({
+        const users = await this.userRepo.find({
+            where: { id: (0, typeorm_2.In)(userIds) },
+            relations: ['roles'],
+        });
+        const subAdminUsers = users.filter(u => u.roles?.some(r => r.role?.name?.toLowerCase() === 'sub_admin'));
+        const subAdminUserIds = subAdminUsers.map(u => u.id);
+        const assignments = subAdminUserIds.map(userId => ({
             userId,
             categoryId,
         }));
-        await this.subAdminCategoryRepo.save(assignments);
+        if (assignments.length) {
+            await this.userCategoryRepo.save(assignments);
+        }
         return this.getById(categoryId);
     }
     async delete(id) {
@@ -109,8 +141,10 @@ exports.CategoriesService = CategoriesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
     __param(1, (0, typeorm_1.InjectRepository)(category_config_entity_1.CategoryConfig)),
-    __param(2, (0, typeorm_1.InjectRepository)(sub_admin_category_entity_1.SubAdminCategory)),
+    __param(2, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
+    __param(3, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])
 ], CategoriesService);

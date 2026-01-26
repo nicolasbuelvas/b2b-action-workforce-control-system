@@ -51,14 +51,43 @@ export class SubAdminService {
    * Get categories assigned to sub-admin
    */
   async getUserCategories(userId: string): Promise<Category[]> {
+    console.log(`[getUserCategories] START - userId: ${userId}`);
+    console.log(`[getUserCategories] userId type: ${typeof userId}`);
+    console.log(`[getUserCategories] userId valid: ${!!userId && userId !== 'undefined' && userId !== 'null'}`);
+    
+    if (!userId || userId === 'undefined' || userId === 'null') {
+      console.error(`[getUserCategories] ERROR: Invalid userId: ${userId}`);
+      throw new Error('Invalid userId');
+    }
+    
+    // First, let's verify the count
+    const totalUserCategories = await this.userCategoryRepo.find();
+    console.log(`[getUserCategories] Total user_categories in DB: ${totalUserCategories.length}`);
+    
+    // Now filter by userId
     const userCategories = await this.userCategoryRepo.find({
       where: { userId },
       relations: ['category'],
     });
 
-    return userCategories
+    console.log(`[getUserCategories] Query result - Found ${userCategories.length} user_category records for userId ${userId}`);
+    if (userCategories.length > 0) {
+      console.log(`[getUserCategories] Raw records:`, userCategories.map(uc => ({
+        id: uc.id,
+        userId: uc.userId,
+        categoryId: uc.categoryId,
+        categoryName: uc.category?.name,
+        isActive: uc.category?.isActive,
+      })));
+    }
+    
+    const categories = userCategories
       .map(uc => uc.category)
       .filter(c => c && c.isActive !== false);
+    
+    console.log(`[getUserCategories] RESULT - Returning ${categories.length} active categories:`, categories.map(c => ({ id: c.id, name: c.name })));
+    
+    return categories;
   }
 
   /**

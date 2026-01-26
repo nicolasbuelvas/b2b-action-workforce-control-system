@@ -9,7 +9,6 @@ import { Category } from '../categories/entities/category.entity';
 import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
-import { AssignCategoryDto } from './dto/assign-category.dto';
 import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
 import { RemoveUserFromCategoryDto } from './dto/remove-user-category.dto';
 export declare class AdminService {
@@ -36,10 +35,6 @@ export declare class AdminService {
     createSubAdmin(dto: CreateSubAdminDto): Promise<{
         userId: string;
         role: string;
-        categories: string[];
-    }>;
-    assignCategories(dto: AssignCategoryDto): Promise<{
-        userId: string;
         categories: string[];
     }>;
     getSystemLogs(): Promise<({

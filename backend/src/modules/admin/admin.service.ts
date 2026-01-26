@@ -14,7 +14,6 @@ import { SubAdminCategory } from '../categories/entities/sub-admin-category.enti
 import { UserCategory } from '../categories/entities/user-category.entity';
 
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
-import { AssignCategoryDto } from './dto/assign-category.dto';
 import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
 import { RemoveUserFromCategoryDto } from './dto/remove-user-category.dto';
 
@@ -121,32 +120,6 @@ export class AdminService {
     return {
       userId: user.id,
       role: role.name,
-      categories: dto.categoryIds,
-    };
-  }
-
-  async assignCategories(dto: AssignCategoryDto) {
-    const user = await this.userRepo.findOne({
-      where: { id: dto.userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Remove existing assignments for this user
-    await this.subAdminCategoryRepo.delete({ userId: dto.userId });
-
-    // Create new assignments
-    const assignments = dto.categoryIds.map(categoryId => ({
-      userId: dto.userId,
-      categoryId,
-    }));
-
-    await this.subAdminCategoryRepo.save(assignments);
-
-    return {
-      userId: user.id,
       categories: dto.categoryIds,
     };
   }

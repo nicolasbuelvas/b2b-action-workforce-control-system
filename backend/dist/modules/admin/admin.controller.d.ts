@@ -1,6 +1,5 @@
 import { AdminService } from './admin.service';
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
-import { AssignCategoryDto } from './dto/assign-category.dto';
 import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
 import { RemoveUserFromCategoryDto } from './dto/remove-user-category.dto';
 export declare class AdminController {
@@ -93,10 +92,6 @@ export declare class AdminController {
     createSubAdmin(dto: CreateSubAdminDto): Promise<{
         userId: string;
         role: string;
-        categories: string[];
-    }>;
-    assignCategory(dto: AssignCategoryDto): Promise<{
-        userId: string;
         categories: string[];
     }>;
     assignUserToCategories(dto: AssignUserToCategoriesDto): Promise<{
