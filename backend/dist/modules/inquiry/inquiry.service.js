@@ -147,9 +147,13 @@ let InquiryService = class InquiryService {
             },
         });
         if (!task) {
+            const platform = researchTask.targetType === 'COMPANY'
+                ? inquiry_task_entity_1.InquiryPlatform.WEBSITE
+                : inquiry_task_entity_1.InquiryPlatform.LINKEDIN;
             task = this.taskRepo.create({
                 targetId: researchTask.targetId,
                 categoryId: researchTask.categoryId,
+                platform,
                 researchTaskId,
                 status: inquiry_task_entity_1.InquiryStatus.PENDING,
             });

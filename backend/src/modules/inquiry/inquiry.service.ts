@@ -12,6 +12,7 @@ import {
 import {
   InquiryTask,
   InquiryStatus,
+  InquiryPlatform,
 } from './entities/inquiry-task.entity';
 import { OutreachRecord } from './entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from './entities/inquiry-submission-snapshot.entity';
@@ -204,9 +205,15 @@ export class InquiryService {
 
     // If no inquiry task exists, create one
     if (!task) {
+      // Determine platform from research task targetType
+      const platform = researchTask.targetType === 'COMPANY' 
+        ? InquiryPlatform.WEBSITE 
+        : InquiryPlatform.LINKEDIN;
+      
       task = this.taskRepo.create({
         targetId: researchTask.targetId,
         categoryId: researchTask.categoryId,
+        platform,
         researchTaskId, // Store research task ID directly
         status: InquiryStatus.PENDING,
       });
