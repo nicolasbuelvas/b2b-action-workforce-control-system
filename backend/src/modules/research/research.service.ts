@@ -41,6 +41,10 @@ export class ResearchService {
     private readonly linkedinProfileRepo: Repository<LinkedInProfile>,
   ) {}
 
+  private isUuid(value?: string): boolean {
+    return typeof value === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(value);
+  }
+
   async getAvailableTasks(
     userId: string,
     targetTypes: Array<'COMPANY' | 'LINKEDIN' | 'LINKEDIN_PROFILE'>,
@@ -107,15 +111,24 @@ export class ResearchService {
             };
           }
         } else if (task.targetType === 'LINKEDIN_PROFILE') {
-          const profile = await this.linkedinProfileRepo.findOne({
-            where: { id: task.targetId },
-          });
+          // Some seeded tasks store a non-UUID identifier; avoid UUID casting errors
+          if (this.isUuid(task.targetId)) {
+            const profile = await this.linkedinProfileRepo.findOne({
+              where: { id: task.targetId },
+            });
 
-          targetInfo = {
-            domain: profile?.url || '',
-            name: profile?.contactName || profile?.url || '',
-            country: profile?.country || '',
-          };
+            targetInfo = {
+              domain: profile?.url || '',
+              name: profile?.contactName || profile?.url || '',
+              country: profile?.country || '',
+            };
+          } else {
+            targetInfo = {
+              domain: task.targetId,
+              name: task.targetId,
+              country: '',
+            };
+          }
         } else if (task.targetType === 'LINKEDIN') {
           targetInfo = {
             domain: task.targetId,

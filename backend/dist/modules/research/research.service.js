@@ -31,6 +31,9 @@ let ResearchService = class ResearchService {
         this.userCategoryRepo = userCategoryRepo;
         this.linkedinProfileRepo = linkedinProfileRepo;
     }
+    isUuid(value) {
+        return typeof value === 'string' && /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(value);
+    }
     async getAvailableTasks(userId, targetTypes, categoryId) {
         const userCategories = await this.userCategoryRepo.find({
             where: { userId },
@@ -75,14 +78,23 @@ let ResearchService = class ResearchService {
                 }
             }
             else if (task.targetType === 'LINKEDIN_PROFILE') {
-                const profile = await this.linkedinProfileRepo.findOne({
-                    where: { id: task.targetId },
-                });
-                targetInfo = {
-                    domain: profile?.url || '',
-                    name: profile?.contactName || profile?.url || '',
-                    country: profile?.country || '',
-                };
+                if (this.isUuid(task.targetId)) {
+                    const profile = await this.linkedinProfileRepo.findOne({
+                        where: { id: task.targetId },
+                    });
+                    targetInfo = {
+                        domain: profile?.url || '',
+                        name: profile?.contactName || profile?.url || '',
+                        country: profile?.country || '',
+                    };
+                }
+                else {
+                    targetInfo = {
+                        domain: task.targetId,
+                        name: task.targetId,
+                        country: '',
+                    };
+                }
             }
             else if (task.targetType === 'LINKEDIN') {
                 targetInfo = {
