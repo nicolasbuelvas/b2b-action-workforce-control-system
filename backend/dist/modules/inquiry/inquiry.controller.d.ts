@@ -5,7 +5,8 @@ export declare class InquiryController {
     getWebsiteTasks(userId: string): Promise<any[]>;
     getLinkedInTasks(userId: string): Promise<any[]>;
     takeInquiry(body: {
-        inquiryTaskId: string;
+        inquiryTaskId?: string;
+        researchTaskId?: string;
     }, userId: string): Promise<import("./entities/inquiry-task.entity").InquiryTask>;
     submitInquiry(body: any, file: any, userId: string): Promise<{
         action: {

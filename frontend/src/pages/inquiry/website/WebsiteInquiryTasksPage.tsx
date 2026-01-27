@@ -125,6 +125,14 @@ export default function WebsiteInquiryTasksPage() {
       
       setTasks(visibilityFiltered);
 
+      // Auto-select first in-progress task to let user resume quickly after relogin
+      if (!selectedTask) {
+        const firstInProgress = visibilityFiltered.find(t => t.status === 'IN_PROGRESS' && t.assignedToUserId === currentUserId);
+        if (firstInProgress) {
+          handleTaskSelect(firstInProgress);
+        }
+      }
+
       // If the currently selected task is no longer visible, clear selection
       if (selectedTask && !visibilityFiltered.some(t => t.id === selectedTask.id)) {
         setSelectedTask(null);
@@ -145,7 +153,7 @@ export default function WebsiteInquiryTasksPage() {
     setSelectedTask(task);
     
     if (isAlreadyClaimed) {
-      setClaimedTaskId(task.id);
+      setClaimedTaskId(task.inquiryTaskId || task.id);
     } else {
       setClaimedTaskId(null);
     }
@@ -169,6 +177,7 @@ export default function WebsiteInquiryTasksPage() {
       setSubmitError('');
       const result = await inquiryApi.takeTask(selectedTask.id);
       setClaimedTaskId(result.id);
+      await loadTasks();
     } catch (err: any) {
       setSubmitError(err.message || 'Failed to claim task');
       console.error('Error claiming task:', err);
@@ -364,7 +373,8 @@ export default function WebsiteInquiryTasksPage() {
                     <p className="task-category">{task.categoryName}</p>
                     <p className="task-country">{task.companyCountry || 'Global'}</p>
                     <div className="task-footer">
-                      <span className="status">Ready for Inquiry</span>
+                      <span className="status">{task.status === 'IN_PROGRESS' ? 'In Progress' : 'Ready'}</span>
+                      <span className="cta-chip">{task.status === 'IN_PROGRESS' ? 'Resume' : 'Start'}</span>
                     </div>
                   </div>
                 ))}

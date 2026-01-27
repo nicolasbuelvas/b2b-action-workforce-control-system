@@ -141,6 +141,31 @@ export class InquiryService {
           },
         });
 
+        // Compute LinkedIn progress (number of actions done/pending) so UI can resume after logout
+        let linkedinProgress: {
+          completedSteps: number;
+          pendingActionIndex: number | null;
+          nextStep: number;
+        } | null = null;
+        if (type === 'linkedin' && inquiryTask) {
+          const actions = await this.actionRepo.find({
+            where: { inquiryTaskId: inquiryTask.id },
+            order: { actionIndex: 'ASC' },
+          });
+
+          const pendingAction = actions.find(a => a.status === InquiryActionStatus.PENDING) || null;
+          const completedSteps = actions.length;
+          const nextStep = pendingAction
+            ? pendingAction.actionIndex
+            : Math.min(completedSteps + 1, 3);
+
+          linkedinProgress = {
+            completedSteps,
+            pendingActionIndex: pendingAction ? pendingAction.actionIndex : null,
+            nextStep,
+          };
+        }
+
         let taskStatus = InquiryStatus.PENDING;
         let assignedToUserId = null;
         if (inquiryTask) {
@@ -165,6 +190,8 @@ export class InquiryService {
           categoryName: category?.name || '',
           status: taskStatus,
           assignedToUserId,
+          inquiryTaskId: inquiryTask?.id || null,
+          linkedinProgress,
           type: type,
           companyName,
           companyDomain,
@@ -297,18 +324,20 @@ export class InquiryService {
         throw new BadRequestException('Inquiry is not in progress');
       }
 
-      // Check for existing pending action
-      console.log('[SERVICE-SUBMIT] Checking pending actions...');
-      const pending = await manager.getRepository(InquiryAction).findOne({
-        where: {
-          inquiryTaskId: task.id,
-          status: InquiryActionStatus.PENDING,
-        },
-      });
+      // For website tasks we block concurrent pending actions; for LinkedIn we allow collecting all steps before audit
+      if (task.platform !== InquiryPlatform.LINKEDIN) {
+        console.log('[SERVICE-SUBMIT] Checking pending actions...');
+        const pending = await manager.getRepository(InquiryAction).findOne({
+          where: {
+            inquiryTaskId: task.id,
+            status: InquiryActionStatus.PENDING,
+          },
+        });
 
-      if (pending) {
-        console.error('[SERVICE-SUBMIT] ERROR: Pending action exists');
-        throw new BadRequestException('There is already a pending action');
+        if (pending) {
+          console.error('[SERVICE-SUBMIT] ERROR: Pending action exists');
+          throw new BadRequestException('There is already a pending action');
+        }
       }
 
       // Enforce cooldown before any DB modifications

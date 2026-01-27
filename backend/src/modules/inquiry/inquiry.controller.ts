@@ -39,11 +39,17 @@ export class InquiryController {
 
   @Post('take')
   takeInquiry(
-    @Body() body: { inquiryTaskId: string },
+    @Body() body: { inquiryTaskId?: string; researchTaskId?: string },
     @CurrentUser('userId') userId: string,
   ) {
+    // Backward compatible: accept either researchTaskId or inquiryTaskId (was misnamed)
+    const researchTaskId = body.researchTaskId || body.inquiryTaskId;
+    if (!researchTaskId) {
+      throw new BadRequestException('researchTaskId is required');
+    }
+
     return this.inquiryService.takeInquiry(
-      body.inquiryTaskId,
+      researchTaskId,
       userId,
     );
   }

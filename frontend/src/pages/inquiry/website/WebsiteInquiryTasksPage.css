@@ -1,6 +1,7 @@
 .inq-tasks-container {
-  padding: 40px;
-  background: #f1f5f9;
+  padding: 48px;
+  background: radial-gradient(circle at 20% 20%, #ecf2ff 0, #f8fafc 30%, #f8fafc 70%),
+              linear-gradient(135deg, #eef2ff 0%, #f8fafc 40%, #f8fafc 100%);
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
 }
@@ -61,23 +62,25 @@
 }
 
 .task-selector-card {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 18px;
+  padding: 22px;
   border: 1px solid #e2e8f0;
   cursor: pointer;
   transition: 0.2s ease;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 }
 
 .task-selector-card:hover {
-  border-color: #6366f1;
-  transform: translateX(4px);
+  border-color: #0ea5e9;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(14, 165, 233, 0.18);
 }
 
 .task-selector-card.active {
-  border-color: #6366f1;
-  background: #f8faff;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+  border-color: #0ea5e9;
+  background: linear-gradient(180deg, #f0f9ff 0%, #ffffff 100%);
+  box-shadow: 0 16px 46px rgba(14, 165, 233, 0.20);
 }
 
 .task-id-badge {
@@ -94,10 +97,11 @@
 .task-selector-card h4 {
   margin: 0;
   font-size: 16px;
-  color: #1e293b;
+  color: #0f172a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0.01em;
 }
 
 .task-category {
@@ -114,14 +118,25 @@
 
 .task-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
+  margin-top: 8px;
 }
 
 .status {
   font-size: 11px;
   text-transform: uppercase;
-  color: #10b981;
+  color: #0ea5e9;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.cta-chip {
+  background: #0ea5e9;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -130,13 +145,15 @@
   border-radius: 24px;
   border: 1px solid #e2e8f0;
   overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
 }
 
 .execution-card {
-  padding: 40px;
+  padding: 44px;
   display: flex;
   flex-direction: column;
   gap: 30px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 
 .no-task-selected {

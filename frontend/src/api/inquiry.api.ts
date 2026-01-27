@@ -7,6 +7,12 @@ export interface InquiryTask {
   categoryName: string;
   status: string;
   assignedToUserId?: string | null;
+  inquiryTaskId?: string | null;
+  linkedinProgress?: {
+    completedSteps: number;
+    pendingActionIndex: number | null;
+    nextStep: number;
+  } | null;
   type: 'website' | 'linkedin';
   companyName: string;
   companyDomain: string;
@@ -37,9 +43,9 @@ export const inquiryApi = {
     return response.data;
   },
 
-  takeTask: async (inquiryTaskId: string): Promise<any> => {
+  takeTask: async (researchTaskId: string): Promise<any> => {
     const response = await axios.post('/inquiry/take', {
-      inquiryTaskId,
+      researchTaskId,
     });
     return response.data;
   },

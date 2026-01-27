@@ -31,7 +31,11 @@ let InquiryController = class InquiryController {
         return this.inquiryService.getAvailableTasks(userId, 'linkedin');
     }
     takeInquiry(body, userId) {
-        return this.inquiryService.takeInquiry(body.inquiryTaskId, userId);
+        const researchTaskId = body.researchTaskId || body.inquiryTaskId;
+        if (!researchTaskId) {
+            throw new common_1.BadRequestException('researchTaskId is required');
+        }
+        return this.inquiryService.takeInquiry(researchTaskId, userId);
     }
     async submitInquiry(body, file, userId) {
         try {

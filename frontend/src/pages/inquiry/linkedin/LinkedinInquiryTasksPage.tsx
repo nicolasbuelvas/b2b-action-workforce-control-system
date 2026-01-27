@@ -125,13 +125,6 @@ export default function LinkedinInquiryTasksPage() {
     }
   }, [selectedCategory, loadingCategories]);
 
-  // Load tasks when category changes
-  useEffect(() => {
-    if (selectedCategory || (!loadingCategories && categories.length > 0)) {
-      loadTasks();
-    }
-  }, [selectedCategory, loadingCategories]);
-
   const loadCategories = async () => {
     try {
       setLoadingCategories(true);
@@ -176,6 +169,14 @@ export default function LinkedinInquiryTasksPage() {
       
       setTasks(visibilityFiltered);
 
+      // Auto-select first in-progress task for quick resume
+      if (!selectedTask) {
+        const firstInProgress = visibilityFiltered.find(t => t.status === 'IN_PROGRESS' && t.assignedToUserId === currentUserId);
+        if (firstInProgress) {
+          handleTaskSelect(firstInProgress);
+        }
+      }
+
       if (selectedTask && !visibilityFiltered.some(t => t.id === selectedTask.id)) {
         setSelectedTask(null);
         setClaimedTaskId(null);
@@ -195,16 +196,17 @@ export default function LinkedinInquiryTasksPage() {
     setSelectedTask(task);
     
     if (isAlreadyClaimed) {
-      setClaimedTaskId(task.id);
+      setClaimedTaskId(task.inquiryTaskId || task.id);
     } else {
       setClaimedTaskId(null);
     }
     
     setClaiming(false);
-    setCurrentStep(1);
+    const nextStep = task.linkedinProgress?.nextStep || 1;
+    setCurrentStep(nextStep);
     setTemplateIndex(0);
-    setMessageTitle(LINKEDIN_ACTIONS[0].templates[0].title);
-    setMessageContent(LINKEDIN_ACTIONS[0].templates[0].content);
+    setMessageTitle(LINKEDIN_ACTIONS[nextStep - 1].templates[0].title);
+    setMessageContent(LINKEDIN_ACTIONS[nextStep - 1].templates[0].content);
     setProofFile(null);
     setPreviewUrl('');
     setFileError('');
@@ -220,6 +222,8 @@ export default function LinkedinInquiryTasksPage() {
       setSubmitError('');
       const result = await inquiryApi.takeTask(selectedTask.id);
       setClaimedTaskId(result.id);
+      // Refresh tasks so selected item carries inquiryTaskId and progress state
+      await loadTasks();
     } catch (err: any) {
       setSubmitError(err.message || 'Failed to claim task');
       console.error('Error claiming task:', err);
@@ -292,10 +296,14 @@ export default function LinkedinInquiryTasksPage() {
       }
       
       // Move to next step or complete task
+      // Refresh tasks to pull latest step/progress from backend
+      await loadTasks();
+
       if (currentStep < 3) {
-        setCurrentStep(currentStep + 1);
+        const nextStep = currentStep + 1;
+        setCurrentStep(nextStep);
         setTemplateIndex(0);
-        const nextAction = LINKEDIN_ACTIONS[currentStep]; // currentStep is already incremented in mind
+        const nextAction = LINKEDIN_ACTIONS[nextStep - 1];
         setMessageTitle(nextAction.templates[0].title);
         setMessageContent(nextAction.templates[0].content);
         setProofFile(null);
@@ -590,7 +598,7 @@ export default function LinkedinInquiryTasksPage() {
                         </div>
 
                         {submitError && <div className="submit-error">{submitError}</div>}
-                        
+
                         {duplicateWarning && (
                           <div className="submit-warning" style={{
                             background: '#fef3c7',

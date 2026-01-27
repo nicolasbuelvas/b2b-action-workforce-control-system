@@ -104,6 +104,23 @@ let InquiryService = class InquiryService {
                     categoryId: task.categoryId,
                 },
             });
+            let linkedinProgress = null;
+            if (type === 'linkedin' && inquiryTask) {
+                const actions = await this.actionRepo.find({
+                    where: { inquiryTaskId: inquiryTask.id },
+                    order: { actionIndex: 'ASC' },
+                });
+                const pendingAction = actions.find(a => a.status === inquiry_action_entity_1.InquiryActionStatus.PENDING) || null;
+                const completedSteps = actions.length;
+                const nextStep = pendingAction
+                    ? pendingAction.actionIndex
+                    : Math.min(completedSteps + 1, 3);
+                linkedinProgress = {
+                    completedSteps,
+                    pendingActionIndex: pendingAction ? pendingAction.actionIndex : null,
+                    nextStep,
+                };
+            }
             let taskStatus = inquiry_task_entity_1.InquiryStatus.PENDING;
             let assignedToUserId = null;
             if (inquiryTask) {
@@ -123,6 +140,8 @@ let InquiryService = class InquiryService {
                 categoryName: category?.name || '',
                 status: taskStatus,
                 assignedToUserId,
+                inquiryTaskId: inquiryTask?.id || null,
+                linkedinProgress,
                 type: type,
                 companyName,
                 companyDomain,
@@ -206,16 +225,18 @@ let InquiryService = class InquiryService {
                 console.error('[SERVICE-SUBMIT] ERROR: Wrong status:', task.status);
                 throw new common_1.BadRequestException('Inquiry is not in progress');
             }
-            console.log('[SERVICE-SUBMIT] Checking pending actions...');
-            const pending = await manager.getRepository(inquiry_action_entity_1.InquiryAction).findOne({
-                where: {
-                    inquiryTaskId: task.id,
-                    status: inquiry_action_entity_1.InquiryActionStatus.PENDING,
-                },
-            });
-            if (pending) {
-                console.error('[SERVICE-SUBMIT] ERROR: Pending action exists');
-                throw new common_1.BadRequestException('There is already a pending action');
+            if (task.platform !== inquiry_task_entity_1.InquiryPlatform.LINKEDIN) {
+                console.log('[SERVICE-SUBMIT] Checking pending actions...');
+                const pending = await manager.getRepository(inquiry_action_entity_1.InquiryAction).findOne({
+                    where: {
+                        inquiryTaskId: task.id,
+                        status: inquiry_action_entity_1.InquiryActionStatus.PENDING,
+                    },
+                });
+                if (pending) {
+                    console.error('[SERVICE-SUBMIT] ERROR: Pending action exists');
+                    throw new common_1.BadRequestException('There is already a pending action');
+                }
             }
             console.log('[SERVICE-SUBMIT] Enforcing cooldown...');
             try {
