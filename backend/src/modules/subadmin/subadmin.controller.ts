@@ -648,8 +648,19 @@ export class SubAdminController {
    * Get disapproval reasons
    */
   @Get('disapproval-reasons')
-  async getDisapprovalReasons(@CurrentUser() user: UserPayload) {
-    return await this.subAdminService.getDisapprovalReasons();
+  async getDisapprovalReasons(
+    @CurrentUser() user: UserPayload,
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('reasonType') reasonType?: 'rejection' | 'flag',
+    @Query('includeInactive') includeInactive?: string,
+  ) {
+    return await this.subAdminService.getDisapprovalReasonsForSubAdmin(user.id, {
+      search,
+      role,
+      reasonType,
+      includeInactive: includeInactive === 'true',
+    });
   }
 
   /**
@@ -659,9 +670,16 @@ export class SubAdminController {
   @Post('disapproval-reasons')
   async createDisapprovalReason(
     @CurrentUser() user: UserPayload,
-    @Body() body: { reason: string; description?: string; applicableTo: 'research' | 'inquiry' | 'both' },
+    @Body() body: {
+      reason: string;
+      description?: string;
+      reasonType: 'rejection' | 'flag';
+      applicableRoles: string[];
+      categoryIds: string[];
+      isActive?: boolean;
+    },
   ) {
-    return await this.subAdminService.createDisapprovalReason(body);
+    return await this.subAdminService.createDisapprovalReasonForSubAdmin(user.id, body);
   }
 
   /**
@@ -672,9 +690,16 @@ export class SubAdminController {
   async updateDisapprovalReason(
     @CurrentUser() user: UserPayload,
     @Param('id') id: string,
-    @Body() body: { reason?: string; description?: string; applicableTo?: 'research' | 'inquiry' | 'both'; isActive?: boolean },
+    @Body() body: {
+      reason?: string;
+      description?: string;
+      reasonType?: 'rejection' | 'flag';
+      applicableRoles?: string[];
+      categoryIds?: string[];
+      isActive?: boolean;
+    },
   ) {
-    return await this.subAdminService.updateDisapprovalReason(id, body);
+    return await this.subAdminService.updateDisapprovalReasonForSubAdmin(user.id, id, body);
   }
 
   /**

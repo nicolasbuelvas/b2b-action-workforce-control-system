@@ -49,8 +49,8 @@ export declare class AdminController {
         id: string;
         researchTaskId: string;
         auditorUserId: string;
-        decision: "APPROVED" | "REJECTED";
-        rejectionReasonId?: string;
+        decision: "APPROVED" | "REJECTED" | "FLAGGED";
+        disapprovalReasonId?: string;
         createdAt: Date;
         type: string;
     })[]>;
@@ -114,4 +114,31 @@ export declare class AdminController {
         assignedAt: Date;
     }[]>;
     getSubAdmins(): Promise<import("../roles/entities/user-role.entity").UserRole[]>;
+    getDisapprovalReasons(search?: string, role?: string, reasonType?: 'rejection' | 'flag', categoryId?: string, includeInactive?: string): Promise<{
+        reasonType: any;
+        applicableRoles: any;
+        categoryIds: any;
+        id: string;
+        reason: string;
+        description: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
+    createDisapprovalReason(body: {
+        reason: string;
+        description?: string;
+        reasonType: 'rejection' | 'flag';
+        applicableRoles: string[];
+        categoryIds?: string[];
+        isActive?: boolean;
+    }): Promise<import("../subadmin/entities/disapproval-reason.entity").DisapprovalReason>;
+    updateDisapprovalReason(id: string, body: {
+        reason?: string;
+        description?: string;
+        reasonType?: 'rejection' | 'flag';
+        applicableRoles?: string[];
+        categoryIds?: string[];
+        isActive?: boolean;
+    }): Promise<import("../subadmin/entities/disapproval-reason.entity").DisapprovalReason>;
 }

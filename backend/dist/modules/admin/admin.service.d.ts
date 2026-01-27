@@ -8,6 +8,7 @@ import { ResearchAudit } from '../audit/entities/research-audit.entity';
 import { Category } from '../categories/entities/category.entity';
 import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
+import { DisapprovalReason } from '../subadmin/entities/disapproval-reason.entity';
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
 import { RemoveUserFromCategoryDto } from './dto/remove-user-category.dto';
@@ -21,7 +22,8 @@ export declare class AdminService {
     private readonly categoryRepo;
     private readonly subAdminCategoryRepo;
     private readonly userCategoryRepo;
-    constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>, inquiryActionRepo: Repository<InquiryAction>, researchTaskRepo: Repository<ResearchTask>, researchAuditRepo: Repository<ResearchAudit>, categoryRepo: Repository<Category>, subAdminCategoryRepo: Repository<SubAdminCategory>, userCategoryRepo: Repository<UserCategory>);
+    private readonly disapprovalReasonRepo;
+    constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>, inquiryActionRepo: Repository<InquiryAction>, researchTaskRepo: Repository<ResearchTask>, researchAuditRepo: Repository<ResearchAudit>, categoryRepo: Repository<Category>, subAdminCategoryRepo: Repository<SubAdminCategory>, userCategoryRepo: Repository<UserCategory>, disapprovalReasonRepo: Repository<DisapprovalReason>);
     getDashboard(): Promise<{
         totalUsers: number;
         totalResearchers: number;
@@ -50,8 +52,8 @@ export declare class AdminService {
         id: string;
         researchTaskId: string;
         auditorUserId: string;
-        decision: "APPROVED" | "REJECTED";
-        rejectionReasonId?: string;
+        decision: "APPROVED" | "REJECTED" | "FLAGGED";
+        disapprovalReasonId?: string;
         createdAt: Date;
         type: string;
     })[]>;
@@ -133,4 +135,37 @@ export declare class AdminService {
         name: string;
         assignedAt: Date;
     }[]>;
+    getDisapprovalReasons(filters?: {
+        search?: string;
+        role?: string;
+        reasonType?: 'rejection' | 'flag';
+        categoryId?: string;
+        includeInactive?: boolean;
+    }): Promise<{
+        reasonType: any;
+        applicableRoles: any;
+        categoryIds: any;
+        id: string;
+        reason: string;
+        description: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
+    createDisapprovalReason(data: {
+        reason: string;
+        description?: string;
+        reasonType: 'rejection' | 'flag';
+        applicableRoles: string[];
+        categoryIds?: string[];
+        isActive?: boolean;
+    }): Promise<DisapprovalReason>;
+    updateDisapprovalReason(id: string, data: {
+        reason?: string;
+        description?: string;
+        reasonType?: 'rejection' | 'flag';
+        applicableRoles?: string[];
+        categoryIds?: string[];
+        isActive?: boolean;
+    }): Promise<DisapprovalReason>;
 }

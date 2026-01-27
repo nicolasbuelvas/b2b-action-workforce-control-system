@@ -17,10 +17,10 @@ export class ResearchAudit {
   auditorUserId: string;
 
   @Column()
-  decision: 'APPROVED' | 'REJECTED';
+  decision: 'APPROVED' | 'REJECTED' | 'FLAGGED';
 
-  @Column({ nullable: true })
-  rejectionReasonId?: string;
+  @Column({ name: 'rejectionReasonId', nullable: true })
+  disapprovalReasonId?: string;
 
   @CreateDateColumn()
   createdAt: Date;

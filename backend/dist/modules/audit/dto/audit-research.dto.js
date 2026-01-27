@@ -15,12 +15,12 @@ class AuditResearchDto {
 }
 exports.AuditResearchDto = AuditResearchDto;
 __decorate([
-    (0, class_validator_1.IsEnum)(['APPROVED', 'REJECTED']),
+    (0, class_validator_1.IsEnum)(['APPROVED', 'REJECTED', 'FLAGGED']),
     __metadata("design:type", String)
 ], AuditResearchDto.prototype, "decision", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], AuditResearchDto.prototype, "rejectionReasonId", void 0);
+], AuditResearchDto.prototype, "reasonId", void 0);
 //# sourceMappingURL=audit-research.dto.js.map

@@ -1,4 +1,4 @@
-import { Controller, Post, Param, Body, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Param, Body, UseGuards, Get, Query, BadRequestException } from '@nestjs/common';
 import { AuditService } from './audit.service';
 import { AuditResearchDto } from './dto/audit-research.dto';
 import { JwtGuard } from '../../common/guards/jwt.guard';
@@ -10,6 +10,27 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @UseGuards(JwtGuard, RolesGuard)
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
+
+  @Get('disapproval-reasons')
+  @Roles('website_inquirer_auditor', 'linkedin_inquirer_auditor', 'website_research_auditor', 'linkedin_research_auditor')
+  getDisapprovalReasons(
+    @CurrentUser('userId') auditorUserId: string,
+    @Query('reasonType') reasonType?: 'rejection' | 'flag',
+    @Query('categoryId') categoryId?: string,
+    @Query('role') role?: string,
+    @Query('search') search?: string,
+  ) {
+    if (!reasonType) {
+      throw new BadRequestException('reasonType is required');
+    }
+
+    return this.auditService.getDisapprovalReasonsForAuditor(auditorUserId, {
+      reasonType,
+      categoryId,
+      role,
+      search,
+    });
+  }
 
   @Get('research/pending')
   @Roles('website_inquirer_auditor', 'linkedin_inquirer_auditor', 'website_research_auditor', 'linkedin_research_auditor')

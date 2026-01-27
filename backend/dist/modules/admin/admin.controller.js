@@ -76,6 +76,21 @@ let AdminController = class AdminController {
     getSubAdmins() {
         return this.adminService.getSubAdmins();
     }
+    getDisapprovalReasons(search, role, reasonType, categoryId, includeInactive) {
+        return this.adminService.getDisapprovalReasons({
+            search,
+            role,
+            reasonType,
+            categoryId,
+            includeInactive: includeInactive === 'true',
+        });
+    }
+    createDisapprovalReason(body) {
+        return this.adminService.createDisapprovalReason(body);
+    }
+    updateDisapprovalReason(id, body) {
+        return this.adminService.updateDisapprovalReason(id, body);
+    }
 };
 exports.AdminController = AdminController;
 __decorate([
@@ -184,6 +199,32 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "getSubAdmins", null);
+__decorate([
+    (0, common_1.Get)('disapproval-reasons'),
+    __param(0, (0, common_1.Query)('search')),
+    __param(1, (0, common_1.Query)('role')),
+    __param(2, (0, common_1.Query)('reasonType')),
+    __param(3, (0, common_1.Query)('categoryId')),
+    __param(4, (0, common_1.Query)('includeInactive')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getDisapprovalReasons", null);
+__decorate([
+    (0, common_1.Post)('disapproval-reasons'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "createDisapprovalReason", null);
+__decorate([
+    (0, common_1.Patch)('disapproval-reasons/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateDisapprovalReason", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('super_admin'),

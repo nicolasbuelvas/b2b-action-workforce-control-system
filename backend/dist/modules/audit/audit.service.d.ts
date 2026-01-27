@@ -14,6 +14,9 @@ import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
 import { LinkedInProfile } from '../research/entities/linkedin-profile.entity';
+import { DisapprovalReason } from '../subadmin/entities/disapproval-reason.entity';
+import { UserRole } from '../roles/entities/user-role.entity';
+import { Role } from '../roles/entities/role.entity';
 export declare class AuditService {
     private readonly researchRepo;
     private readonly auditRepo;
@@ -28,8 +31,30 @@ export declare class AuditService {
     private readonly outreachRepo;
     private readonly snapshotRepo;
     private readonly linkedinProfileRepo;
+    private readonly disapprovalReasonRepo;
+    private readonly userRoleRepo;
+    private readonly roleRepo;
     private readonly screenshotsService;
-    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, companyRepo: Repository<Company>, userRepo: Repository<User>, inquiryTaskRepo: Repository<InquiryTask>, inquiryActionRepo: Repository<InquiryAction>, outreachRepo: Repository<OutreachRecord>, snapshotRepo: Repository<InquirySubmissionSnapshot>, linkedinProfileRepo: Repository<LinkedInProfile>, screenshotsService: ScreenshotsService);
+    constructor(researchRepo: Repository<ResearchTask>, auditRepo: Repository<ResearchAudit>, submissionRepo: Repository<ResearchSubmission>, flaggedRepo: Repository<FlaggedAction>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, companyRepo: Repository<Company>, userRepo: Repository<User>, inquiryTaskRepo: Repository<InquiryTask>, inquiryActionRepo: Repository<InquiryAction>, outreachRepo: Repository<OutreachRecord>, snapshotRepo: Repository<InquirySubmissionSnapshot>, linkedinProfileRepo: Repository<LinkedInProfile>, disapprovalReasonRepo: Repository<DisapprovalReason>, userRoleRepo: Repository<UserRole>, roleRepo: Repository<Role>, screenshotsService: ScreenshotsService);
+    private getUserRoleNames;
+    private getAuditorCategoryIds;
+    private validateDisapprovalReason;
+    getDisapprovalReasonsForAuditor(auditorUserId: string, filters: {
+        role?: string;
+        reasonType: 'rejection' | 'flag';
+        categoryId?: string;
+        search?: string;
+    }): Promise<{
+        reasonType: any;
+        applicableRoles: any;
+        categoryIds: any;
+        id: string;
+        reason: string;
+        description: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
     getPendingResearch(auditorUserId: string): Promise<{
         id: string;
         categoryId: string;

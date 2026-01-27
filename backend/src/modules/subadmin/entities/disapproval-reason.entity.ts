@@ -17,8 +17,14 @@ export class DisapprovalReason {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'enum', enum: ['research', 'inquiry', 'both'], default: 'both' })
-  applicableTo: 'research' | 'inquiry' | 'both';
+  @Column({ type: 'enum', enum: ['rejection', 'flag'], default: 'rejection' })
+  reasonType: 'rejection' | 'flag';
+
+  @Column({ type: 'text', array: true, default: '{}' })
+  applicableRoles: string[];
+
+  @Column({ type: 'text', array: true, default: '{}' })
+  categoryIds: string[];
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;

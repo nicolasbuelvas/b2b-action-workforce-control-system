@@ -1,10 +1,10 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class AuditResearchDto {
-  @IsEnum(['APPROVED', 'REJECTED'])
-  decision: 'APPROVED' | 'REJECTED';
+  @IsEnum(['APPROVED', 'REJECTED', 'FLAGGED'])
+  decision: 'APPROVED' | 'REJECTED' | 'FLAGGED';
 
   @IsOptional()
   @IsString()
-  rejectionReasonId?: string;
+  reasonId?: string;
 }

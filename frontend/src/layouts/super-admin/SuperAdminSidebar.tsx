@@ -73,6 +73,9 @@ export default function AppSidebar() {
             <NavLink to="/super-admin/action-config" className="sa-link">
               Config
             </NavLink>
+            <NavLink to="/super-admin/disapproval-reasons" className="sa-link">
+              Rejection Reasons
+            </NavLink>
             <NavLink to="/super-admin/pricing" className="sa-link">
               Pricing
             </NavLink>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './LinkedinAuditorPendingPage.css';
 import { useAuth } from '../../../hooks/useAuth';
-import { auditApi, PendingLinkedInInquirySubmission, LinkedInInquiryAction } from '../../../api/audit.api';
+import { auditApi, PendingLinkedInInquirySubmission, LinkedInInquiryAction, DisapprovalReason } from '../../../api/audit.api';
 import { researchApi, Category } from '../../../api/research.api';
 
 export default function LinkedinAuditorPendingPage() {
@@ -14,6 +14,9 @@ export default function LinkedinAuditorPendingPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [rejectionReasons, setRejectionReasons] = useState<DisapprovalReason[]>([]);
+  const [flagReasons, setFlagReasons] = useState<DisapprovalReason[]>([]);
+  const [loadingReasons, setLoadingReasons] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -22,6 +25,15 @@ export default function LinkedinAuditorPendingPage() {
   useEffect(() => {
     loadSubmissions();
   }, []);
+
+  useEffect(() => {
+    if (!selectedCategory) {
+      setRejectionReasons([]);
+      setFlagReasons([]);
+      return;
+    }
+    loadReasons(selectedCategory);
+  }, [selectedCategory]);
 
   useEffect(() => {
     if (loadingCategories) return;
@@ -93,6 +105,23 @@ export default function LinkedinAuditorPendingPage() {
       setError(err.response?.data?.message || 'Failed to load submissions');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReasons = async (categoryId: string) => {
+    try {
+      setLoadingReasons(true);
+      const [rejections, flags] = await Promise.all([
+        auditApi.getDisapprovalReasons({ role: 'linkedin_inquirer_auditor', reasonType: 'rejection', categoryId }),
+        auditApi.getDisapprovalReasons({ role: 'linkedin_inquirer_auditor', reasonType: 'flag', categoryId }),
+      ]);
+      setRejectionReasons(Array.isArray(rejections) ? rejections : []);
+      setFlagReasons(Array.isArray(flags) ? flags : []);
+    } catch (err) {
+      console.error('Failed to load disapproval reasons', err);
+      setError('Failed to load disapproval reasons');
+    } finally {
+      setLoadingReasons(false);
     }
   };
 
@@ -208,6 +237,9 @@ export default function LinkedinAuditorPendingPage() {
                   onRefresh={() => {
                     loadSubmissions();
                   }}
+                  rejectionReasons={rejectionReasons}
+                  flagReasons={flagReasons}
+                  loadingReasons={loadingReasons}
                   formatTimeAgo={formatTimeAgo}
                 />
               </div>
@@ -222,17 +254,25 @@ export default function LinkedinAuditorPendingPage() {
 interface SubmissionCardProps {
   submission: PendingLinkedInInquirySubmission;
   onRefresh: () => void;
+  rejectionReasons: DisapprovalReason[];
+  flagReasons: DisapprovalReason[];
+  loadingReasons: boolean;
   formatTimeAgo: (date: string) => string;
 }
 
 function SubmissionCard({ 
   submission, 
   onRefresh,
+  rejectionReasons,
+  flagReasons,
+  loadingReasons,
   formatTimeAgo
 }: SubmissionCardProps) {
   const [expandedAction, setExpandedAction] = useState<string | null>(
     submission.actions && submission.actions.length > 0 ? submission.actions[0].id : null
   );
+  const [selectedRejectionReason, setSelectedRejectionReason] = useState<{[actionId: string]: string}>({});
+  const [selectedFlagReason, setSelectedFlagReason] = useState<{[actionId: string]: string}>({});
   const [submitting, setSubmitting] = useState(false);
 
   if (!submission) return null;
@@ -257,13 +297,36 @@ function SubmissionCard({
   };
 
   const handleRejectAction = async (actionId: string) => {
+    const reasonId = selectedRejectionReason[actionId];
+    if (!reasonId) {
+      alert('Please select a rejection reason');
+      return;
+    }
     try {
       setSubmitting(true);
-      await auditApi.auditLinkedInInquiry(submission.id, actionId, { decision: 'REJECTED' });
+      await auditApi.auditLinkedInInquiry(submission.id, actionId, { decision: 'REJECTED', reasonId });
       alert('Action rejected successfully!');
       onRefresh();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to reject action');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFlagAction = async (actionId: string) => {
+    const reasonId = selectedFlagReason[actionId];
+    if (!reasonId) {
+      alert('Please select a flag reason');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await auditApi.auditLinkedInInquiry(submission.id, actionId, { decision: 'FLAGGED', reasonId });
+      alert('Action flagged successfully!');
+      onRefresh();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to flag action');
     } finally {
       setSubmitting(false);
     }
@@ -431,18 +494,71 @@ function SubmissionCard({
                     )}
                   </div>
 
+                  {action.status === 'PENDING' && (
+                    <>
+                      <div className="li-reason-selectors" style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px' }}>Rejection Reason:</label>
+                          <select
+                            value={selectedRejectionReason[action.id] || ''}
+                            onChange={(e) => {
+                              setSelectedRejectionReason({...selectedRejectionReason, [action.id]: e.target.value});
+                              setSelectedFlagReason({...selectedFlagReason, [action.id]: ''});
+                            }}
+                            disabled={loadingReasons}
+                            style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px' }}
+                          >
+                            <option value="">Select reason...</option>
+                            {rejectionReasons.map((reason) => (
+                              <option key={reason.id} value={reason.id}>{reason.reason}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '13px' }}>Flag Reason:</label>
+                          <select
+                            value={selectedFlagReason[action.id] || ''}
+                            onChange={(e) => {
+                              setSelectedFlagReason({...selectedFlagReason, [action.id]: e.target.value});
+                              setSelectedRejectionReason({...selectedRejectionReason, [action.id]: ''});
+                            }}
+                            disabled={loadingReasons || action.isDuplicate}
+                            style={{ width: '100%', padding: '8px', fontSize: '13px', borderRadius: '4px' }}
+                          >
+                            <option value="">Not flagging</option>
+                            {flagReasons.map((reason) => (
+                              <option key={reason.id} value={reason.id}>{reason.reason}</option>
+                            ))}
+                          </select>
+                          {action.isDuplicate && <p style={{ fontSize: '11px', color: '#666', marginTop: '3px' }}>Duplicate — use rejection.</p>}
+                        </div>
+                      </div>
+                      {loadingReasons && <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>Loading reasons…</p>}
+                    </>
+                  )}
+
                   <div className="li-action-controls" style={{ display: 'flex', gap: '10px' }}>
                     <button 
                       onClick={() => handleRejectAction(action.id)}
-                      disabled={submitting || action.status !== 'PENDING'}
+                      disabled={submitting || action.status !== 'PENDING' || !selectedRejectionReason[action.id]}
                       className="li-btn-reject"
+                      title={!selectedRejectionReason[action.id] ? 'Select a rejection reason' : ''}
                     >
                       {submitting ? 'Processing...' : 'Reject'}
                     </button>
                     <button 
+                      onClick={() => handleFlagAction(action.id)}
+                      disabled={submitting || action.status !== 'PENDING' || !selectedFlagReason[action.id] || action.isDuplicate}
+                      className="li-btn-secondary"
+                      title={action.isDuplicate ? 'Duplicate must be rejected' : !selectedFlagReason[action.id] ? 'Select a flag reason' : ''}
+                    >
+                      {submitting ? 'Processing...' : 'Flag'}
+                    </button>
+                    <button 
                       onClick={() => handleApproveAction(action.id)}
-                      disabled={submitting || action.status !== 'PENDING'}
+                      disabled={submitting || action.status !== 'PENDING' || action.isDuplicate}
                       className="li-btn-approve"
+                      title={action.isDuplicate ? 'Cannot approve duplicate' : ''}
                     >
                       {submitting ? 'Processing...' : 'Approve'}
                     </button>

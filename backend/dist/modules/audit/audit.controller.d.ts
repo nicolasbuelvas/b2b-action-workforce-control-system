@@ -3,6 +3,17 @@ import { AuditResearchDto } from './dto/audit-research.dto';
 export declare class AuditController {
     private readonly auditService;
     constructor(auditService: AuditService);
+    getDisapprovalReasons(auditorUserId: string, reasonType?: 'rejection' | 'flag', categoryId?: string, role?: string, search?: string): Promise<{
+        reasonType: any;
+        applicableRoles: any;
+        categoryIds: any;
+        id: string;
+        reason: string;
+        description: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
     getPendingResearch(auditorUserId: string): Promise<{
         id: string;
         categoryId: string;

@@ -24,6 +24,17 @@ let AuditController = class AuditController {
     constructor(auditService) {
         this.auditService = auditService;
     }
+    getDisapprovalReasons(auditorUserId, reasonType, categoryId, role, search) {
+        if (!reasonType) {
+            throw new common_1.BadRequestException('reasonType is required');
+        }
+        return this.auditService.getDisapprovalReasonsForAuditor(auditorUserId, {
+            reasonType,
+            categoryId,
+            role,
+            search,
+        });
+    }
     getPendingResearch(auditorUserId) {
         return this.auditService.getPendingResearch(auditorUserId);
     }
@@ -44,6 +55,18 @@ let AuditController = class AuditController {
     }
 };
 exports.AuditController = AuditController;
+__decorate([
+    (0, common_1.Get)('disapproval-reasons'),
+    (0, roles_decorator_1.Roles)('website_inquirer_auditor', 'linkedin_inquirer_auditor', 'website_research_auditor', 'linkedin_research_auditor'),
+    __param(0, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __param(1, (0, common_1.Query)('reasonType')),
+    __param(2, (0, common_1.Query)('categoryId')),
+    __param(3, (0, common_1.Query)('role')),
+    __param(4, (0, common_1.Query)('search')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, String]),
+    __metadata("design:returntype", void 0)
+], AuditController.prototype, "getDisapprovalReasons", null);
 __decorate([
     (0, common_1.Get)('research/pending'),
     (0, roles_decorator_1.Roles)('website_inquirer_auditor', 'linkedin_inquirer_auditor', 'website_research_auditor', 'linkedin_research_auditor'),

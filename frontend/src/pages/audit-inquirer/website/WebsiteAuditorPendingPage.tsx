@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './WebsiteAuditorPendingPage.css';
 import { useAuth } from '../../../hooks/useAuth';
-import { auditApi, PendingInquirySubmission } from '../../../api/audit.api';
+import { auditApi, PendingInquirySubmission, DisapprovalReason } from '../../../api/audit.api';
 import { researchApi, Category } from '../../../api/research.api';
 
 export default function WebsiteAuditorPendingPage() {
@@ -14,6 +14,9 @@ export default function WebsiteAuditorPendingPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [rejectionReasons, setRejectionReasons] = useState<DisapprovalReason[]>([]);
+  const [flagReasons, setFlagReasons] = useState<DisapprovalReason[]>([]);
+  const [loadingReasons, setLoadingReasons] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -22,6 +25,15 @@ export default function WebsiteAuditorPendingPage() {
   useEffect(() => {
     loadSubmissions();
   }, []);
+
+  useEffect(() => {
+    if (!selectedCategory) {
+      setRejectionReasons([]);
+      setFlagReasons([]);
+      return;
+    }
+    loadReasons(selectedCategory);
+  }, [selectedCategory]);
 
   useEffect(() => {
     if (loadingCategories) return;
@@ -96,6 +108,23 @@ export default function WebsiteAuditorPendingPage() {
     }
   };
 
+  const loadReasons = async (categoryId: string) => {
+    try {
+      setLoadingReasons(true);
+      const [rejections, flags] = await Promise.all([
+        auditApi.getDisapprovalReasons({ role: 'website_inquirer_auditor', reasonType: 'rejection', categoryId }),
+        auditApi.getDisapprovalReasons({ role: 'website_inquirer_auditor', reasonType: 'flag', categoryId }),
+      ]);
+      setRejectionReasons(Array.isArray(rejections) ? rejections : []);
+      setFlagReasons(Array.isArray(flags) ? flags : []);
+    } catch (err) {
+      console.error('Failed to load disapproval reasons', err);
+      setError('Failed to load disapproval reasons');
+    } finally {
+      setLoadingReasons(false);
+    }
+  };
+
   const handleApprove = async (taskId: string) => {
     try {
       await auditApi.auditInquiry(taskId, { decision: 'APPROVED' });
@@ -109,13 +138,9 @@ export default function WebsiteAuditorPendingPage() {
     }
   };
 
-  const handleReject = async (taskId: string, rejectionReasonId?: string) => {
+  const handleReject = async (taskId: string, reasonId: string) => {
     try {
-      const payload: any = { decision: 'REJECTED' };
-      if (rejectionReasonId) {
-        payload.rejectionReasonId = rejectionReasonId;
-      }
-      await auditApi.auditInquiry(taskId, payload);
+      await auditApi.auditInquiry(taskId, { decision: 'REJECTED', reasonId });
       setSubmissions(prev => {
         const next = prev.filter(s => s.id !== taskId);
         setCurrentIndex(idx => Math.min(idx, Math.max(next.length - 1, 0)));
@@ -123,6 +148,19 @@ export default function WebsiteAuditorPendingPage() {
       });
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to reject submission');
+    }
+  };
+
+  const handleFlag = async (taskId: string, reasonId: string) => {
+    try {
+      await auditApi.auditInquiry(taskId, { decision: 'FLAGGED', reasonId });
+      setSubmissions(prev => {
+        const next = prev.filter(s => s.id !== taskId);
+        setCurrentIndex(idx => Math.min(idx, Math.max(next.length - 1, 0)));
+        return next;
+      });
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to flag submission');
     }
   };
 
@@ -237,6 +275,10 @@ export default function WebsiteAuditorPendingPage() {
                   submission={submissions[currentIndex]}
                   onApprove={handleApprove}
                   onReject={handleReject}
+                  onFlag={handleFlag}
+                  rejectionReasons={rejectionReasons}
+                  flagReasons={flagReasons}
+                  loadingReasons={loadingReasons}
                   formatTimeAgo={formatTimeAgo}
                 />
               </div>
@@ -251,7 +293,11 @@ export default function WebsiteAuditorPendingPage() {
 interface SubmissionCardProps {
   submission: PendingInquirySubmission;
   onApprove: (taskId: string) => void;
-  onReject: (taskId: string, rejectionReasonId?: string) => void;
+  onReject: (taskId: string, reasonId: string) => void;
+  onFlag: (taskId: string, reasonId: string) => void;
+  rejectionReasons: DisapprovalReason[];
+  flagReasons: DisapprovalReason[];
+  loadingReasons: boolean;
   formatTimeAgo: (date: string) => string;
 }
 
@@ -259,6 +305,10 @@ function SubmissionCard({
   submission, 
   onApprove, 
   onReject,
+  onFlag,
+  rejectionReasons,
+  flagReasons,
+  loadingReasons,
   formatTimeAgo
 }: SubmissionCardProps) {
   const [validationChecks, setValidationChecks] = useState({
@@ -268,9 +318,8 @@ function SubmissionCard({
     noManipulation: false,
     messageValid: false,
   });
-  const [suspicious, setSuspicious] = useState(false);
-  const [suspiciousReason, setSuspiciousReason] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [selectedRejectionReason, setSelectedRejectionReason] = useState('');
+  const [selectedFlagReason, setSelectedFlagReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   if (!submission) return null;
@@ -292,9 +341,9 @@ function SubmissionCard({
   });
 
   const allValidationsChecked = Object.values(validationChecks).every(v => v);
-  // Block approval if duplicate is detected
-  const canApprove = allValidationsChecked && !suspicious && !isDuplicate;
-  const canReject = rejectionReason || suspiciousReason || isDuplicate;
+  const canApprove = allValidationsChecked && !isDuplicate;
+  const canReject = Boolean(selectedRejectionReason);
+  const canFlag = Boolean(selectedFlagReason) && !isDuplicate;
 
   const handleApproveClick = async () => {
     if (!canApprove) return;
@@ -307,12 +356,20 @@ function SubmissionCard({
   };
 
   const handleRejectClick = async () => {
-    if (!canReject) return;
+    if (!canReject || !selectedRejectionReason) return;
     setSubmitting(true);
     try {
-      // Use selected reason or suspicious flag, auditor chooses
-      const reasonId = rejectionReason || suspiciousReason;
-      await onReject(submission.id, reasonId);
+      await onReject(submission.id, selectedRejectionReason);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFlagClick = async () => {
+    if (!canFlag || !selectedFlagReason) return;
+    setSubmitting(true);
+    try {
+      await onFlag(submission.id, selectedFlagReason);
     } finally {
       setSubmitting(false);
     }
@@ -479,43 +536,42 @@ function SubmissionCard({
 
         <section className="controls-section">
           <div className="control-group">
-            <label>Rejection Reason:</label>
-            <select 
-              value={rejectionReason}
+            <label>Rejection Reason</label>
+            <select
+              value={selectedRejectionReason}
               onChange={(e) => {
-                setRejectionReason(e.target.value);
-                if (e.target.value) setSuspiciousReason('');
+                setSelectedRejectionReason(e.target.value);
+                setSelectedFlagReason('');
               }}
               className="rejection-select"
-              disabled={suspicious}
+              disabled={loadingReasons}
             >
               <option value="">Select reason...</option>
-              <option value="INVALID_DATA">Invalid Data</option>
-              <option value="INCOMPLETE">Incomplete Submission</option>
-              {isDuplicate && <option value="DUPLICATE">Duplicate Screenshot (System Detected)</option>}
-              <option value="WRONG_TARGET">Wrong Target</option>
-              <option value="MANIPULATED">Manipulated Screenshot</option>
-              <option value="OTHER">Other</option>
+              {rejectionReasons.map((reason) => (
+                <option key={reason.id} value={reason.id}>{reason.reason}</option>
+              ))}
             </select>
           </div>
 
           <div className="control-group">
-            <label>Flag as Suspicious:</label>
+            <label>Flag Reason</label>
             <select
-              value={suspiciousReason}
+              value={selectedFlagReason}
               onChange={(e) => {
-                setSuspiciousReason(e.target.value);
-                if (e.target.value) setRejectionReason('');
+                setSelectedFlagReason(e.target.value);
+                setSelectedRejectionReason('');
               }}
-              className={`suspicious-select ${suspiciousReason ? 'active' : ''}`}
+              className="rejection-select"
+              disabled={loadingReasons || isDuplicate}
             >
-              <option value="">Not suspicious</option>
-              <option value="SUSPICIOUS_CONTACT">Suspicious Contact Pattern</option>
-              <option value="SUSPICIOUS_DATA">Suspicious Data</option>
-              <option value="REQUIRES_REVIEW">Requires Further Review</option>
-              {isDuplicate && <option value="POTENTIAL_FRAUD">Potential Fraud / Duplicate</option>}
+              <option value="">Not flagging</option>
+              {flagReasons.map((reason) => (
+                <option key={reason.id} value={reason.id}>{reason.reason}</option>
+              ))}
             </select>
+            {isDuplicate && <p className="muted">Duplicate detected — use a rejection reason.</p>}
           </div>
+          {loadingReasons && <p className="muted">Loading reasons…</p>}
         </section>
         </div>
 
@@ -547,11 +603,19 @@ function SubmissionCard({
         >
           {submitting ? 'Processing...' : 'Reject'}
         </button>
+        <button
+          onClick={handleFlagClick}
+          disabled={!canFlag || submitting}
+          className="btn-secondary"
+          title={!canFlag ? (isDuplicate ? 'Duplicate must be rejected, not flagged' : 'Select a flag reason') : ''}
+        >
+          {submitting ? 'Processing...' : 'Flag'}
+        </button>
         <button 
           onClick={handleApproveClick}
           disabled={!canApprove || submitting}
           className="btn-approve"
-          title={!canApprove ? (isDuplicate ? 'Cannot approve: Duplicate screenshot detected' : suspicious ? 'Disable suspicious flag first' : 'Complete all validations') : ''}
+          title={!canApprove ? (isDuplicate ? 'Cannot approve: Duplicate screenshot detected' : 'Complete all validations') : ''}
         >
           {submitting ? 'Processing...' : 'Approve'}
         </button>

@@ -1546,22 +1546,153 @@ export class SubAdminService {
 
   // ========= DISAPPROVAL REASONS CRUD =========
 
-  async getDisapprovalReasons() {
-    return await this.disapprovalReasonRepo.find({ order: { reason: 'ASC' } });
+  private async getSubAdminCategoryIds(userId: string): Promise<string[]> {
+    const myCategories = await this.userCategoryRepo.find({
+      where: { userId },
+      select: ['categoryId'],
+    });
+    return myCategories.map(c => c.categoryId);
   }
 
-  async createDisapprovalReason(data: { reason: string; description?: string; applicableTo: 'research' | 'inquiry' | 'both' }) {
-    const disapprovalReason = this.disapprovalReasonRepo.create(data);
+  async getDisapprovalReasonsForSubAdmin(
+    subAdminUserId: string,
+    filters?: { search?: string; role?: string; reasonType?: 'rejection' | 'flag'; includeInactive?: boolean },
+  ) {
+    const categoryIds = await this.getSubAdminCategoryIds(subAdminUserId);
+
+    // Try new schema first, fallback to old schema if columns don't exist
+    try {
+      const qb = this.disapprovalReasonRepo
+        .createQueryBuilder('dr')
+        .where('(dr."categoryIds" = :emptyArray OR dr."categoryIds" && :categoryIds)', {
+          emptyArray: '{}',
+          categoryIds,
+        });
+
+      if (!filters?.includeInactive) {
+        qb.andWhere('dr.isActive = :active', { active: true });
+      }
+
+      if (filters?.role) {
+        qb.andWhere(':role = ANY(dr."applicableRoles")', { role: filters.role });
+      }
+
+      if (filters?.reasonType) {
+        qb.andWhere('dr.reasonType = :reasonType', { reasonType: filters.reasonType });
+      }
+
+      if (filters?.search) {
+        qb.andWhere('(dr.description ILIKE :search)', {
+          search: `%${filters.search}%`,
+        });
+      }
+
+      qb.orderBy('dr.description', 'ASC');
+      return await qb.getMany();
+    } catch (err: any) {
+      // Fallback for old schema (before migration)
+      console.warn('New schema columns not found, using fallback query:', err.message);
+      const qb = this.disapprovalReasonRepo
+        .createQueryBuilder('dr')
+        .select(['dr.id', 'dr.reason', 'dr.description', 'dr.isActive'])
+        .where('dr.isActive = :active', { active: true });
+
+      if (filters?.search) {
+        qb.andWhere('(dr.description ILIKE :search)', {
+          search: `%${filters.search}%`,
+        });
+      }
+
+      qb.orderBy('dr.description', 'ASC');
+      const rows = await qb.getMany();
+      // Provide safe defaults for missing new-schema fields so UI keeps working
+      return rows.map(r => ({
+        ...r,
+        reasonType: (r as any).reasonType ?? 'rejection',
+        applicableRoles: (r as any).applicableRoles ?? [],
+        categoryIds: (r as any).categoryIds ?? [],
+      }));
+    }
+  }
+
+  async createDisapprovalReasonForSubAdmin(
+    subAdminUserId: string,
+    data: { reason: string; description?: string; reasonType: 'rejection' | 'flag'; applicableRoles: string[]; categoryIds: string[]; isActive?: boolean },
+  ) {
+    const myCategories = await this.getSubAdminCategoryIds(subAdminUserId);
+
+    if (!data.reason?.trim()) {
+      throw new BadRequestException('Reason is required');
+    }
+    if (!Array.isArray(data.applicableRoles) || data.applicableRoles.length === 0) {
+      throw new BadRequestException('At least one role is required');
+    }
+    if (!Array.isArray(data.categoryIds) || data.categoryIds.length === 0) {
+      throw new BadRequestException('Select at least one category');
+    }
+
+    const invalid = data.categoryIds.filter(cid => !myCategories.includes(cid));
+    if (invalid.length > 0) {
+      throw new ForbiddenException('You can only assign reasons to your categories');
+    }
+
+    const disapprovalReason = this.disapprovalReasonRepo.create({
+      reason: data.reason.trim(),
+      description: data.description?.trim() || null,
+      reasonType: data.reasonType,
+      applicableRoles: data.applicableRoles,
+      categoryIds: data.categoryIds,
+      isActive: data.isActive ?? true,
+    });
+
     return await this.disapprovalReasonRepo.save(disapprovalReason);
   }
 
-  async updateDisapprovalReason(id: string, data: { reason?: string; description?: string; applicableTo?: 'research' | 'inquiry' | 'both'; isActive?: boolean }) {
+  async updateDisapprovalReasonForSubAdmin(
+    subAdminUserId: string,
+    id: string,
+    data: { reason?: string; description?: string; reasonType?: 'rejection' | 'flag'; applicableRoles?: string[]; categoryIds?: string[]; isActive?: boolean },
+  ) {
+    const myCategories = await this.getSubAdminCategoryIds(subAdminUserId);
+
     const disapprovalReason = await this.disapprovalReasonRepo.findOne({ where: { id } });
     if (!disapprovalReason) {
       throw new BadRequestException('Disapproval reason not found');
     }
 
-    Object.assign(disapprovalReason, data);
+    // Sub-admins cannot edit global reasons created by super admins
+    if (!disapprovalReason.categoryIds || disapprovalReason.categoryIds.length === 0) {
+      throw new ForbiddenException('You cannot edit global disapproval reasons');
+    }
+
+    const targetCategories = data.categoryIds ?? disapprovalReason.categoryIds;
+    const invalid = targetCategories.filter(cid => !myCategories.includes(cid));
+    if (invalid.length > 0) {
+      throw new ForbiddenException('You can only assign reasons to your categories');
+    }
+
+    if (data.reason !== undefined) {
+      disapprovalReason.reason = data.reason.trim();
+    }
+    if (data.description !== undefined) {
+      disapprovalReason.description = data.description?.trim() || null;
+    }
+    if (data.reasonType) {
+      disapprovalReason.reasonType = data.reasonType;
+    }
+    if (data.applicableRoles) {
+      if (data.applicableRoles.length === 0) {
+        throw new BadRequestException('At least one role is required');
+      }
+      disapprovalReason.applicableRoles = data.applicableRoles;
+    }
+    if (data.categoryIds) {
+      disapprovalReason.categoryIds = data.categoryIds;
+    }
+    if (data.isActive !== undefined) {
+      disapprovalReason.isActive = data.isActive;
+    }
+
     return await this.disapprovalReasonRepo.save(disapprovalReason);
   }
 }

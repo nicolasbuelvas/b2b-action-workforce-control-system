@@ -24,6 +24,9 @@ import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
 import { LinkedInProfile } from '../research/entities/linkedin-profile.entity';
+import { DisapprovalReason } from '../subadmin/entities/disapproval-reason.entity';
+import { UserRole } from '../roles/entities/user-role.entity';
+import { Role } from '../roles/entities/role.entity';
 
 @Injectable()
 export class AuditService {
@@ -67,8 +70,124 @@ export class AuditService {
     @InjectRepository(LinkedInProfile)
     private readonly linkedinProfileRepo: Repository<LinkedInProfile>,
 
+    @InjectRepository(DisapprovalReason)
+    private readonly disapprovalReasonRepo: Repository<DisapprovalReason>,
+
+    @InjectRepository(UserRole)
+    private readonly userRoleRepo: Repository<UserRole>,
+
+    @InjectRepository(Role)
+    private readonly roleRepo: Repository<Role>,
+
     private readonly screenshotsService: ScreenshotsService,
   ) {}
+
+  private async getUserRoleNames(userId: string): Promise<string[]> {
+    const roles = await this.userRoleRepo.find({ where: { userId } });
+    return roles.map(r => r.role?.name).filter(Boolean);
+  }
+
+  private async getAuditorCategoryIds(userId: string): Promise<string[]> {
+    const userCategories = await this.userCategoryRepo.find({
+      where: { userId },
+      select: ['categoryId'],
+    });
+    return userCategories.map(uc => uc.categoryId);
+  }
+
+  private async validateDisapprovalReason(
+    reasonId: string,
+    options: { categoryId: string; expectedType: 'rejection' | 'flag'; userRoles: string[] },
+  ): Promise<DisapprovalReason> {
+    const reason = await this.disapprovalReasonRepo.findOne({ where: { id: reasonId } });
+    if (!reason) {
+      throw new BadRequestException('Invalid disapproval reason');
+    }
+
+    if (!reason.isActive) {
+      throw new BadRequestException('Disapproval reason is inactive');
+    }
+
+    if (reason.reasonType !== options.expectedType) {
+      throw new BadRequestException(`Reason must be of type ${options.expectedType}`);
+    }
+
+    if (reason.categoryIds?.length && !reason.categoryIds.includes(options.categoryId)) {
+      throw new ForbiddenException('Reason not allowed for this category');
+    }
+
+    if (reason.applicableRoles?.length) {
+      const allowed = reason.applicableRoles.some(role => options.userRoles.includes(role));
+      if (!allowed) {
+        throw new ForbiddenException('Reason not allowed for your role');
+      }
+    }
+
+    return reason;
+  }
+
+  async getDisapprovalReasonsForAuditor(
+    auditorUserId: string,
+    filters: { role?: string; reasonType: 'rejection' | 'flag'; categoryId?: string; search?: string },
+  ) {
+    const userRoles = await this.getUserRoleNames(auditorUserId);
+    if (userRoles.length === 0) {
+      return [];
+    }
+
+    const categoryIds = await this.getAuditorCategoryIds(auditorUserId);
+    if (categoryIds.length === 0) {
+      return [];
+    }
+
+    const targetCategories = filters.categoryId ? [filters.categoryId] : categoryIds;
+    if (filters.categoryId && !categoryIds.includes(filters.categoryId)) {
+      throw new ForbiddenException('Category not assigned to you');
+    }
+
+    try {
+      const qb = this.disapprovalReasonRepo
+        .createQueryBuilder('dr')
+        .where('dr.isActive = true')
+        .andWhere('dr.reasonType = :reasonType', { reasonType: filters.reasonType })
+        .andWhere('(dr."categoryIds" = :emptyArray OR dr."categoryIds" && :categoryIds)', {
+          emptyArray: '{}',
+          categoryIds: targetCategories,
+        })
+        .andWhere('(dr."applicableRoles" && :roles)', { roles: filters.role ? [filters.role] : userRoles });
+
+      if (filters.search) {
+        qb.andWhere('(dr.description ILIKE :search)', {
+          search: `%${filters.search}%`,
+        });
+      }
+
+      qb.orderBy('dr.description', 'ASC');
+      return await qb.getMany();
+    } catch (err: any) {
+      // Fallback for old schema (before migration)
+      console.warn('New schema columns not found, using fallback:', err.message);
+      const qb = this.disapprovalReasonRepo
+        .createQueryBuilder('dr')
+        .select(['dr.id', 'dr.reason', 'dr.description', 'dr.isActive'])
+        .where('dr.isActive = true');
+
+      if (filters.search) {
+        qb.andWhere('(dr.description ILIKE :search)', {
+          search: `%${filters.search}%`,
+        });
+      }
+
+      qb.orderBy('dr.description', 'ASC');
+      const rows = await qb.getMany();
+      return rows.map(r => ({
+        ...r,
+        reasonType: (r as any).reasonType ?? 'rejection',
+        applicableRoles: (r as any).applicableRoles ?? [],
+        categoryIds: (r as any).categoryIds ?? [],
+      }));
+    }
+  }
 
   async getPendingResearch(auditorUserId: string) {
     // Get auditor's assigned categories
@@ -168,23 +287,37 @@ export class AuditService {
       );
     }
 
+    const userRoles = await this.getUserRoleNames(auditorUserId);
+    const expectedType = dto.decision === 'REJECTED' ? 'rejection' : dto.decision === 'FLAGGED' ? 'flag' : null;
+
+    let reason: DisapprovalReason | null = null;
+    if (expectedType) {
+      if (!dto.reasonId) {
+        throw new BadRequestException('reasonId is required for this decision');
+      }
+      reason = await this.validateDisapprovalReason(dto.reasonId, {
+        categoryId: task.categoryId,
+        expectedType,
+        userRoles,
+      });
+    }
+
     await this.auditRepo.save({
       researchTaskId,
       auditorUserId,
       decision: dto.decision,
+      disapprovalReasonId: reason?.id,
     });
 
-    task.status =
-      dto.decision === 'APPROVED'
-        ? ResearchStatus.COMPLETED
-        : ResearchStatus.IN_PROGRESS;
-
-    if (dto.decision === 'REJECTED') {
+    if (dto.decision === 'APPROVED') {
+      task.status = ResearchStatus.COMPLETED;
+    } else {
+      task.status = ResearchStatus.REJECTED;
       await this.flaggedRepo.save({
         userId: task.assignedToUserId,
         targetId: researchTaskId,
-        actionType: 'RESEARCH',
-        reason: 'MANUAL_REJECTION',
+        actionType: dto.decision === 'FLAGGED' ? 'RESEARCH_FLAG' : 'RESEARCH',
+        reason: reason?.reason || 'Manual review required',
       });
     }
 
@@ -296,6 +429,8 @@ export class AuditService {
       );
     }
 
+    const userRoles = await this.getUserRoleNames(auditorUserId);
+
     // Fetch snapshot to check duplicate status
     const snapshot = await this.snapshotRepo.findOne({
       where: { inquiryTaskId: task.id },
@@ -309,17 +444,34 @@ export class AuditService {
       );
     }
 
+    const expectedType = dto.decision === 'REJECTED' ? 'rejection' : dto.decision === 'FLAGGED' ? 'flag' : null;
+    let reason: DisapprovalReason | null = null;
+
+    if (expectedType) {
+      if (!dto.reasonId) {
+        throw new BadRequestException('reasonId is required for this decision');
+      }
+
+      reason = await this.validateDisapprovalReason(dto.reasonId, {
+        categoryId: task.categoryId,
+        expectedType,
+        userRoles,
+      });
+    }
+
     task.status =
       dto.decision === 'APPROVED'
         ? InquiryStatus.APPROVED
+        : dto.decision === 'FLAGGED'
+        ? InquiryStatus.FLAGGED
         : InquiryStatus.REJECTED;
 
-    if (dto.decision === 'REJECTED') {
+    if (dto.decision === 'REJECTED' || dto.decision === 'FLAGGED') {
       await this.flaggedRepo.save({
         userId: task.assignedToUserId,
         targetId: inquiryTaskId,
-        actionType: 'INQUIRY',
-        reason: snapshot?.isDuplicate ? 'Duplicate (System Detected)' : 'MANUAL_REJECTION',
+        actionType: dto.decision === 'FLAGGED' ? 'INQUIRY_FLAG' : 'INQUIRY',
+        reason: reason?.reason || (snapshot?.isDuplicate ? 'Duplicate (System Detected)' : 'Manual review required'),
       });
     }
 
@@ -447,6 +599,22 @@ export class AuditService {
       throw new BadRequestException('Snapshot not found');
     }
 
+    const userRoles = await this.getUserRoleNames(auditorUserId);
+    const expectedType = dto.decision === 'REJECTED' ? 'rejection' : dto.decision === 'FLAGGED' ? 'flag' : null;
+    let reason: DisapprovalReason | null = null;
+
+    if (expectedType) {
+      if (!dto.reasonId) {
+        throw new BadRequestException('reasonId is required for this decision');
+      }
+
+      reason = await this.validateDisapprovalReason(dto.reasonId, {
+        categoryId: task.categoryId,
+        expectedType,
+        userRoles,
+      });
+    }
+
     // Auditor can approve or reject - duplicate warnings are non-blocking
     if (snapshot?.isDuplicate && dto.decision === 'APPROVED') {
       console.log('[LINKEDIN-AUDIT] Warning: Approving action with duplicate screenshot', {
@@ -460,6 +628,15 @@ export class AuditService {
     action.reviewedAt = new Date();
     await actionRepo.save(action);
 
+    if (dto.decision === 'REJECTED' || dto.decision === 'FLAGGED') {
+      await this.flaggedRepo.save({
+        userId: task.assignedToUserId,
+        targetId: inquiryTaskId,
+        actionType: dto.decision === 'FLAGGED' ? 'LINKEDIN_INQUIRY_FLAG' : 'LINKEDIN_INQUIRY',
+        reason: reason?.reason || (snapshot?.isDuplicate ? 'Duplicate (System Detected)' : 'Manual review required'),
+      });
+    }
+
     // Check if all actions are approved
     const allActions = await actionRepo.find({
       where: { inquiryTaskId },
@@ -467,8 +644,13 @@ export class AuditService {
 
     const allApproved = allActions.every(a => a.status === InquiryActionStatus.APPROVED);
     const anyRejected = allActions.some(a => a.status === InquiryActionStatus.REJECTED);
+    const hasFlag = dto.decision === 'FLAGGED' || (await this.flaggedRepo.count({
+      where: { targetId: inquiryTaskId, actionType: 'LINKEDIN_INQUIRY_FLAG' },
+    })) > 0;
 
-    if (allApproved) {
+    if (hasFlag) {
+      task.status = InquiryStatus.FLAGGED;
+    } else if (allApproved) {
       task.status = InquiryStatus.APPROVED;
     } else if (anyRejected) {
       task.status = InquiryStatus.REJECTED;

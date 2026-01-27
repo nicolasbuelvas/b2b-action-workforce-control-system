@@ -12,6 +12,7 @@ import { ResearchAudit } from '../audit/entities/research-audit.entity';
 import { Category } from '../categories/entities/category.entity';
 import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
+import { DisapprovalReason } from '../subadmin/entities/disapproval-reason.entity';
 
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
@@ -46,6 +47,9 @@ export class AdminService {
 
     @InjectRepository(UserCategory)
     private readonly userCategoryRepo: Repository<UserCategory>,
+
+    @InjectRepository(DisapprovalReason)
+    private readonly disapprovalReasonRepo: Repository<DisapprovalReason>,
   ) {}
 
   async getDashboard() {
@@ -443,5 +447,152 @@ export class AdminService {
       name: uc.category.name,
       assignedAt: uc.createdAt,
     }));
+  }
+
+  // ========= DISAPPROVAL REASONS (SUPER ADMIN) =========
+
+  async getDisapprovalReasons(filters?: {
+    search?: string;
+    role?: string;
+    reasonType?: 'rejection' | 'flag';
+    categoryId?: string;
+    includeInactive?: boolean;
+  }) {
+    try {
+      const qb = this.disapprovalReasonRepo.createQueryBuilder('dr');
+
+      if (!filters?.includeInactive) {
+        qb.where('dr.isActive = :active', { active: true });
+      }
+
+      if (filters?.search) {
+        qb.andWhere('(dr.description ILIKE :search)', {
+          search: `%${filters.search}%`,
+        });
+      }
+
+      if (filters?.role) {
+        qb.andWhere(':role = ANY(dr."applicableRoles")', { role: filters.role });
+      }
+
+      if (filters?.reasonType) {
+        qb.andWhere('dr.reasonType = :reasonType', { reasonType: filters.reasonType });
+      }
+
+      if (filters?.categoryId) {
+        qb.andWhere('(dr."categoryIds" = :emptyArray OR :categoryId = ANY(dr."categoryIds"))', {
+          emptyArray: '{}',
+          categoryId: filters.categoryId,
+        });
+      }
+
+      qb.orderBy('dr.description', 'ASC');
+      return await qb.getMany();
+    } catch (err: any) {
+      // Fallback for old schema (before migration)
+      console.warn('New schema columns not found, using fallback query:', err.message);
+      const qb = this.disapprovalReasonRepo
+        .createQueryBuilder('dr')
+        .select(['dr.id', 'dr.reason', 'dr.description', 'dr.isActive']);
+
+      if (!filters?.includeInactive) {
+        qb.where('dr.isActive = :active', { active: true });
+      }
+
+      if (filters?.search) {
+        qb.andWhere('(dr.description ILIKE :search)', {
+          search: `%${filters.search}%`,
+        });
+      }
+
+      qb.orderBy('dr.description', 'ASC');
+      const rows = await qb.getMany();
+      return rows.map(r => ({
+        ...r,
+        reasonType: (r as any).reasonType ?? 'rejection',
+        applicableRoles: (r as any).applicableRoles ?? [],
+        categoryIds: (r as any).categoryIds ?? [],
+      }));
+    }
+  }
+
+  async createDisapprovalReason(data: {
+    reason: string;
+    description?: string;
+    reasonType: 'rejection' | 'flag';
+    applicableRoles: string[];
+    categoryIds?: string[];
+    isActive?: boolean;
+  }) {
+    if (!data.reason?.trim()) {
+      throw new BadRequestException('Reason is required');
+    }
+
+    if (!Array.isArray(data.applicableRoles) || data.applicableRoles.length === 0) {
+      throw new BadRequestException('At least one role is required');
+    }
+
+    if (!data.reasonType) {
+      throw new BadRequestException('reasonType is required');
+    }
+
+    const categoryIds = Array.isArray(data.categoryIds) ? Array.from(new Set(data.categoryIds)) : [];
+
+    const disapprovalReason = this.disapprovalReasonRepo.create({
+      reason: data.reason.trim(),
+      description: data.description?.trim() || null,
+      reasonType: data.reasonType,
+      applicableRoles: data.applicableRoles,
+      categoryIds,
+      isActive: data.isActive ?? true,
+    });
+
+    return await this.disapprovalReasonRepo.save(disapprovalReason);
+  }
+
+  async updateDisapprovalReason(
+    id: string,
+    data: {
+      reason?: string;
+      description?: string;
+      reasonType?: 'rejection' | 'flag';
+      applicableRoles?: string[];
+      categoryIds?: string[];
+      isActive?: boolean;
+    },
+  ) {
+    const disapprovalReason = await this.disapprovalReasonRepo.findOne({ where: { id } });
+    if (!disapprovalReason) {
+      throw new BadRequestException('Disapproval reason not found');
+    }
+
+    if (data.reason !== undefined) {
+      disapprovalReason.reason = data.reason.trim();
+    }
+
+    if (data.description !== undefined) {
+      disapprovalReason.description = data.description?.trim() || null;
+    }
+
+    if (data.reasonType) {
+      disapprovalReason.reasonType = data.reasonType;
+    }
+
+    if (data.applicableRoles) {
+      if (data.applicableRoles.length === 0) {
+        throw new BadRequestException('At least one role is required');
+      }
+      disapprovalReason.applicableRoles = data.applicableRoles;
+    }
+
+    if (data.categoryIds) {
+      disapprovalReason.categoryIds = Array.from(new Set(data.categoryIds));
+    }
+
+    if (data.isActive !== undefined) {
+      disapprovalReason.isActive = data.isActive;
+    }
+
+    return await this.disapprovalReasonRepo.save(disapprovalReason);
   }
 }

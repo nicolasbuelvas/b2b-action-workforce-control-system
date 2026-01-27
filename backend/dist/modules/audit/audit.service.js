@@ -30,8 +30,11 @@ const outreach_record_entity_1 = require("../inquiry/entities/outreach-record.en
 const inquiry_submission_snapshot_entity_1 = require("../inquiry/entities/inquiry-submission-snapshot.entity");
 const screenshots_service_1 = require("../screenshots/screenshots.service");
 const linkedin_profile_entity_1 = require("../research/entities/linkedin-profile.entity");
+const disapproval_reason_entity_1 = require("../subadmin/entities/disapproval-reason.entity");
+const user_role_entity_1 = require("../roles/entities/user-role.entity");
+const role_entity_1 = require("../roles/entities/role.entity");
 let AuditService = class AuditService {
-    constructor(researchRepo, auditRepo, submissionRepo, flaggedRepo, categoryRepo, userCategoryRepo, companyRepo, userRepo, inquiryTaskRepo, inquiryActionRepo, outreachRepo, snapshotRepo, linkedinProfileRepo, screenshotsService) {
+    constructor(researchRepo, auditRepo, submissionRepo, flaggedRepo, categoryRepo, userCategoryRepo, companyRepo, userRepo, inquiryTaskRepo, inquiryActionRepo, outreachRepo, snapshotRepo, linkedinProfileRepo, disapprovalReasonRepo, userRoleRepo, roleRepo, screenshotsService) {
         this.researchRepo = researchRepo;
         this.auditRepo = auditRepo;
         this.submissionRepo = submissionRepo;
@@ -45,7 +48,95 @@ let AuditService = class AuditService {
         this.outreachRepo = outreachRepo;
         this.snapshotRepo = snapshotRepo;
         this.linkedinProfileRepo = linkedinProfileRepo;
+        this.disapprovalReasonRepo = disapprovalReasonRepo;
+        this.userRoleRepo = userRoleRepo;
+        this.roleRepo = roleRepo;
         this.screenshotsService = screenshotsService;
+    }
+    async getUserRoleNames(userId) {
+        const roles = await this.userRoleRepo.find({ where: { userId } });
+        return roles.map(r => r.role?.name).filter(Boolean);
+    }
+    async getAuditorCategoryIds(userId) {
+        const userCategories = await this.userCategoryRepo.find({
+            where: { userId },
+            select: ['categoryId'],
+        });
+        return userCategories.map(uc => uc.categoryId);
+    }
+    async validateDisapprovalReason(reasonId, options) {
+        const reason = await this.disapprovalReasonRepo.findOne({ where: { id: reasonId } });
+        if (!reason) {
+            throw new common_1.BadRequestException('Invalid disapproval reason');
+        }
+        if (!reason.isActive) {
+            throw new common_1.BadRequestException('Disapproval reason is inactive');
+        }
+        if (reason.reasonType !== options.expectedType) {
+            throw new common_1.BadRequestException(`Reason must be of type ${options.expectedType}`);
+        }
+        if (reason.categoryIds?.length && !reason.categoryIds.includes(options.categoryId)) {
+            throw new common_1.ForbiddenException('Reason not allowed for this category');
+        }
+        if (reason.applicableRoles?.length) {
+            const allowed = reason.applicableRoles.some(role => options.userRoles.includes(role));
+            if (!allowed) {
+                throw new common_1.ForbiddenException('Reason not allowed for your role');
+            }
+        }
+        return reason;
+    }
+    async getDisapprovalReasonsForAuditor(auditorUserId, filters) {
+        const userRoles = await this.getUserRoleNames(auditorUserId);
+        if (userRoles.length === 0) {
+            return [];
+        }
+        const categoryIds = await this.getAuditorCategoryIds(auditorUserId);
+        if (categoryIds.length === 0) {
+            return [];
+        }
+        const targetCategories = filters.categoryId ? [filters.categoryId] : categoryIds;
+        if (filters.categoryId && !categoryIds.includes(filters.categoryId)) {
+            throw new common_1.ForbiddenException('Category not assigned to you');
+        }
+        try {
+            const qb = this.disapprovalReasonRepo
+                .createQueryBuilder('dr')
+                .where('dr.isActive = true')
+                .andWhere('dr.reasonType = :reasonType', { reasonType: filters.reasonType })
+                .andWhere('(dr."categoryIds" = :emptyArray OR dr."categoryIds" && :categoryIds)', {
+                emptyArray: '{}',
+                categoryIds: targetCategories,
+            })
+                .andWhere('(dr."applicableRoles" && :roles)', { roles: filters.role ? [filters.role] : userRoles });
+            if (filters.search) {
+                qb.andWhere('(dr.description ILIKE :search)', {
+                    search: `%${filters.search}%`,
+                });
+            }
+            qb.orderBy('dr.description', 'ASC');
+            return await qb.getMany();
+        }
+        catch (err) {
+            console.warn('New schema columns not found, using fallback:', err.message);
+            const qb = this.disapprovalReasonRepo
+                .createQueryBuilder('dr')
+                .select(['dr.id', 'dr.reason', 'dr.description', 'dr.isActive'])
+                .where('dr.isActive = true');
+            if (filters.search) {
+                qb.andWhere('(dr.description ILIKE :search)', {
+                    search: `%${filters.search}%`,
+                });
+            }
+            qb.orderBy('dr.description', 'ASC');
+            const rows = await qb.getMany();
+            return rows.map(r => ({
+                ...r,
+                reasonType: r.reasonType ?? 'rejection',
+                applicableRoles: r.applicableRoles ?? [],
+                categoryIds: r.categoryIds ?? [],
+            }));
+        }
     }
     async getPendingResearch(auditorUserId) {
         const userCategories = await this.userCategoryRepo.find({
@@ -121,21 +212,35 @@ let AuditService = class AuditService {
         if (task.assignedToUserId === auditorUserId) {
             throw new common_1.ForbiddenException('Auditor cannot audit own submission');
         }
+        const userRoles = await this.getUserRoleNames(auditorUserId);
+        const expectedType = dto.decision === 'REJECTED' ? 'rejection' : dto.decision === 'FLAGGED' ? 'flag' : null;
+        let reason = null;
+        if (expectedType) {
+            if (!dto.reasonId) {
+                throw new common_1.BadRequestException('reasonId is required for this decision');
+            }
+            reason = await this.validateDisapprovalReason(dto.reasonId, {
+                categoryId: task.categoryId,
+                expectedType,
+                userRoles,
+            });
+        }
         await this.auditRepo.save({
             researchTaskId,
             auditorUserId,
             decision: dto.decision,
+            disapprovalReasonId: reason?.id,
         });
-        task.status =
-            dto.decision === 'APPROVED'
-                ? research_task_entity_1.ResearchStatus.COMPLETED
-                : research_task_entity_1.ResearchStatus.IN_PROGRESS;
-        if (dto.decision === 'REJECTED') {
+        if (dto.decision === 'APPROVED') {
+            task.status = research_task_entity_1.ResearchStatus.COMPLETED;
+        }
+        else {
+            task.status = research_task_entity_1.ResearchStatus.REJECTED;
             await this.flaggedRepo.save({
                 userId: task.assignedToUserId,
                 targetId: researchTaskId,
-                actionType: 'RESEARCH',
-                reason: 'MANUAL_REJECTION',
+                actionType: dto.decision === 'FLAGGED' ? 'RESEARCH_FLAG' : 'RESEARCH',
+                reason: reason?.reason || 'Manual review required',
             });
         }
         return this.researchRepo.save(task);
@@ -216,6 +321,7 @@ let AuditService = class AuditService {
         if (task.assignedToUserId === auditorUserId) {
             throw new common_1.ForbiddenException('Auditor cannot audit own submission');
         }
+        const userRoles = await this.getUserRoleNames(auditorUserId);
         const snapshot = await this.snapshotRepo.findOne({
             where: { inquiryTaskId: task.id },
             order: { createdAt: 'DESC' },
@@ -223,16 +329,30 @@ let AuditService = class AuditService {
         if (snapshot?.isDuplicate && dto.decision === 'APPROVED') {
             throw new common_1.BadRequestException('Cannot approve submission with duplicate screenshot. Please reject with reason "Duplicate Screenshot".');
         }
+        const expectedType = dto.decision === 'REJECTED' ? 'rejection' : dto.decision === 'FLAGGED' ? 'flag' : null;
+        let reason = null;
+        if (expectedType) {
+            if (!dto.reasonId) {
+                throw new common_1.BadRequestException('reasonId is required for this decision');
+            }
+            reason = await this.validateDisapprovalReason(dto.reasonId, {
+                categoryId: task.categoryId,
+                expectedType,
+                userRoles,
+            });
+        }
         task.status =
             dto.decision === 'APPROVED'
                 ? inquiry_task_entity_1.InquiryStatus.APPROVED
-                : inquiry_task_entity_1.InquiryStatus.REJECTED;
-        if (dto.decision === 'REJECTED') {
+                : dto.decision === 'FLAGGED'
+                    ? inquiry_task_entity_1.InquiryStatus.FLAGGED
+                    : inquiry_task_entity_1.InquiryStatus.REJECTED;
+        if (dto.decision === 'REJECTED' || dto.decision === 'FLAGGED') {
             await this.flaggedRepo.save({
                 userId: task.assignedToUserId,
                 targetId: inquiryTaskId,
-                actionType: 'INQUIRY',
-                reason: snapshot?.isDuplicate ? 'Duplicate (System Detected)' : 'MANUAL_REJECTION',
+                actionType: dto.decision === 'FLAGGED' ? 'INQUIRY_FLAG' : 'INQUIRY',
+                reason: reason?.reason || (snapshot?.isDuplicate ? 'Duplicate (System Detected)' : 'Manual review required'),
             });
         }
         await this.inquiryTaskRepo.save(task);
@@ -325,6 +445,19 @@ let AuditService = class AuditService {
         if (!snapshot) {
             throw new common_1.BadRequestException('Snapshot not found');
         }
+        const userRoles = await this.getUserRoleNames(auditorUserId);
+        const expectedType = dto.decision === 'REJECTED' ? 'rejection' : dto.decision === 'FLAGGED' ? 'flag' : null;
+        let reason = null;
+        if (expectedType) {
+            if (!dto.reasonId) {
+                throw new common_1.BadRequestException('reasonId is required for this decision');
+            }
+            reason = await this.validateDisapprovalReason(dto.reasonId, {
+                categoryId: task.categoryId,
+                expectedType,
+                userRoles,
+            });
+        }
         if (snapshot?.isDuplicate && dto.decision === 'APPROVED') {
             console.log('[LINKEDIN-AUDIT] Warning: Approving action with duplicate screenshot', {
                 actionId,
@@ -335,12 +468,26 @@ let AuditService = class AuditService {
             dto.decision === 'APPROVED' ? inquiry_action_entity_1.InquiryActionStatus.APPROVED : inquiry_action_entity_1.InquiryActionStatus.REJECTED;
         action.reviewedAt = new Date();
         await actionRepo.save(action);
+        if (dto.decision === 'REJECTED' || dto.decision === 'FLAGGED') {
+            await this.flaggedRepo.save({
+                userId: task.assignedToUserId,
+                targetId: inquiryTaskId,
+                actionType: dto.decision === 'FLAGGED' ? 'LINKEDIN_INQUIRY_FLAG' : 'LINKEDIN_INQUIRY',
+                reason: reason?.reason || (snapshot?.isDuplicate ? 'Duplicate (System Detected)' : 'Manual review required'),
+            });
+        }
         const allActions = await actionRepo.find({
             where: { inquiryTaskId },
         });
         const allApproved = allActions.every(a => a.status === inquiry_action_entity_1.InquiryActionStatus.APPROVED);
         const anyRejected = allActions.some(a => a.status === inquiry_action_entity_1.InquiryActionStatus.REJECTED);
-        if (allApproved) {
+        const hasFlag = dto.decision === 'FLAGGED' || (await this.flaggedRepo.count({
+            where: { targetId: inquiryTaskId, actionType: 'LINKEDIN_INQUIRY_FLAG' },
+        })) > 0;
+        if (hasFlag) {
+            task.status = inquiry_task_entity_1.InquiryStatus.FLAGGED;
+        }
+        else if (allApproved) {
             task.status = inquiry_task_entity_1.InquiryStatus.APPROVED;
         }
         else if (anyRejected) {
@@ -368,7 +515,13 @@ exports.AuditService = AuditService = __decorate([
     __param(10, (0, typeorm_1.InjectRepository)(outreach_record_entity_1.OutreachRecord)),
     __param(11, (0, typeorm_1.InjectRepository)(inquiry_submission_snapshot_entity_1.InquirySubmissionSnapshot)),
     __param(12, (0, typeorm_1.InjectRepository)(linkedin_profile_entity_1.LinkedInProfile)),
+    __param(13, (0, typeorm_1.InjectRepository)(disapproval_reason_entity_1.DisapprovalReason)),
+    __param(14, (0, typeorm_1.InjectRepository)(user_role_entity_1.UserRole)),
+    __param(15, (0, typeorm_1.InjectRepository)(role_entity_1.Role)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

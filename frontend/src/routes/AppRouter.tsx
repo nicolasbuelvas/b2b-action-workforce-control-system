@@ -62,6 +62,7 @@ import CreateUserPage from '../pages/admin/CreateUserPage';
 import CategoriesPage from '../pages/admin/CategoriesPage';
 import CategoryRulesPage from '../pages/admin/CategoryRulesPage';
 import ActionConfigPage from '../pages/admin/ActionConfigPage';
+import AdminDisapprovalReasonsPage from '../pages/admin/AdminDisapprovalReasonsPage';
 import PricingPage from '../pages/admin/PricingPage';
 import RolePerformancePage from '../pages/admin/RolePerformancePage';
 import SystemLogsPage from '../pages/admin/SystemLogsPage';
@@ -106,6 +107,7 @@ export default function AppRouter() {
           <Route path="user-categories" element={<UserCategoryAssignment />} />
           <Route path="category-rules" element={<CategoryRulesPage />} />
           <Route path="action-config" element={<ActionConfigPage />} />
+          <Route path="disapproval-reasons" element={<AdminDisapprovalReasonsPage />} />
           <Route path="pricing" element={<PricingPage />} />
           <Route path="role-performance" element={<RolePerformancePage />} />
           <Route path="logs" element={<SystemLogsPage />} />

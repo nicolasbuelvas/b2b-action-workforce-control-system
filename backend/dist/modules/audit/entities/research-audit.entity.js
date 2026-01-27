@@ -31,9 +31,9 @@ __decorate([
     __metadata("design:type", String)
 ], ResearchAudit.prototype, "decision", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ name: 'rejectionReasonId', nullable: true }),
     __metadata("design:type", String)
-], ResearchAudit.prototype, "rejectionReasonId", void 0);
+], ResearchAudit.prototype, "disapprovalReasonId", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

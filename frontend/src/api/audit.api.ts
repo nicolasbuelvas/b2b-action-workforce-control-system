@@ -72,9 +72,19 @@ export interface PendingLinkedInInquirySubmission {
   actions: LinkedInInquiryAction[];
 }
 
+export interface DisapprovalReason {
+  id: string;
+  reason: string;
+  description?: string;
+  reasonType: 'rejection' | 'flag';
+  applicableRoles: string[];
+  categoryIds: string[];
+  isActive: boolean;
+}
+
 export interface AuditDecision {
-  decision: 'APPROVED' | 'REJECTED';
-  rejectionReasonId?: string;
+  decision: 'APPROVED' | 'REJECTED' | 'FLAGGED';
+  reasonId?: string;
 }
 
 export const auditApi = {
@@ -105,6 +115,16 @@ export const auditApi = {
 
   auditLinkedInInquiry: async (taskId: string, actionId: string, decision: AuditDecision): Promise<any> => {
     const response = await axios.post(`/audit/linkedin-inquiry/${taskId}/actions/${actionId}`, decision);
+    return response.data;
+  },
+
+  getDisapprovalReasons: async (params: {
+    role?: string;
+    reasonType: 'rejection' | 'flag';
+    categoryId?: string;
+    search?: string;
+  }): Promise<DisapprovalReason[]> => {
+    const response = await axios.get('/audit/disapproval-reasons', { params });
     return response.data;
   },
 };

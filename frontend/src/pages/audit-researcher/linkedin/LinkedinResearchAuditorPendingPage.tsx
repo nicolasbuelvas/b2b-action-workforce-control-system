@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 // Reuse website auditor styles for consistent UI
 import '../website/WebsiteResearchAuditorPendingPage.css';
-import { auditApi, PendingResearchSubmission } from '../../../api/audit.api';
+import { auditApi, PendingResearchSubmission, DisapprovalReason } from '../../../api/audit.api';
 import { researchApi, Category } from '../../../api/research.api';
 import { useAuth } from '../../../hooks/useAuth';
 
@@ -14,6 +14,10 @@ export default function LinkedinResearchAuditorPendingPage() {
   const [loading, setLoading] = useState(true);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [rejectionReasons, setRejectionReasons] = useState<DisapprovalReason[]>([]);
+  const [flagReasons, setFlagReasons] = useState<DisapprovalReason[]>([]);
+  const [loadingReasons, setLoadingReasons] = useState(true);
 
   useEffect(() => {
     loadCategories();
@@ -22,6 +26,12 @@ export default function LinkedinResearchAuditorPendingPage() {
   useEffect(() => {
     loadSubmissions();
   }, []);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      loadReasons();
+    }
+  }, [selectedCategory]);
 
   useEffect(() => {
     if (loadingCategories) return;
@@ -90,6 +100,24 @@ export default function LinkedinResearchAuditorPendingPage() {
     }
   };
 
+  const loadReasons = async () => {
+    if (!selectedCategory) return;
+    
+    try {
+      setLoadingReasons(true);
+      const [rejectionData, flagData] = await Promise.all([
+        auditApi.getDisapprovalReasons({ role: 'linkedin_research_auditor', categoryId: selectedCategory, reasonType: 'rejection' }),
+        auditApi.getDisapprovalReasons({ role: 'linkedin_research_auditor', categoryId: selectedCategory, reasonType: 'flag' })
+      ]);
+      setRejectionReasons(rejectionData);
+      setFlagReasons(flagData);
+    } catch (err) {
+      console.error('Failed to load disapproval reasons:', err);
+    } finally {
+      setLoadingReasons(false);
+    }
+  };
+
   const handleApprove = async (taskId: string) => {
     try {
       await auditApi.auditResearch(taskId, { decision: 'APPROVED' });
@@ -99,14 +127,21 @@ export default function LinkedinResearchAuditorPendingPage() {
     }
   };
 
-  const handleReject = async (taskId: string, rejectionReasonId?: string) => {
+  const handleReject = async (taskId: string, reasonId: string) => {
     try {
-      const payload: any = { decision: 'REJECTED' };
-      if (rejectionReasonId) payload.rejectionReasonId = rejectionReasonId;
-      await auditApi.auditResearch(taskId, payload);
+      await auditApi.auditResearch(taskId, { decision: 'REJECTED', reasonId });
       setSubmissions(prev => prev.filter(s => s.id !== taskId));
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to reject submission');
+    }
+  };
+
+  const handleFlag = async (taskId: string, reasonId: string) => {
+    try {
+      await auditApi.auditResearch(taskId, { decision: 'FLAGGED', reasonId });
+      setSubmissions(prev => prev.filter(s => s.id !== taskId));
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to flag submission');
     }
   };
 
@@ -186,6 +221,10 @@ export default function LinkedinResearchAuditorPendingPage() {
                 submission={submission}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                onFlag={handleFlag}
+                rejectionReasons={rejectionReasons}
+                flagReasons={flagReasons}
+                loadingReasons={loadingReasons}
                 formatTimeAgo={formatTimeAgo}
               />
             ))}
@@ -199,11 +238,15 @@ export default function LinkedinResearchAuditorPendingPage() {
 type CardProps = {
   submission: PendingResearchSubmission;
   onApprove: (taskId: string) => void;
-  onReject: (taskId: string, rejectionReasonId?: string) => void;
+  onReject: (taskId: string, reasonId: string) => void;
+  onFlag: (taskId: string, reasonId: string) => void;
+  rejectionReasons: DisapprovalReason[];
+  flagReasons: DisapprovalReason[];
+  loadingReasons: boolean;
   formatTimeAgo: (date: string) => string;
 };
 
-function LinkedInSubmissionCard({ submission, onApprove, onReject, formatTimeAgo }: CardProps) {
+function LinkedInSubmissionCard({ submission, onApprove, onReject, onFlag, rejectionReasons, flagReasons, loadingReasons, formatTimeAgo }: CardProps) {
   const [checks, setChecks] = useState({
     profileUrl: false,
     contactName: false,
@@ -211,8 +254,8 @@ function LinkedInSubmissionCard({ submission, onApprove, onReject, formatTimeAgo
     country: false,
     language: false,
   });
-  const [suspiciousReason, setSuspiciousReason] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [selectedRejectionReason, setSelectedRejectionReason] = useState('');
+  const [selectedFlagReason, setSelectedFlagReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const displayUrl = ((): string => {
@@ -222,8 +265,9 @@ function LinkedInSubmissionCard({ submission, onApprove, onReject, formatTimeAgo
   })();
 
   const allChecked = Object.values(checks).every(Boolean);
-  const canApprove = allChecked && !suspiciousReason;
-  const canReject = Boolean(rejectionReason || suspiciousReason);
+  const canApprove = allChecked && !selectedFlagReason;
+  const canReject = Boolean(selectedRejectionReason);
+  const canFlag = Boolean(selectedFlagReason);
 
   const toggle = (key: keyof typeof checks) => setChecks(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -238,11 +282,20 @@ function LinkedInSubmissionCard({ submission, onApprove, onReject, formatTimeAgo
   };
 
   const handleReject = async () => {
-    if (!canReject) return;
+    if (!canReject || !selectedRejectionReason) return;
     setSubmitting(true);
     try {
-      const reasonId = rejectionReason || suspiciousReason;
-      await onReject(submission.id, reasonId);
+      await onReject(submission.id, selectedRejectionReason);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFlag = async () => {
+    if (!canFlag || !selectedFlagReason) return;
+    setSubmitting(true);
+    try {
+      await onFlag(submission.id, selectedFlagReason);
     } finally {
       setSubmitting(false);
     }
@@ -323,37 +376,40 @@ function LinkedInSubmissionCard({ submission, onApprove, onReject, formatTimeAgo
           <div className="control-group">
             <label>Rejection Reason:</label>
             <select
-              value={rejectionReason}
-              onChange={(e) => { setRejectionReason(e.target.value); if (e.target.value) setSuspiciousReason(''); }}
+              value={selectedRejectionReason}
+              onChange={(e) => { setSelectedRejectionReason(e.target.value); if (e.target.value) setSelectedFlagReason(''); }}
               className="rejection-select"
-              disabled={Boolean(suspiciousReason)}
+              disabled={loadingReasons || Boolean(selectedFlagReason)}
             >
               <option value="">Select reason...</option>
-              <option value="INVALID_DATA">Invalid Data</option>
-              <option value="INCOMPLETE">Incomplete Submission</option>
-              <option value="WRONG_TARGET">Wrong Target</option>
-              <option value="DUPLICATE">Duplicate</option>
-              <option value="OTHER">Other</option>
+              {rejectionReasons.map((reason) => (
+                <option key={reason.id} value={reason.id}>
+                  {reason.description}
+                </option>
+              ))}
             </select>
           </div>
           <div className="control-group">
-            <label>Flag as Suspicious:</label>
+            <label>Flag Reason:</label>
             <select
-              value={suspiciousReason}
-              onChange={(e) => { setSuspiciousReason(e.target.value); if (e.target.value) setRejectionReason(''); }}
-              className={`suspicious-select ${suspiciousReason ? 'active' : ''}`}
+              value={selectedFlagReason}
+              onChange={(e) => { setSelectedFlagReason(e.target.value); if (e.target.value) setSelectedRejectionReason(''); }}
+              className={`suspicious-select ${selectedFlagReason ? 'active' : ''}`}
+              disabled={loadingReasons || Boolean(selectedRejectionReason)}
             >
-              <option value="">Not suspicious</option>
-              <option value="SUSPICIOUS_CONTACT">Suspicious Contact</option>
-              <option value="SUSPICIOUS_DATA">Suspicious Data</option>
-              <option value="REQUIRES_REVIEW">Requires Further Review</option>
-              <option value="POTENTIAL_FRAUD">Potential Fraud</option>
+              <option value="">Not flagged</option>
+              {flagReasons.map((reason) => (
+                <option key={reason.id} value={reason.id}>
+                  {reason.description}
+                </option>
+              ))}
             </select>
           </div>
         </section>
       </div>
       <div className="card-actions">
         <button className="btn-reject" onClick={handleReject} disabled={!canReject || submitting}>{submitting ? 'Processing...' : 'Reject'}</button>
+        <button className="btn-flag" onClick={handleFlag} disabled={!canFlag || submitting}>{submitting ? 'Processing...' : 'Flag'}</button>
         <button className="btn-approve" onClick={handleApprove} disabled={!canApprove || submitting}>{submitting ? 'Processing...' : 'Approve'}</button>
       </div>
     </div>

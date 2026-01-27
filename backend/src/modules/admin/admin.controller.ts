@@ -114,4 +114,55 @@ export class AdminController {
   getSubAdmins() {
     return this.adminService.getSubAdmins();
   }
+
+  /**
+   * DISAPPROVAL REASONS (SUPER ADMIN)
+   */
+  @Get('disapproval-reasons')
+  getDisapprovalReasons(
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('reasonType') reasonType?: 'rejection' | 'flag',
+    @Query('categoryId') categoryId?: string,
+    @Query('includeInactive') includeInactive?: string,
+  ) {
+    return this.adminService.getDisapprovalReasons({
+      search,
+      role,
+      reasonType,
+      categoryId,
+      includeInactive: includeInactive === 'true',
+    });
+  }
+
+  @Post('disapproval-reasons')
+  createDisapprovalReason(
+    @Body()
+    body: {
+      reason: string;
+      description?: string;
+      reasonType: 'rejection' | 'flag';
+      applicableRoles: string[];
+      categoryIds?: string[];
+      isActive?: boolean;
+    },
+  ) {
+    return this.adminService.createDisapprovalReason(body);
+  }
+
+  @Patch('disapproval-reasons/:id')
+  updateDisapprovalReason(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      reason?: string;
+      description?: string;
+      reasonType?: 'rejection' | 'flag';
+      applicableRoles?: string[];
+      categoryIds?: string[];
+      isActive?: boolean;
+    },
+  ) {
+    return this.adminService.updateDisapprovalReason(id, body);
+  }
 }

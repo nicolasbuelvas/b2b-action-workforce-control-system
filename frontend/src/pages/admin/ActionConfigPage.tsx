@@ -127,17 +127,15 @@ const ActionConfigPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [globalLists, setGlobalLists] = useState<{
     blacklist: GlobalListItem[];
-    rejectionReasons: GlobalListItem[];
     companyTypes: GlobalListItem[];
     jobTypes: GlobalListItem[];
   }>({
     blacklist: [],
-    rejectionReasons: [],
     companyTypes: [],
     jobTypes: [],
   });
   const [globalListType, setGlobalListType] = useState<
-    'blacklist' | 'rejectionReasons' | 'companyTypes' | 'jobTypes'
+    'blacklist' | 'companyTypes' | 'jobTypes'
   >('blacklist');
   const [showGlobalListModal, setShowGlobalListModal] = useState(false);
   const [globalListInput, setGlobalListInput] = useState('');
@@ -151,15 +149,14 @@ const ActionConfigPage: React.FC = () => {
     Promise.all([
       fetchActionsConfig(),
       fetchGlobalList('blacklist'),
-      fetchGlobalList('rejectionReasons'),
       fetchGlobalList('companyTypes'),
       fetchGlobalList('jobTypes'),
       fetchNotices(),
     ]).then(
-      ([actions, blacklist, rejectionReasons, companyTypes, jobTypes, notices]) => {
+      ([actions, blacklist, companyTypes, jobTypes, notices]) => {
         setActions(actions);
         setFilteredActions(actions);
-        setGlobalLists({ blacklist, rejectionReasons, companyTypes, jobTypes });
+        setGlobalLists({ blacklist, companyTypes, jobTypes });
         setNotices(notices);
         setLoading(false);
       }
@@ -329,14 +326,6 @@ const ActionConfigPage: React.FC = () => {
           </button>
           <button
             onClick={() => {
-              setGlobalListType('rejectionReasons');
-              setShowGlobalListModal(true);
-            }}
-          >
-            Rejection Reasons
-          </button>
-          <button
-            onClick={() => {
               setGlobalListType('companyTypes');
               setShowGlobalListModal(true);
             }}
@@ -479,7 +468,7 @@ const ActionConfigPage: React.FC = () => {
                         requiresApproval: fd.get('requiresApproval') === 'on',
                         approvalRole: fd.get('approvalRole') as Role,
                         approvalCriteria: fd.get('approvalCriteria') as string,
-                        rejectionReasonGroupId: fd.get('rejectionReasonGroupId') as string,
+                        rejectionReasonGroupId: '',
                       },
                   guidelines: fd.get('guidelines') as string,
                 };
@@ -611,17 +600,6 @@ const ActionConfigPage: React.FC = () => {
                   placeholder="Describe approval criteria..."
                   defaultValue={editAction?.approval?.approvalCriteria || ''}
                 />
-                <select
-                  name="rejectionReasonGroupId"
-                  defaultValue={editAction?.approval?.rejectionReasonGroupId || ''}
-                >
-                  <option value="">Select Rejection Reason Group</option>
-                  {globalLists.rejectionReasons.map((rr) => (
-                    <option key={rr.id} value={rr.id}>
-                      {rr.name}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div className="modal-actions">
                 <button
@@ -646,7 +624,6 @@ const ActionConfigPage: React.FC = () => {
           <div className="modal-content">
             <h2>
               {globalListType === 'blacklist' && 'Company Blacklist'}
-              {globalListType === 'rejectionReasons' && 'Rejection Reasons'}
               {globalListType === 'companyTypes' && 'Company Types'}
               {globalListType === 'jobTypes' && 'Job Types'}
             </h2>

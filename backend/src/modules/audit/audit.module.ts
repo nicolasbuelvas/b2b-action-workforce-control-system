@@ -19,6 +19,9 @@ import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsModule } from '../screenshots/screenshots.module';
 import { LinkedInProfile } from '../research/entities/linkedin-profile.entity';
+import { DisapprovalReason } from '../subadmin/entities/disapproval-reason.entity';
+import { UserRole } from '../roles/entities/user-role.entity';
+import { Role } from '../roles/entities/role.entity';
 
 @Module({
   imports: [
@@ -37,6 +40,9 @@ import { LinkedInProfile } from '../research/entities/linkedin-profile.entity';
       OutreachRecord,
       InquirySubmissionSnapshot,
       LinkedInProfile,
+      DisapprovalReason,
+      UserRole,
+      Role,
     ]),
     ScreenshotsModule,
   ],

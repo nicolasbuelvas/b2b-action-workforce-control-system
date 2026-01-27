@@ -59,8 +59,9 @@ const research_audit_entity_1 = require("../audit/entities/research-audit.entity
 const category_entity_1 = require("../categories/entities/category.entity");
 const sub_admin_category_entity_1 = require("../categories/entities/sub-admin-category.entity");
 const user_category_entity_1 = require("../categories/entities/user-category.entity");
+const disapproval_reason_entity_1 = require("../subadmin/entities/disapproval-reason.entity");
 let AdminService = class AdminService {
-    constructor(userRepo, roleRepo, userRoleRepo, inquiryActionRepo, researchTaskRepo, researchAuditRepo, categoryRepo, subAdminCategoryRepo, userCategoryRepo) {
+    constructor(userRepo, roleRepo, userRoleRepo, inquiryActionRepo, researchTaskRepo, researchAuditRepo, categoryRepo, subAdminCategoryRepo, userCategoryRepo, disapprovalReasonRepo) {
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.userRoleRepo = userRoleRepo;
@@ -70,6 +71,7 @@ let AdminService = class AdminService {
         this.categoryRepo = categoryRepo;
         this.subAdminCategoryRepo = subAdminCategoryRepo;
         this.userCategoryRepo = userCategoryRepo;
+        this.disapprovalReasonRepo = disapprovalReasonRepo;
     }
     async getDashboard() {
         const totalUsers = await this.userRepo.count();
@@ -397,6 +399,104 @@ let AdminService = class AdminService {
             assignedAt: uc.createdAt,
         }));
     }
+    async getDisapprovalReasons(filters) {
+        try {
+            const qb = this.disapprovalReasonRepo.createQueryBuilder('dr');
+            if (!filters?.includeInactive) {
+                qb.where('dr.isActive = :active', { active: true });
+            }
+            if (filters?.search) {
+                qb.andWhere('(dr.description ILIKE :search)', {
+                    search: `%${filters.search}%`,
+                });
+            }
+            if (filters?.role) {
+                qb.andWhere(':role = ANY(dr."applicableRoles")', { role: filters.role });
+            }
+            if (filters?.reasonType) {
+                qb.andWhere('dr.reasonType = :reasonType', { reasonType: filters.reasonType });
+            }
+            if (filters?.categoryId) {
+                qb.andWhere('(dr."categoryIds" = :emptyArray OR :categoryId = ANY(dr."categoryIds"))', {
+                    emptyArray: '{}',
+                    categoryId: filters.categoryId,
+                });
+            }
+            qb.orderBy('dr.description', 'ASC');
+            return await qb.getMany();
+        }
+        catch (err) {
+            console.warn('New schema columns not found, using fallback query:', err.message);
+            const qb = this.disapprovalReasonRepo
+                .createQueryBuilder('dr')
+                .select(['dr.id', 'dr.reason', 'dr.description', 'dr.isActive']);
+            if (!filters?.includeInactive) {
+                qb.where('dr.isActive = :active', { active: true });
+            }
+            if (filters?.search) {
+                qb.andWhere('(dr.description ILIKE :search)', {
+                    search: `%${filters.search}%`,
+                });
+            }
+            qb.orderBy('dr.description', 'ASC');
+            const rows = await qb.getMany();
+            return rows.map(r => ({
+                ...r,
+                reasonType: r.reasonType ?? 'rejection',
+                applicableRoles: r.applicableRoles ?? [],
+                categoryIds: r.categoryIds ?? [],
+            }));
+        }
+    }
+    async createDisapprovalReason(data) {
+        if (!data.reason?.trim()) {
+            throw new common_1.BadRequestException('Reason is required');
+        }
+        if (!Array.isArray(data.applicableRoles) || data.applicableRoles.length === 0) {
+            throw new common_1.BadRequestException('At least one role is required');
+        }
+        if (!data.reasonType) {
+            throw new common_1.BadRequestException('reasonType is required');
+        }
+        const categoryIds = Array.isArray(data.categoryIds) ? Array.from(new Set(data.categoryIds)) : [];
+        const disapprovalReason = this.disapprovalReasonRepo.create({
+            reason: data.reason.trim(),
+            description: data.description?.trim() || null,
+            reasonType: data.reasonType,
+            applicableRoles: data.applicableRoles,
+            categoryIds,
+            isActive: data.isActive ?? true,
+        });
+        return await this.disapprovalReasonRepo.save(disapprovalReason);
+    }
+    async updateDisapprovalReason(id, data) {
+        const disapprovalReason = await this.disapprovalReasonRepo.findOne({ where: { id } });
+        if (!disapprovalReason) {
+            throw new common_1.BadRequestException('Disapproval reason not found');
+        }
+        if (data.reason !== undefined) {
+            disapprovalReason.reason = data.reason.trim();
+        }
+        if (data.description !== undefined) {
+            disapprovalReason.description = data.description?.trim() || null;
+        }
+        if (data.reasonType) {
+            disapprovalReason.reasonType = data.reasonType;
+        }
+        if (data.applicableRoles) {
+            if (data.applicableRoles.length === 0) {
+                throw new common_1.BadRequestException('At least one role is required');
+            }
+            disapprovalReason.applicableRoles = data.applicableRoles;
+        }
+        if (data.categoryIds) {
+            disapprovalReason.categoryIds = Array.from(new Set(data.categoryIds));
+        }
+        if (data.isActive !== undefined) {
+            disapprovalReason.isActive = data.isActive;
+        }
+        return await this.disapprovalReasonRepo.save(disapprovalReason);
+    }
 };
 exports.AdminService = AdminService;
 exports.AdminService = AdminService = __decorate([
@@ -410,7 +510,9 @@ exports.AdminService = AdminService = __decorate([
     __param(6, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
     __param(7, (0, typeorm_1.InjectRepository)(sub_admin_category_entity_1.SubAdminCategory)),
     __param(8, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
+    __param(9, (0, typeorm_1.InjectRepository)(disapproval_reason_entity_1.DisapprovalReason)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

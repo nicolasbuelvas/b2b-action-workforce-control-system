@@ -26,6 +26,9 @@ const outreach_record_entity_1 = require("../inquiry/entities/outreach-record.en
 const inquiry_submission_snapshot_entity_1 = require("../inquiry/entities/inquiry-submission-snapshot.entity");
 const screenshots_module_1 = require("../screenshots/screenshots.module");
 const linkedin_profile_entity_1 = require("../research/entities/linkedin-profile.entity");
+const disapproval_reason_entity_1 = require("../subadmin/entities/disapproval-reason.entity");
+const user_role_entity_1 = require("../roles/entities/user-role.entity");
+const role_entity_1 = require("../roles/entities/role.entity");
 let AuditModule = class AuditModule {
 };
 exports.AuditModule = AuditModule;
@@ -47,6 +50,9 @@ exports.AuditModule = AuditModule = __decorate([
                 outreach_record_entity_1.OutreachRecord,
                 inquiry_submission_snapshot_entity_1.InquirySubmissionSnapshot,
                 linkedin_profile_entity_1.LinkedInProfile,
+                disapproval_reason_entity_1.DisapprovalReason,
+                user_role_entity_1.UserRole,
+                role_entity_1.Role,
             ]),
             screenshots_module_1.ScreenshotsModule,
         ],
