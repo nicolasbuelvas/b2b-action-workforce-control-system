@@ -340,19 +340,21 @@ export class InquiryService {
         }
       }
 
-      // Enforce cooldown before any DB modifications
-      console.log('[SERVICE-SUBMIT] Enforcing cooldown...');
-      try {
-        await this.cooldownService.enforceCooldown({
-          userId,
-          targetId: task.targetId,
-          categoryId: task.categoryId,
-          actionType: dto.actionType,
-        });
-        console.log('[SERVICE-SUBMIT] Cooldown OK');
-      } catch (err) {
-        console.error('[SERVICE-SUBMIT] ERROR: Cooldown violation:', err.message);
-        throw err;
+      // Enforce cooldown for website flow; skip for LinkedIn 3-step so user can finish all steps consecutively
+      if (task.platform !== InquiryPlatform.LINKEDIN) {
+        console.log('[SERVICE-SUBMIT] Enforcing cooldown...');
+        try {
+          await this.cooldownService.enforceCooldown({
+            userId,
+            targetId: task.targetId,
+            categoryId: task.categoryId,
+            actionType: dto.actionType,
+          });
+          console.log('[SERVICE-SUBMIT] Cooldown OK');
+        } catch (err) {
+          console.error('[SERVICE-SUBMIT] ERROR: Cooldown violation:', err.message);
+          throw err;
+        }
       }
 
       // Process screenshot (duplicate is allowed, returns isDuplicate flag)

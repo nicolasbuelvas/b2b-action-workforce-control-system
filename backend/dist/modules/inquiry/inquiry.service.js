@@ -238,19 +238,21 @@ let InquiryService = class InquiryService {
                     throw new common_1.BadRequestException('There is already a pending action');
                 }
             }
-            console.log('[SERVICE-SUBMIT] Enforcing cooldown...');
-            try {
-                await this.cooldownService.enforceCooldown({
-                    userId,
-                    targetId: task.targetId,
-                    categoryId: task.categoryId,
-                    actionType: dto.actionType,
-                });
-                console.log('[SERVICE-SUBMIT] Cooldown OK');
-            }
-            catch (err) {
-                console.error('[SERVICE-SUBMIT] ERROR: Cooldown violation:', err.message);
-                throw err;
+            if (task.platform !== inquiry_task_entity_1.InquiryPlatform.LINKEDIN) {
+                console.log('[SERVICE-SUBMIT] Enforcing cooldown...');
+                try {
+                    await this.cooldownService.enforceCooldown({
+                        userId,
+                        targetId: task.targetId,
+                        categoryId: task.categoryId,
+                        actionType: dto.actionType,
+                    });
+                    console.log('[SERVICE-SUBMIT] Cooldown OK');
+                }
+                catch (err) {
+                    console.error('[SERVICE-SUBMIT] ERROR: Cooldown violation:', err.message);
+                    throw err;
+                }
             }
             console.log('[SERVICE-SUBMIT] Processing screenshot...');
             let screenshotResult;
