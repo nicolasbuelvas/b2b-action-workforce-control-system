@@ -2,17 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { client } from '../../api/client';
 import './SubAdminCRUD.css';
 
+interface Category {
+  id: string;
+  name: string;
+}
+
 interface User {
   id: string;
+  name: string;
   email: string;
-  role: string;
-  status: 'approved' | 'pending' | 'disapproved';
+  status: string;
   createdAt: string;
+  roles: string[];
+  categories: Category[];
+  categoryCount: number;
 }
 
 export default function SubAdminUsers(): JSX.Element {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -28,12 +37,15 @@ export default function SubAdminUsers(): JSX.Element {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      // Placeholder - backend endpoint to be implemented
-      // const response = await client.get('/subadmin/users');
-      // setUsers(response.data || []);
-      setUsers([]);
+      setError(null);
+      console.log('[SubAdminUsers] Fetching users from /subadmin/users');
+      const response = await client.get('/subadmin/users');
+      console.log('[SubAdminUsers] Received users:', response.data);
+      setUsers(response.data || []);
     } catch (err: any) {
-      console.error('Failed to load users', err);
+      console.error('[SubAdminUsers] Failed to load users', err);
+      setError(err.response?.data?.message || 'Failed to load users');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -68,24 +80,24 @@ export default function SubAdminUsers(): JSX.Element {
         <div>
           <h2>User Management</h2>
           <p className="muted">
-            Create and manage users for Researcher, Inquirer, and Auditor roles within your categories
+            View and manage users assigned to your categories
           </p>
         </div>
-        <button className="btn-primary" onClick={handleCreate}>
-          + Create User
-        </button>
       </header>
 
       <main className="sa-main">
         {loading && <div className="loading-state">Loading users...</div>}
+        {error && <div className="error-state">{error}</div>}
 
-        {!loading && (
+        {!loading && !error && (
           <div className="crud-table-container">
             <table className="crud-table">
               <thead>
                 <tr>
+                  <th>Name</th>
                   <th>Email</th>
-                  <th>Role</th>
+                  <th>Roles</th>
+                  <th>Categories</th>
                   <th>Status</th>
                   <th>Created</th>
                   <th>Actions</th>
@@ -94,8 +106,33 @@ export default function SubAdminUsers(): JSX.Element {
               <tbody>
                 {users.map((user) => (
                   <tr key={user.id}>
-                    <td className="font-semibold">{user.email}</td>
-                    <td>{user.role}</td>
+                    <td className="font-semibold">{user.name}</td>
+                    <td>{user.email}</td>
+                    <td>
+                      <div className="role-badges">
+                        {user.roles && user.roles.length > 0 ? (
+                          user.roles.map((role, idx) => (
+                            <span key={idx} className="role-badge">{role}</span>
+                          ))
+                        ) : (
+                          <span className="muted">No roles</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="category-list">
+                        {user.categories && user.categories.length > 0 ? (
+                          <>
+                            <span className="category-badge">{user.categories[0].name}</span>
+                            {user.categoryCount > 1 && (
+                              <span className="category-more">+{user.categoryCount - 1} more</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="muted">No categories</span>
+                        )}
+                      </div>
+                    </td>
                     <td>
                       <span className={`status-badge status-${user.status}`}>
                         {user.status}
@@ -104,7 +141,9 @@ export default function SubAdminUsers(): JSX.Element {
                     <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                     <td>
                       <div className="action-buttons">
-                        <button className="btn-sm btn-secondary">Edit</button>
+                        <button className="btn-sm btn-secondary" onClick={() => alert('Edit functionality coming soon')}>
+                          View
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -114,10 +153,8 @@ export default function SubAdminUsers(): JSX.Element {
 
             {users.length === 0 && (
               <div className="empty-state">
-                <p>No users yet. Create users to assign tasks.</p>
-                <button className="btn-primary" onClick={handleCreate}>
-                  Create First User
-                </button>
+                <p>No users found in your assigned categories.</p>
+                <p className="muted">Users will appear here when they are assigned to categories you manage.</p>
               </div>
             )}
           </div>

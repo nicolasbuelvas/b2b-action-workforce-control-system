@@ -14,4 +14,6 @@ export declare class ScreenshotsService {
     }>;
     saveScreenshotFile(buffer: Buffer, actionId: string, userId: string, mimeType: string, isDuplicateFromProcessing: boolean): Promise<Screenshot>;
     getScreenshotByActionId(actionId: string): Promise<Screenshot | null>;
+    deleteScreenshotByActionId(actionId: string): Promise<void>;
+    deleteScreenshotsForInquiryActions(actionIds: string[]): Promise<void>;
 }

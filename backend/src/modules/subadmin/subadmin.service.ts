@@ -130,6 +130,75 @@ export class SubAdminService {
   }
 
   /**
+   * Get users who are assigned to any of the subadmin's categories
+   * Returns unique users with their roles and categories
+   */
+  async getUsersInMyCategories(subAdminUserId: string): Promise<any[]> {
+    console.log('[getUsersInMyCategories] START - subAdminUserId:', subAdminUserId);
+
+    // Get subadmin's categories
+    const subAdminCategories = await this.userCategoryRepo.find({
+      where: { userId: subAdminUserId },
+      select: ['categoryId'],
+    });
+
+    if (subAdminCategories.length === 0) {
+      console.log('[getUsersInMyCategories] Subadmin has no categories assigned');
+      return [];
+    }
+
+    const categoryIds = subAdminCategories.map(uc => uc.categoryId);
+    console.log('[getUsersInMyCategories] Subadmin categories:', categoryIds);
+
+    // Get all user_categories records that match these categories
+    const userCategoriesInMyCategories = await this.userCategoryRepo
+      .createQueryBuilder('uc')
+      .where('uc.categoryId IN (:...categoryIds)', { categoryIds })
+      .andWhere('uc.userId != :subAdminUserId', { subAdminUserId }) // Exclude the subadmin themselves
+      .leftJoinAndSelect('uc.category', 'category')
+      .getMany();
+
+    // Get unique user IDs
+    const userIds = [...new Set(userCategoriesInMyCategories.map(uc => uc.userId))];
+    console.log('[getUsersInMyCategories] Found', userIds.length, 'unique users');
+
+    if (userIds.length === 0) {
+      return [];
+    }
+
+    // Fetch full user details with roles
+    const users = await this.userRepo
+      .createQueryBuilder('user')
+      .where('user.id IN (:...userIds)', { userIds })
+      .leftJoinAndSelect('user.roles', 'role')
+      .getMany();
+
+    // Enrich with categories
+    const enrichedUsers = users.map(user => {
+      const userCategories = userCategoriesInMyCategories
+        .filter(uc => uc.userId === user.id)
+        .map(uc => ({
+          id: uc.categoryId,
+          name: uc.category?.name || 'Unknown',
+        }));
+
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        status: user.status,
+        createdAt: user.createdAt,
+        roles: user.roles?.map(r => r.role) || [],
+        categories: userCategories,
+        categoryCount: userCategories.length,
+      };
+    });
+
+    console.log('[getUsersInMyCategories] Returning', enrichedUsers.length, 'enriched users');
+    return enrichedUsers;
+  }
+
+  /**
    * Get Website research tasks for sub-admin
    */
   async getWebsiteResearchTasks(

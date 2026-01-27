@@ -129,4 +129,46 @@ export class ScreenshotsService {
   async getScreenshotByActionId(actionId: string): Promise<Screenshot | null> {
     return this.screenshotRepo.findOne({ where: { actionId } });
   }
+
+  /**
+   * Delete screenshot file and database record by action ID
+   * Called after audit approval/rejection/flag to cleanup
+   */
+  async deleteScreenshotByActionId(actionId: string): Promise<void> {
+    const screenshot = await this.screenshotRepo.findOne({ where: { actionId } });
+    
+    if (!screenshot) {
+      console.log('[SCREENSHOTS] No screenshot found for actionId:', actionId);
+      return;
+    }
+
+    // Delete physical file
+    if (screenshot.filePath) {
+      const fullPath = path.join(process.cwd(), screenshot.filePath);
+      try {
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+          console.log('[SCREENSHOTS] Deleted file:', fullPath);
+        }
+      } catch (error) {
+        console.error('[SCREENSHOTS] Failed to delete file:', fullPath, error);
+        // Continue to delete DB record even if file deletion fails
+      }
+    }
+
+    // Delete database record
+    await this.screenshotRepo.delete({ id: screenshot.id });
+    console.log('[SCREENSHOTS] Deleted screenshot record:', screenshot.id);
+
+    // Note: We keep the hash in screenshot_hashes table for duplicate detection history
+  }
+
+  /**
+   * Delete screenshots for inquiry task (multiple actions)
+   */
+  async deleteScreenshotsForInquiryActions(actionIds: string[]): Promise<void> {
+    for (const actionId of actionIds) {
+      await this.deleteScreenshotByActionId(actionId);
+    }
+  }
 }

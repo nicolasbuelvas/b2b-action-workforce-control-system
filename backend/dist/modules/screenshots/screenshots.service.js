@@ -133,6 +133,32 @@ let ScreenshotsService = class ScreenshotsService {
     async getScreenshotByActionId(actionId) {
         return this.screenshotRepo.findOne({ where: { actionId } });
     }
+    async deleteScreenshotByActionId(actionId) {
+        const screenshot = await this.screenshotRepo.findOne({ where: { actionId } });
+        if (!screenshot) {
+            console.log('[SCREENSHOTS] No screenshot found for actionId:', actionId);
+            return;
+        }
+        if (screenshot.filePath) {
+            const fullPath = path.join(process.cwd(), screenshot.filePath);
+            try {
+                if (fs.existsSync(fullPath)) {
+                    fs.unlinkSync(fullPath);
+                    console.log('[SCREENSHOTS] Deleted file:', fullPath);
+                }
+            }
+            catch (error) {
+                console.error('[SCREENSHOTS] Failed to delete file:', fullPath, error);
+            }
+        }
+        await this.screenshotRepo.delete({ id: screenshot.id });
+        console.log('[SCREENSHOTS] Deleted screenshot record:', screenshot.id);
+    }
+    async deleteScreenshotsForInquiryActions(actionIds) {
+        for (const actionId of actionIds) {
+            await this.deleteScreenshotByActionId(actionId);
+        }
+    }
 };
 exports.ScreenshotsService = ScreenshotsService;
 exports.ScreenshotsService = ScreenshotsService = __decorate([

@@ -48,6 +48,25 @@ export class SubAdminController {
   }
 
   /**
+   * GET /subadmin/users
+   * Get users assigned to subadmin's categories
+   * Returns all users who have at least one category in common with the subadmin
+   */
+  @Get('users')
+  async getUsers(@CurrentUser() user: UserPayload) {
+    const userId = user?.id ?? user?.userId;
+    console.log('[subadmin.controller.getUsers] user:', user, 'resolvedUserId:', userId);
+
+    if (!userId) {
+      throw new Error('Invalid user payload: missing userId');
+    }
+
+    const users = await this.subAdminService.getUsersInMyCategories(userId);
+    console.log('[subadmin.controller.getUsers] returning users:', users.length);
+    return users;
+  }
+
+  /**
    * GET /subadmin/research/website
    * Get Website research tasks with pagination
    */

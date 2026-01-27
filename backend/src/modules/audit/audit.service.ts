@@ -19,7 +19,7 @@ import { UserCategory } from '../categories/entities/user-category.entity';
 import { Company } from '../research/entities/company.entity';
 import { User } from '../users/entities/user.entity';
 import { InquiryTask, InquiryStatus } from '../inquiry/entities/inquiry-task.entity';
-import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
+import { InquiryAction, InquiryActionStatus } from '../inquiry/entities/inquiry-action.entity';
 import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
@@ -323,7 +323,16 @@ export class AuditService {
       });
     }
 
-    return this.inquiryTaskRepo.save(task);
+    // Save task status
+    await this.inquiryTaskRepo.save(task);
+
+    // Delete screenshot after audit (approved, rejected, or flagged)
+    if (snapshot?.inquiryActionId) {
+      await this.screenshotsService.deleteScreenshotByActionId(snapshot.inquiryActionId);
+      console.log('[AUDIT] Screenshot deleted for inquiry action:', snapshot.inquiryActionId);
+    }
+
+    return task;
   }
 
   async getPendingLinkedInInquiry(auditorUserId: string) {
@@ -447,7 +456,7 @@ export class AuditService {
     }
 
     action.status =
-      dto.decision === 'APPROVED' ? 'APPROVED' : 'REJECTED';
+      dto.decision === 'APPROVED' ? InquiryActionStatus.APPROVED : InquiryActionStatus.REJECTED;
     action.reviewedAt = new Date();
     await actionRepo.save(action);
 
@@ -456,8 +465,8 @@ export class AuditService {
       where: { inquiryTaskId },
     });
 
-    const allApproved = allActions.every(a => a.status === 'APPROVED');
-    const anyRejected = allActions.some(a => a.status === 'REJECTED');
+    const allApproved = allActions.every(a => a.status === InquiryActionStatus.APPROVED);
+    const anyRejected = allActions.some(a => a.status === InquiryActionStatus.REJECTED);
 
     if (allApproved) {
       task.status = InquiryStatus.APPROVED;
@@ -465,7 +474,14 @@ export class AuditService {
       task.status = InquiryStatus.REJECTED;
     }
 
-    return this.inquiryTaskRepo.save(task);
+    // Save task status
+    await this.inquiryTaskRepo.save(task);
+
+    // Delete screenshot after audit decision
+    await this.screenshotsService.deleteScreenshotByActionId(actionId);
+    console.log('[LINKEDIN-AUDIT] Screenshot deleted for action:', actionId);
+
+    return task;
   }
 }
 

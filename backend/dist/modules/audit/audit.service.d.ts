@@ -9,7 +9,7 @@ import { UserCategory } from '../categories/entities/user-category.entity';
 import { Company } from '../research/entities/company.entity';
 import { User } from '../users/entities/user.entity';
 import { InquiryTask, InquiryStatus } from '../inquiry/entities/inquiry-task.entity';
-import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
+import { InquiryAction, InquiryActionStatus } from '../inquiry/entities/inquiry-action.entity';
 import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
@@ -84,7 +84,7 @@ export declare class AuditService {
         actions: {
             id: string;
             actionType: any;
-            status: import("../inquiry/entities/inquiry-action.entity").InquiryActionStatus;
+            status: InquiryActionStatus;
             screenshotUrl: string;
             isDuplicate: boolean;
         }[];

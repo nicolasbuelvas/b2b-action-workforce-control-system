@@ -235,7 +235,12 @@ let AuditService = class AuditService {
                 reason: snapshot?.isDuplicate ? 'Duplicate (System Detected)' : 'MANUAL_REJECTION',
             });
         }
-        return this.inquiryTaskRepo.save(task);
+        await this.inquiryTaskRepo.save(task);
+        if (snapshot?.inquiryActionId) {
+            await this.screenshotsService.deleteScreenshotByActionId(snapshot.inquiryActionId);
+            console.log('[AUDIT] Screenshot deleted for inquiry action:', snapshot.inquiryActionId);
+        }
+        return task;
     }
     async getPendingLinkedInInquiry(auditorUserId) {
         const userCategories = await this.userCategoryRepo.find({
@@ -327,21 +332,24 @@ let AuditService = class AuditService {
             });
         }
         action.status =
-            dto.decision === 'APPROVED' ? 'APPROVED' : 'REJECTED';
+            dto.decision === 'APPROVED' ? inquiry_action_entity_1.InquiryActionStatus.APPROVED : inquiry_action_entity_1.InquiryActionStatus.REJECTED;
         action.reviewedAt = new Date();
         await actionRepo.save(action);
         const allActions = await actionRepo.find({
             where: { inquiryTaskId },
         });
-        const allApproved = allActions.every(a => a.status === 'APPROVED');
-        const anyRejected = allActions.some(a => a.status === 'REJECTED');
+        const allApproved = allActions.every(a => a.status === inquiry_action_entity_1.InquiryActionStatus.APPROVED);
+        const anyRejected = allActions.some(a => a.status === inquiry_action_entity_1.InquiryActionStatus.REJECTED);
         if (allApproved) {
             task.status = inquiry_task_entity_1.InquiryStatus.APPROVED;
         }
         else if (anyRejected) {
             task.status = inquiry_task_entity_1.InquiryStatus.REJECTED;
         }
-        return this.inquiryTaskRepo.save(task);
+        await this.inquiryTaskRepo.save(task);
+        await this.screenshotsService.deleteScreenshotByActionId(actionId);
+        console.log('[LINKEDIN-AUDIT] Screenshot deleted for action:', actionId);
+        return task;
     }
 };
 exports.AuditService = AuditService;
