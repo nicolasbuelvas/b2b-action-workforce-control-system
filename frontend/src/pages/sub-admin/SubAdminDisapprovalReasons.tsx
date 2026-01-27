@@ -1,13 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { client } from '../../api/client';
-import './SubAdminCRUD.css';
+import React, { useEffect, useState } from 'react';
+import axios from '../../api/axios';
+import '../admin/adminDisapprovalReasons.css';
 
-interface Category {
-  id: string;
-  name: string;
-}
-
-type DisapprovalReason = {
+interface DisapprovalReason {
   id: string;
   description: string;
   reasonType: 'rejection' | 'flag';
@@ -15,7 +10,12 @@ type DisapprovalReason = {
   categoryIds: string[];
   isActive: boolean;
   createdAt: string;
-};
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 const AUDITOR_ROLES = [
   { value: 'website_inquirer_auditor', label: 'Website Inquirer Auditor' },
@@ -24,296 +24,353 @@ const AUDITOR_ROLES = [
   { value: 'linkedin_research_auditor', label: 'LinkedIn Research Auditor' },
 ];
 
-export default function SubAdminDisapprovalReasons(): JSX.Element {
-  const [items, setItems] = useState<DisapprovalReason[]>([]);
+export default function SubAdminDisapprovalReasonsPage() {
+  const [reasons, setReasons] = useState<DisapprovalReason[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<DisapprovalReason | null>(null);
-  const [formData, setFormData] = useState({
-    description: '',
-    reasonType: 'rejection' as 'rejection' | 'flag',
-    applicableRoles: [] as string[],
-    categoryIds: [] as string[],
-  });
+  const [editingReason, setEditingReason] = useState<DisapprovalReason | null>(null);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('');
+  const [filterType, setFilterType] = useState('');
 
-  const loadReasons = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // Form state
+  const [formDescription, setFormDescription] = useState('');
+  const [formReasonType, setFormReasonType] = useState<'rejection' | 'flag'>('rejection');
+  const [formApplicableRoles, setFormApplicableRoles] = useState<string[]>([]);
+  const [formCategoryIds, setFormCategoryIds] = useState<string[]>([]);
+  const [formIsActive, setFormIsActive] = useState(true);
+
+  useEffect(() => {
+    loadCategories();
+    loadReasons();
+  }, []);
+
+  const loadCategories = async () => {
     try {
-      const response = await client.get('/subadmin/disapproval-reasons');
-      setItems(Array.isArray(response.data) ? response.data : []);
-    } catch (e: any) {
-      console.error(e);
-      setError(e.message || 'Failed to load reasons');
+      const res = await axios.get('/subadmin/categories');
+      setCategories(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    }
+  };
+
+  const loadReasons = async () => {
+    try {
+      setLoading(true);
+      const params: any = {};
+      if (searchTerm) params.search = searchTerm;
+      if (filterRole) params.role = filterRole;
+      if (filterType) params.reasonType = filterType;
+
+      const res = await axios.get('/subadmin/disapproval-reasons', { params });
+      setReasons(res.data);
+    } catch (err) {
+      console.error('Failed to load reasons:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const loadCategories = useCallback(async () => {
-    setLoadingCategories(true);
-    try {
-      const response = await client.get('/subadmin/categories');
-      setCategories(Array.isArray(response.data) ? response.data : []);
-    } catch (e: any) {
-      console.error(e);
-    } finally {
-      setLoadingCategories(false);
-    }
-  }, []);
+  };
 
   useEffect(() => {
-    loadReasons();
-    loadCategories();
-  }, [loadReasons, loadCategories]);
+    const debounce = setTimeout(loadReasons, 300);
+    return () => clearTimeout(debounce);
+  }, [searchTerm, filterRole, filterType]);
 
-  const handleCreate = () => {
-    setEditingItem(null);
-    setFormData({
-      description: '',
-      reasonType: 'rejection',
-      applicableRoles: [],
-      categoryIds: [],
-    });
+  const openCreateModal = () => {
+    setEditingReason(null);
+    setFormDescription('');
+    setFormReasonType('rejection');
+    setFormApplicableRoles([]);
+    setFormCategoryIds([]);
+    setFormIsActive(true);
     setShowModal(true);
   };
 
-  const handleEdit = (item: DisapprovalReason) => {
-    setEditingItem(item);
-    setFormData({
-      description: item.description,
-      reasonType: item.reasonType,
-      applicableRoles: item.applicableRoles,
-      categoryIds: item.categoryIds,
-    });
+  const openEditModal = (reason: DisapprovalReason) => {
+    setEditingReason(reason);
+    setFormDescription(reason.description);
+    setFormReasonType(reason.reasonType);
+    setFormApplicableRoles(reason.applicableRoles);
+    setFormCategoryIds(reason.categoryIds);
+    setFormIsActive(reason.isActive);
     setShowModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formDescription.trim()) {
+      alert('Description is required');
+      return;
+    }
+    if (formApplicableRoles.length === 0) {
+      alert('Please select at least one auditor role');
+      return;
+    }
+    if (formCategoryIds.length === 0) {
+      alert('Please select at least one category');
+      return;
+    }
+
+    const payload = {
+      description: formDescription.trim(),
+      reasonType: formReasonType,
+      applicableRoles: formApplicableRoles,
+      categoryIds: formCategoryIds,
+      isActive: formIsActive,
+    };
+
     try {
-      if (!formData.description.trim()) {
-        alert('Description is required');
-        return;
-      }
-      if (formData.applicableRoles.length === 0) {
-        alert('Please select at least one auditor role');
-        return;
-      }
-
-      const payload = {
-        description: formData.description,
-        reasonType: formData.reasonType,
-        applicableRoles: formData.applicableRoles,
-        categoryIds: formData.categoryIds,
-      };
-
-      if (editingItem) {
-        await client.patch(`/subadmin/disapproval-reasons/${editingItem.id}`, payload);
+      if (editingReason) {
+        await axios.patch(`/subadmin/disapproval-reasons/${editingReason.id}`, payload);
       } else {
-        await client.post('/subadmin/disapproval-reasons', payload);
+        await axios.post('/subadmin/disapproval-reasons', payload);
       }
+
       setShowModal(false);
       loadReasons();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to save disapproval reason');
+      alert(err.response?.data?.message || err.message || 'Failed to save disapproval reason');
     }
   };
 
-  const toggleActive = async (item: DisapprovalReason) => {
+  const handleDelete = async (reason: DisapprovalReason) => {
+    if (!window.confirm(`Are you sure you want to delete "${reason.description}"?`)) {
+      return;
+    }
+
     try {
-      await client.patch(`/subadmin/disapproval-reasons/${item.id}`, {
-        isActive: !item.isActive,
-      });
+      await axios.delete(`/subadmin/disapproval-reasons/${reason.id}`);
       loadReasons();
-    } catch (e) {
-      console.error(e);
-      alert('Failed to update status');
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete disapproval reason');
     }
   };
 
-  const toggleRole = (role: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      applicableRoles: prev.applicableRoles.includes(role)
-        ? prev.applicableRoles.filter((r) => r !== role)
-        : [...prev.applicableRoles, role],
-    }));
+  const toggleRoleSelection = (role: string) => {
+    setFormApplicableRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+    );
   };
 
-  const toggleCategory = (categoryId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      categoryIds: prev.categoryIds.includes(categoryId)
-        ? prev.categoryIds.filter((c) => c !== categoryId)
-        : [...prev.categoryIds, categoryId],
-    }));
+  const toggleCategorySelection = (categoryId: string) => {
+    setFormCategoryIds((prev) =>
+      prev.includes(categoryId) ? prev.filter((c) => c !== categoryId) : [...prev, categoryId]
+    );
   };
+
+  const filteredReasons = reasons;
 
   return (
-    <div className="sa-crud-page">
-      <header className="sa-page-header">
-        <div>
-          <h2>Disapproval Reasons</h2>
-          <p className="muted">
-            Manage reasons used by auditors when rejecting submissions
-          </p>
-        </div>
-        <button className="btn-primary" onClick={handleCreate}>
-          + Add Reason
+    <div className="admin-disapproval-container">
+      <header className="page-header">
+        <h1>Disapproval & Flag Reasons (Your Categories)</h1>
+        <button className="btn-primary" onClick={openCreateModal}>
+          + Create Reason
         </button>
       </header>
 
-      <main className="sa-main">
-        {loading && <div className="loading-state">Loading...</div>}
-        {error && <div className="error-message">{error}</div>}
+      <div className="filters-section">
+        <input
+          type="text"
+          placeholder="Search descriptions..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="filter-input"
+        />
+        <select
+          value={filterRole}
+          onChange={(e) => setFilterRole(e.target.value)}
+          className="filter-select"
+        >
+          <option value="">All Roles</option>
+          {AUDITOR_ROLES.map((role) => (
+            <option key={role.value} value={role.value}>
+              {role.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="filter-select"
+        >
+          <option value="">All Types</option>
+          <option value="rejection">Rejection</option>
+          <option value="flag">Flag</option>
+        </select>
+      </div>
 
-        {!loading && !error && (
-          <div className="crud-table-container">
-            <table className="crud-table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Type</th>
-                  <th>Applicable Roles</th>
-                  <th>Categories</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className={!item.isActive ? 'inactive-row' : ''}>
-                    <td className="font-semibold">{item.description}</td>
-                    <td>
-                      <span className={`badge-pill type-${item.reasonType}`}>
-                        {item.reasonType === 'rejection' ? 'Rejection' : 'Flag'}
-                      </span>
-                    </td>
-                    <td>
-                      {item.applicableRoles.length > 0
-                        ? item.applicableRoles
-                            .map((role) => AUDITOR_ROLES.find((r) => r.value === role)?.label || role)
-                            .join(', ')
-                        : 'None'}
-                    </td>
-                    <td>
-                      {item.categoryIds.length > 0
-                        ? item.categoryIds
-                            .map((catId) => categories.find((c) => c.id === catId)?.name || catId)
-                            .join(', ')
-                        : 'All'}
-                    </td>
-                    <td>
-                      <span
-                        className={`status-badge ${item.isActive ? 'status-active' : 'status-inactive'}`}
+      {loading ? (
+        <div className="loading-state">Loading reasons...</div>
+      ) : (
+        <table className="reasons-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Type</th>
+              <th>Applicable Roles</th>
+              <th>Categories</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredReasons.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
+                  No disapproval reasons found. Create one to get started.
+                </td>
+              </tr>
+            ) : (
+              filteredReasons.map((reason) => (
+                <tr key={reason.id}>
+                  <td>{reason.description}</td>
+                  <td>
+                    <span className={`type-badge type-${reason.reasonType}`}>
+                      {reason.reasonType === 'rejection' ? 'Rejection' : 'Flag'}
+                    </span>
+                  </td>
+                  <td>
+                    {reason.applicableRoles.length > 0
+                      ? reason.applicableRoles
+                          .map((role) => AUDITOR_ROLES.find((r) => r.value === role)?.label || role)
+                          .join(', ')
+                      : 'None'}
+                  </td>
+                  <td>
+                    {reason.categoryIds.length > 0
+                      ? reason.categoryIds
+                          .map((catId) => categories.find((c) => c.id === catId)?.name || catId)
+                          .join(', ')
+                      : 'All'}
+                  </td>
+                  <td>
+                    <span className={`status-badge status-${reason.isActive ? 'active' : 'inactive'}`}>
+                      {reason.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="btn-edit" onClick={() => openEditModal(reason)}>
+                        Edit
+                      </button>
+                      <button 
+                        className="btn-delete" 
+                        onClick={() => handleDelete(reason)}
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.875rem',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#dc2626')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = '#ef4444')}
                       >
-                        {item.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button className="btn-sm btn-secondary" onClick={() => handleEdit(item)}>
-                          Edit
-                        </button>
-                        <button className="btn-sm btn-outline" onClick={() => toggleActive(item)}>
-                          {item.isActive ? 'Deactivate' : 'Activate'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {items.length === 0 && (
-              <div className="empty-state">
-                <p>No disapproval reasons created yet.</p>
-                <button className="btn-primary" onClick={handleCreate}>
-                  Create First Reason
-                </button>
-              </div>
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
-          </div>
-        )}
-      </main>
+          </tbody>
+        </table>
+      )}
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>{editingItem ? 'Edit Disapproval Reason' : 'Create Disapproval Reason'}</h3>
+            <h2>{editingReason ? 'Edit Disapproval Reason' : 'Create Disapproval Reason'}</h2>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
-                <label htmlFor="description">Description *</label>
+                <label>Description*</label>
                 <textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Enter reason description..."
                   rows={3}
                   required
-                  placeholder="Enter reason description..."
                 />
               </div>
+
               <div className="form-group">
-                <label>Reason Type *</label>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <label>Reason Type*</label>
+                <div className="radio-group">
+                  <label className="radio-item">
                     <input
                       type="radio"
-                      checked={formData.reasonType === 'rejection'}
-                      onChange={() => setFormData({ ...formData, reasonType: 'rejection' })}
+                      checked={formReasonType === 'rejection'}
+                      onChange={() => setFormReasonType('rejection')}
                     />
                     <span>Rejection</span>
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <label className="radio-item">
                     <input
                       type="radio"
-                      checked={formData.reasonType === 'flag'}
-                      onChange={() => setFormData({ ...formData, reasonType: 'flag' })}
+                      checked={formReasonType === 'flag'}
+                      onChange={() => setFormReasonType('flag')}
                     />
                     <span>Flag</span>
                   </label>
                 </div>
               </div>
+
               <div className="form-group">
-                <label>Applicable Auditor Roles * (select at least one)</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label>Applicable Auditor Roles* (select at least one)</label>
+                <div className="checkbox-group">
                   {AUDITOR_ROLES.map((role) => (
-                    <label key={role.value} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <label key={role.value} className="checkbox-item">
                       <input
                         type="checkbox"
-                        checked={formData.applicableRoles.includes(role.value)}
-                        onChange={() => toggleRole(role.value)}
+                        checked={formApplicableRoles.includes(role.value)}
+                        onChange={() => toggleRoleSelection(role.value)}
                       />
                       <span>{role.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
+
               <div className="form-group">
-                <label>Categories (leave empty for global access)</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label>Your Assigned Categories* (select at least one)</label>
+                <div className="checkbox-group">
                   {categories.map((cat) => (
-                    <label key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <label key={cat.id} className="checkbox-item">
                       <input
                         type="checkbox"
-                        checked={formData.categoryIds.includes(cat.id)}
-                        onChange={() => toggleCategory(cat.id)}
+                        checked={formCategoryIds.includes(cat.id)}
+                        onChange={() => toggleCategorySelection(cat.id)}
                       />
                       <span>{cat.name}</span>
                     </label>
                   ))}
                 </div>
               </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
+
+              <div className="form-group">
+                <label className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    checked={formIsActive}
+                    onChange={(e) => setFormIsActive(e.target.checked)}
+                  />
+                  <span>Active (visible to auditors)</span>
+                </label>
+              </div>
+
+              <div className="form-actions">
+                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  {editingItem ? 'Update' : 'Create'}
+                <button type="submit" className="btn-submit">
+                  {editingReason ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>

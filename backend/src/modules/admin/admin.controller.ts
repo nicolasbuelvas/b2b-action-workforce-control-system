@@ -165,4 +165,11 @@ export class AdminController {
   ) {
     return this.adminService.updateDisapprovalReason(id, body);
   }
+
+  @Delete('disapproval-reasons/:id')
+  deleteDisapprovalReason(
+    @Param('id') id: string,
+  ) {
+    return this.adminService.deleteDisapprovalReason(id);
+  }
 }

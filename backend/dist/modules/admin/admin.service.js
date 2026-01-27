@@ -497,6 +497,14 @@ let AdminService = class AdminService {
         }
         return await this.disapprovalReasonRepo.save(disapprovalReason);
     }
+    async deleteDisapprovalReason(id) {
+        const disapprovalReason = await this.disapprovalReasonRepo.findOne({ where: { id } });
+        if (!disapprovalReason) {
+            throw new common_1.BadRequestException('Disapproval reason not found');
+        }
+        await this.disapprovalReasonRepo.delete(id);
+        return { success: true, message: 'Disapproval reason deleted successfully' };
+    }
 };
 exports.AdminService = AdminService;
 exports.AdminService = AdminService = __decorate([

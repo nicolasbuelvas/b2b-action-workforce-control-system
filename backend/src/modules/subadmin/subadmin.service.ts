@@ -1695,4 +1695,30 @@ export class SubAdminService {
 
     return await this.disapprovalReasonRepo.save(disapprovalReason);
   }
+
+  async deleteDisapprovalReasonForSubAdmin(
+    subAdminUserId: string,
+    id: string,
+  ) {
+    const myCategories = await this.getSubAdminCategoryIds(subAdminUserId);
+
+    const disapprovalReason = await this.disapprovalReasonRepo.findOne({ where: { id } });
+    if (!disapprovalReason) {
+      throw new BadRequestException('Disapproval reason not found');
+    }
+
+    // Sub-admins cannot delete global reasons created by super admins
+    if (!disapprovalReason.categoryIds || disapprovalReason.categoryIds.length === 0) {
+      throw new ForbiddenException('You cannot delete global disapproval reasons');
+    }
+
+    // Check if all categories belong to this sub-admin
+    const invalid = disapprovalReason.categoryIds.filter(cid => !myCategories.includes(cid));
+    if (invalid.length > 0) {
+      throw new ForbiddenException('You can only delete reasons from your categories');
+    }
+
+    await this.disapprovalReasonRepo.delete(id);
+    return { success: true, message: 'Disapproval reason deleted successfully' };
+  }
 }

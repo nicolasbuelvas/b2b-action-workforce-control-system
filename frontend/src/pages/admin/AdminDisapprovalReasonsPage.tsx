@@ -134,6 +134,19 @@ export default function AdminDisapprovalReasonsPage() {
     }
   };
 
+  const handleDelete = async (reason: DisapprovalReason) => {
+    if (!window.confirm(`Are you sure you want to delete "${reason.description}"?`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/admin/disapproval-reasons/${reason.id}`);
+      loadReasons();
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete disapproval reason');
+    }
+  };
+
   const toggleRoleSelection = (role: string) => {
     setFormApplicableRoles((prev) =>
       prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
@@ -250,9 +263,29 @@ export default function AdminDisapprovalReasonsPage() {
                     </span>
                   </td>
                   <td>
-                    <button className="btn-edit" onClick={() => openEditModal(reason)}>
-                      Edit
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="btn-edit" onClick={() => openEditModal(reason)}>
+                        Edit
+                      </button>
+                      <button 
+                        className="btn-delete" 
+                        onClick={() => handleDelete(reason)}
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.875rem',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = '#dc2626')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = '#ef4444')}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

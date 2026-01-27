@@ -168,4 +168,8 @@ export declare class AdminService {
         categoryIds?: string[];
         isActive?: boolean;
     }): Promise<DisapprovalReason>;
+    deleteDisapprovalReason(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

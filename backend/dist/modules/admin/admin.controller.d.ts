@@ -141,4 +141,8 @@ export declare class AdminController {
         categoryIds?: string[];
         isActive?: boolean;
     }): Promise<import("../subadmin/entities/disapproval-reason.entity").DisapprovalReason>;
+    deleteDisapprovalReason(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

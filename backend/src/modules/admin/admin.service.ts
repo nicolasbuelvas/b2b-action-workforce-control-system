@@ -595,4 +595,14 @@ export class AdminService {
 
     return await this.disapprovalReasonRepo.save(disapprovalReason);
   }
+
+  async deleteDisapprovalReason(id: string) {
+    const disapprovalReason = await this.disapprovalReasonRepo.findOne({ where: { id } });
+    if (!disapprovalReason) {
+      throw new BadRequestException('Disapproval reason not found');
+    }
+
+    await this.disapprovalReasonRepo.delete(id);
+    return { success: true, message: 'Disapproval reason deleted successfully' };
+  }
 }

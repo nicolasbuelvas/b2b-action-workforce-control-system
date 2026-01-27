@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   Patch,
+  Delete,
   BadRequestException,
 } from '@nestjs/common';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
@@ -700,6 +701,18 @@ export class SubAdminController {
     },
   ) {
     return await this.subAdminService.updateDisapprovalReasonForSubAdmin(user.id, id, body);
+  }
+
+  /**
+   * DELETE /subadmin/disapproval-reasons/:id
+   * Delete disapproval reason
+   */
+  @Delete('disapproval-reasons/:id')
+  async deleteDisapprovalReason(
+    @CurrentUser() user: UserPayload,
+    @Param('id') id: string,
+  ) {
+    return await this.subAdminService.deleteDisapprovalReasonForSubAdmin(user.id, id);
   }
 
   /**

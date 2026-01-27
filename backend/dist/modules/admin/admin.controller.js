@@ -91,6 +91,9 @@ let AdminController = class AdminController {
     updateDisapprovalReason(id, body) {
         return this.adminService.updateDisapprovalReason(id, body);
     }
+    deleteDisapprovalReason(id) {
+        return this.adminService.deleteDisapprovalReason(id);
+    }
 };
 exports.AdminController = AdminController;
 __decorate([
@@ -225,6 +228,13 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "updateDisapprovalReason", null);
+__decorate([
+    (0, common_1.Delete)('disapproval-reasons/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteDisapprovalReason", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('super_admin'),
