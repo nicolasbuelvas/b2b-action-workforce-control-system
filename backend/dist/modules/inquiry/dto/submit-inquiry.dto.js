@@ -16,6 +16,9 @@ var InquiryActionType;
     InquiryActionType["EMAIL"] = "EMAIL";
     InquiryActionType["LINKEDIN"] = "LINKEDIN";
     InquiryActionType["CALL"] = "CALL";
+    InquiryActionType["LINKEDIN_OUTREACH"] = "LINKEDIN_OUTREACH";
+    InquiryActionType["LINKEDIN_EMAIL_REQUEST"] = "LINKEDIN_EMAIL_REQUEST";
+    InquiryActionType["LINKEDIN_CATALOGUE"] = "LINKEDIN_CATALOGUE";
 })(InquiryActionType || (exports.InquiryActionType = InquiryActionType = {}));
 class SubmitInquiryDto {
 }

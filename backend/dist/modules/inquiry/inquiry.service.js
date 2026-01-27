@@ -43,7 +43,7 @@ let InquiryService = class InquiryService {
         this.dataSource = dataSource;
     }
     async getAvailableTasks(userId, type) {
-        const targetType = type === 'website' ? 'COMPANY' : 'LINKEDIN';
+        const targetType = type === 'website' ? 'COMPANY' : 'LINKEDIN_PROFILE';
         const userCategories = await this.userCategoryRepo.find({
             where: { userId },
             select: ['categoryId'],
@@ -77,7 +77,7 @@ let InquiryService = class InquiryService {
                     companyCountry = company.country;
                 }
             }
-            else if (task.targetType === 'LINKEDIN') {
+            else if (task.targetType === 'LINKEDIN' || task.targetType === 'LINKEDIN_PROFILE') {
                 companyDomain = task.targetId;
             }
             const submission = await this.submissionRepo.findOne({
@@ -178,7 +178,7 @@ let InquiryService = class InquiryService {
             console.error('[SERVICE-SUBMIT] ERROR: actionType is required');
             throw new common_1.BadRequestException('actionType is required');
         }
-        const validActionTypes = ['EMAIL', 'LINKEDIN', 'CALL'];
+        const validActionTypes = ['EMAIL', 'LINKEDIN', 'CALL', 'LINKEDIN_OUTREACH', 'LINKEDIN_EMAIL_REQUEST', 'LINKEDIN_CATALOGUE'];
         if (!validActionTypes.includes(dto.actionType)) {
             console.error('[SERVICE-SUBMIT] ERROR: Invalid actionType:', dto.actionType);
             throw new common_1.BadRequestException(`actionType must be one of: ${validActionTypes.join(', ')}`);
@@ -244,10 +244,17 @@ let InquiryService = class InquiryService {
                 console.error('[SERVICE-SUBMIT] ERROR: Screenshot processing failed:', err.message);
                 throw err;
             }
+            let actionIndex = 1;
+            if (dto.actionType === 'LINKEDIN_OUTREACH')
+                actionIndex = 1;
+            else if (dto.actionType === 'LINKEDIN_EMAIL_REQUEST')
+                actionIndex = 2;
+            else if (dto.actionType === 'LINKEDIN_CATALOGUE')
+                actionIndex = 3;
             console.log('[SERVICE-SUBMIT] Creating action record...');
             const action = await manager.getRepository(inquiry_action_entity_1.InquiryAction).save({
                 inquiryTaskId: task.id,
-                actionIndex: 1,
+                actionIndex,
                 performedByUserId: userId,
                 status: inquiry_action_entity_1.InquiryActionStatus.PENDING,
             });
@@ -334,10 +341,23 @@ let InquiryService = class InquiryService {
                 isDuplicate,
             });
             console.log('[SERVICE-SUBMIT] Snapshot saved');
-            console.log('[SERVICE-SUBMIT] Finalizing task status...');
-            task.status = inquiry_task_entity_1.InquiryStatus.COMPLETED;
+            let taskCompleted = true;
+            if (dto.actionType && dto.actionType.startsWith('LINKEDIN_')) {
+                const allActions = await manager.getRepository(inquiry_action_entity_1.InquiryAction).find({
+                    where: { inquiryTaskId: task.id },
+                });
+                taskCompleted = allActions.length >= 3;
+                console.log(`[SERVICE-SUBMIT] LinkedIn task: ${allActions.length} actions completed out of 3`);
+            }
+            if (taskCompleted) {
+                console.log('[SERVICE-SUBMIT] Finalizing task status to COMPLETED...');
+                task.status = inquiry_task_entity_1.InquiryStatus.COMPLETED;
+            }
+            else {
+                console.log('[SERVICE-SUBMIT] Task remains IN_PROGRESS (waiting for more steps)...');
+            }
             await manager.getRepository(inquiry_task_entity_1.InquiryTask).save(task);
-            console.log('[SERVICE-SUBMIT] Task status updated to COMPLETED');
+            console.log('[SERVICE-SUBMIT] Task status updated:', task.status);
             console.log('[SERVICE-SUBMIT] Transaction completed successfully');
             return {
                 action,

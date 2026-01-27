@@ -65,7 +65,7 @@ let InquiryController = class InquiryController {
                 console.error('[INQUIRY-SUBMIT] ERROR: Invalid UUID:', body.inquiryTaskId);
                 throw new common_1.BadRequestException('inquiryTaskId must be a valid UUID');
             }
-            const validTypes = ['EMAIL', 'LINKEDIN', 'CALL'];
+            const validTypes = ['EMAIL', 'LINKEDIN', 'CALL', 'LINKEDIN_OUTREACH', 'LINKEDIN_EMAIL_REQUEST', 'LINKEDIN_CATALOGUE'];
             if (!validTypes.includes(body.actionType)) {
                 console.error('[INQUIRY-SUBMIT] ERROR: Invalid actionType:', body.actionType);
                 throw new common_1.BadRequestException(`actionType must be one of: ${validTypes.join(', ')}`);

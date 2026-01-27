@@ -46,7 +46,7 @@ export const inquiryApi = {
 
   submitAction: async (
     inquiryTaskId: string,
-    actionType: 'EMAIL' | 'LINKEDIN' | 'CALL',
+    actionType: 'EMAIL' | 'LINKEDIN' | 'CALL' | 'LINKEDIN_OUTREACH' | 'LINKEDIN_EMAIL_REQUEST' | 'LINKEDIN_CATALOGUE',
     screenshot: File,
   ): Promise<any> => {
     const formData = new FormData();
