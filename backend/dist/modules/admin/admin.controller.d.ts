@@ -80,6 +80,12 @@ export declare class AdminController {
     }): Promise<{
         success: boolean;
     }>;
+    updateUserProfile(id: string, body: {
+        name?: string;
+        role?: string;
+    }): Promise<{
+        success: boolean;
+    }>;
     resetUserPassword(id: string, body?: {
         password?: string;
     }): Promise<{

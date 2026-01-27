@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -341,6 +341,28 @@ export class AdminService {
 
   async updateUserStatus(id: string, status: string) {
     await this.userRepo.update(id, { status: status as 'active' | 'suspended' });
+    return { success: true };
+  }
+
+  async updateUserProfile(id: string, payload: { name?: string; role?: string }) {
+    const user = await this.userRepo.findOne({ where: { id }, relations: ['roles', 'roles.role'] });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (payload.name && payload.name.trim().length > 0) {
+      user.name = payload.name.trim();
+    }
+
+    if (payload.role) {
+      const roleEntity = await this.roleRepo.findOne({ where: { name: payload.role } });
+      if (!roleEntity) {
+        throw new BadRequestException('Invalid role');
+      }
+
+      await this.userRoleRepo.delete({ userId: user.id });
+      await this.userRoleRepo.save({ userId: user.id, roleId: roleEntity.id });
+    }
+
+    await this.userRepo.save(user);
     return { success: true };
   }
 

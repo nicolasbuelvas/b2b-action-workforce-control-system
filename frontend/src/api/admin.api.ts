@@ -69,6 +69,14 @@ export async function updateUserStatus(id: string, status: string) {
   return res.data;
 }
 
+export async function updateUserProfile(
+  id: string,
+  data: { name?: string; role?: string }
+) {
+  const res = await axios.patch(`/admin/users/${id}/profile`, data);
+  return res.data;
+}
+
 export async function resetUserPassword(id: string, password?: string) {
   const res = await axios.post(
     `/admin/users/${id}/reset-password`,

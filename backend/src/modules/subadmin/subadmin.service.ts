@@ -1,6 +1,6 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ResearchTask, ResearchStatus } from '../research/entities/research-task.entity';
 import { ResearchSubmission } from '../research/entities/research-submission.entity';
 import { InquiryTask, InquiryStatus, InquiryPlatform } from '../inquiry/entities/inquiry-task.entity';
@@ -14,6 +14,9 @@ import { User } from '../users/entities/user.entity';
 import { CompanyType } from './entities/company-type.entity';
 import { JobType } from './entities/job-type.entity';
 import { DisapprovalReason } from './entities/disapproval-reason.entity';
+import { Role } from '../roles/entities/role.entity';
+import { UserRole } from '../roles/entities/user-role.entity';
+import * as bcrypt from 'bcrypt';
 import { normalizeDomain, normalizeLinkedInUrl } from '../../common/utils/normalization.util';
 
 @Injectable()
@@ -39,6 +42,10 @@ export class SubAdminService {
     private readonly linkedinProfileRepo: Repository<LinkedInProfile>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Role)
+    private readonly roleRepo: Repository<Role>,
+    @InjectRepository(UserRole)
+    private readonly userRoleRepo: Repository<UserRole>,
     @InjectRepository(CompanyType)
     private readonly companyTypeRepo: Repository<CompanyType>,
     @InjectRepository(JobType)
@@ -199,8 +206,179 @@ export class SubAdminService {
   }
 
   /**
-   * Get Website research tasks for sub-admin
+   * Helper: ensure sub-admin shares at least one category with target user
    */
+  private async ensureUserInMyCategories(subAdminUserId: string, targetUserId: string) {
+    const myCategories = await this.userCategoryRepo.find({
+      where: { userId: subAdminUserId },
+      select: ['categoryId'],
+    });
+
+    if (myCategories.length === 0) {
+      throw new ForbiddenException('You have no categories assigned');
+    }
+
+    const categoryIds = myCategories.map(c => c.categoryId);
+    const shared = await this.userCategoryRepo.findOne({
+      where: { userId: targetUserId, categoryId: In(categoryIds) },
+    });
+
+    if (!shared) {
+      throw new ForbiddenException('User is not in your categories');
+    }
+  }
+
+  /**
+   * Get users limited to sub-admin categories with pagination and filters
+   */
+  async getUsersInMyCategoriesPaginated(
+    subAdminUserId: string,
+    params: { page: number; limit: number; search?: string; role?: string; status?: string },
+  ) {
+    const { page = 1, limit = 10, search = '', role = '', status = '' } = params;
+
+    const myCategories = await this.userCategoryRepo.find({
+      where: { userId: subAdminUserId },
+      select: ['categoryId'],
+    });
+
+    if (myCategories.length === 0) {
+      return { users: [], total: 0, page, limit, totalPages: 0 };
+    }
+
+    const categoryIds = myCategories.map(c => c.categoryId);
+    const qb = this.userRepo
+      .createQueryBuilder('user')
+      .innerJoin(UserCategory, 'uc', 'uc.userId = user.id')
+      .leftJoinAndSelect('user.roles', 'ur')
+      .leftJoinAndSelect('ur.role', 'role')
+      .where('uc.categoryId IN (:...categoryIds)', { categoryIds })
+      .andWhere('user.id != :subAdminUserId', { subAdminUserId })
+      .distinct(true);
+
+    if (search) {
+      qb.andWhere(
+        '(user.name ILIKE :search OR user.email ILIKE :search OR CAST(user.id AS TEXT) ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (role) {
+      qb.andWhere('role.name = :role', { role });
+    }
+
+    if (status) {
+      qb.andWhere('user.status = :status', { status });
+    }
+
+    qb.orderBy('user.createdAt', 'DESC');
+
+    const [users, total] = await qb.skip((page - 1) * limit).take(limit).getManyAndCount();
+
+    const formatted = users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.roles?.[0]?.role?.name || 'No Role',
+      status: user.status || 'active',
+      createdAt: user.createdAt,
+      updatedAt: user.createdAt,
+    }));
+
+    return {
+      users: formatted,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getUsersStatsInMyCategories(subAdminUserId: string) {
+    const myCategories = await this.userCategoryRepo.find({
+      where: { userId: subAdminUserId },
+      select: ['categoryId'],
+    });
+
+    if (myCategories.length === 0) {
+      return { totalUsers: 0, activeUsers: 0, suspendedUsers: 0 };
+    }
+
+    const categoryIds = myCategories.map(c => c.categoryId);
+
+    const baseQb = this.userRepo
+      .createQueryBuilder('user')
+      .innerJoin(UserCategory, 'uc', 'uc.userId = user.id')
+      .where('uc.categoryId IN (:...categoryIds)', { categoryIds })
+      .andWhere('user.id != :subAdminUserId', { subAdminUserId });
+
+    const totalUsers = await baseQb.getCount();
+    const activeUsers = await baseQb.clone().andWhere('user.status = :s', { s: 'active' }).getCount();
+    const suspendedUsers = await baseQb.clone().andWhere('user.status = :s', { s: 'suspended' }).getCount();
+
+    return { totalUsers, activeUsers, suspendedUsers };
+  }
+
+  async updateUserStatusBySubAdmin(subAdminUserId: string, targetUserId: string, status: string) {
+    if (!['active', 'suspended'].includes(status)) {
+      throw new BadRequestException('Invalid status');
+    }
+
+    await this.ensureUserInMyCategories(subAdminUserId, targetUserId);
+    await this.userRepo.update(targetUserId, { status: status as 'active' | 'suspended' });
+    return { success: true };
+  }
+
+  async resetUserPasswordBySubAdmin(subAdminUserId: string, targetUserId: string, newPassword?: string) {
+    await this.ensureUserInMyCategories(subAdminUserId, targetUserId);
+
+    const user = await this.userRepo.findOne({ where: { id: targetUserId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (newPassword) {
+      user.password_hash = await bcrypt.hash(newPassword, 10);
+      await this.userRepo.save(user);
+      return { success: true, message: 'Password updated successfully' };
+    }
+
+    return { success: true, message: 'Password reset email sent' };
+  }
+
+  async updateUserProfileBySubAdmin(
+    subAdminUserId: string,
+    targetUserId: string,
+    payload: { name?: string; role?: string },
+  ) {
+    await this.ensureUserInMyCategories(subAdminUserId, targetUserId);
+
+    const user = await this.userRepo.findOne({ where: { id: targetUserId }, relations: ['roles', 'roles.role'] });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (payload.name && payload.name.trim().length > 0) {
+      user.name = payload.name.trim();
+    }
+
+    if (payload.role) {
+      if (['super_admin', 'sub_admin'].includes(payload.role)) {
+        throw new ForbiddenException('Not allowed to assign this role');
+      }
+
+      const roleEntity = await this.roleRepo.findOne({ where: { name: payload.role } });
+      if (!roleEntity) {
+        throw new BadRequestException('Invalid role');
+      }
+
+      await this.userRoleRepo.delete({ userId: user.id });
+      await this.userRoleRepo.save({ userId: user.id, roleId: roleEntity.id });
+    }
+
+    await this.userRepo.save(user);
+    return { success: true };
+  }
+
+   /**
+    * Get Website research tasks for sub-admin
+    */
   async getWebsiteResearchTasks(
     userId: string,
     categoryId?: string,

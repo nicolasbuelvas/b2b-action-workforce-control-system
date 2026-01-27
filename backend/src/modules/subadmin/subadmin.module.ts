@@ -15,6 +15,8 @@ import { User } from '../users/entities/user.entity';
 import { CompanyType } from './entities/company-type.entity';
 import { JobType } from './entities/job-type.entity';
 import { DisapprovalReason } from './entities/disapproval-reason.entity';
+import { Role } from '../roles/entities/role.entity';
+import { UserRole } from '../roles/entities/user-role.entity';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { DisapprovalReason } from './entities/disapproval-reason.entity';
       Company,
       LinkedInProfile,
       User,
+      Role,
+      UserRole,
       CompanyType,
       JobType,
       DisapprovalReason,

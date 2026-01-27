@@ -72,6 +72,14 @@ export class AdminController {
     return this.adminService.updateUserStatus(id, body.status);
   }
 
+  @Patch('users/:id/profile')
+  updateUserProfile(
+    @Param('id') id: string,
+    @Body() body: { name?: string; role?: string },
+  ) {
+    return this.adminService.updateUserProfile(id, body);
+  }
+
   @Post('users/:id/reset-password')
   resetUserPassword(@Param('id') id: string, @Body() body?: { password?: string }) {
     return this.adminService.resetUserPassword(id, body?.password);

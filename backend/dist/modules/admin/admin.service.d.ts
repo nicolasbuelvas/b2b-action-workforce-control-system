@@ -107,6 +107,12 @@ export declare class AdminService {
     updateUserStatus(id: string, status: string): Promise<{
         success: boolean;
     }>;
+    updateUserProfile(id: string, payload: {
+        name?: string;
+        role?: string;
+    }): Promise<{
+        success: boolean;
+    }>;
     resetUserPassword(id: string, newPassword?: string): Promise<{
         success: boolean;
         message: string;

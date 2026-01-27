@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUsers, getUsersStats, updateUserStatus, resetUserPassword, deleteUser } from '../../api/admin.api';
+import { getUsers, getUsersStats, updateUserStatus, updateUserProfile, resetUserPassword, deleteUser } from '../../api/admin.api';
 import StatCard from '../../components/cards/StatCard';
 import './userPage.css';
 
@@ -201,18 +201,31 @@ export default function UsersPage() {
   const handleSaveEdit = async () => {
     if (!editingUser) return;
     try {
-      // Assuming we have an updateUser API, but since it's not there, perhaps update status and name separately
-      // For now, only update status, as name might need a separate API
+      const updates: { name?: string; role?: string } = {};
+      
+      if (editForm.name !== editingUser.name) {
+        updates.name = editForm.name;
+      }
+      
+      if (editForm.role !== editingUser.role) {
+        updates.role = editForm.role;
+      }
+      
+      if (Object.keys(updates).length > 0) {
+        await updateUserProfile(editingUser.id, updates);
+      }
+      
       if (editForm.status !== editingUser.status) {
         await updateUserStatus(editingUser.id, editForm.status);
       }
-      // TODO: Update name if API exists
+      
       setEditingUser(null);
       fetchUsers();
       fetchStats();
       alert('User updated successfully');
-    } catch (err) {
-      alert('Failed to update user');
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || 'Failed to update user';
+      alert(errorMsg);
     }
   };
 

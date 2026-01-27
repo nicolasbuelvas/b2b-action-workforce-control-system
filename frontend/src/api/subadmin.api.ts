@@ -61,6 +61,30 @@ export interface CreateLinkedInResearchTaskPayload {
   language?: string;
 }
 
+export interface SubAdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: 'active' | 'suspended';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubAdminUsersResponse {
+  users: SubAdminUser[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface SubAdminUserStats {
+  totalUsers: number;
+  activeUsers: number;
+  suspendedUsers: number;
+}
+
 /**
  * Fetch categories accessible to sub-admin
  */
@@ -340,6 +364,88 @@ export async function flagInquiryTask(taskId: string): Promise<any> {
     return response.data;
   } catch (error: any) {
     console.error('Failed to flag inquiry task:', error);
+    throw error;
+  }
+}
+
+// ==================== User Management APIs ====================
+
+/**
+ * Get users in subadmin's categories (paginated with filters)
+ */
+export async function getSubAdminUsers(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: string;
+  status?: string;
+}): Promise<SubAdminUsersResponse> {
+  try {
+    const response = await client.get('/subadmin/users', { params });
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to fetch subadmin users:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get user statistics for subadmin's categories
+ */
+export async function getSubAdminUserStats(): Promise<SubAdminUserStats> {
+  try {
+    const response = await client.get('/subadmin/users/stats');
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to fetch user stats:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update user status (active/suspended)
+ */
+export async function updateSubAdminUserStatus(
+  userId: string,
+  status: 'active' | 'suspended'
+): Promise<{ success: boolean }> {
+  try {
+    const response = await client.patch(`/subadmin/users/${userId}/status`, { status });
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to update user status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reset user password
+ */
+export async function resetSubAdminUserPassword(
+  userId: string,
+  password?: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const response = await client.post(`/subadmin/users/${userId}/reset-password`, { password });
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to reset user password:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update user profile (name, role)
+ */
+export async function updateSubAdminUserProfile(
+  userId: string,
+  data: { name?: string; role?: string }
+): Promise<{ success: boolean }> {
+  try {
+    const response = await client.patch(`/subadmin/users/${userId}/profile`, data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to update user profile:', error);
     throw error;
   }
 }

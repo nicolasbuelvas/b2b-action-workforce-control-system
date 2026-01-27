@@ -49,11 +49,17 @@ export class SubAdminController {
 
   /**
    * GET /subadmin/users
-   * Get users assigned to subadmin's categories
-   * Returns all users who have at least one category in common with the subadmin
+   * Get users assigned to subadmin's categories with pagination and filters
    */
   @Get('users')
-  async getUsers(@CurrentUser() user: UserPayload) {
+  async getUsers(
+    @CurrentUser() user: UserPayload,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+    @Query('status') status?: string,
+  ) {
     const userId = user?.id ?? user?.userId;
     console.log('[subadmin.controller.getUsers] user:', user, 'resolvedUserId:', userId);
 
@@ -61,10 +67,91 @@ export class SubAdminController {
       throw new Error('Invalid user payload: missing userId');
     }
 
+    // If pagination params provided, use paginated endpoint
+    if (page !== undefined || limit !== undefined) {
+      return await this.subAdminService.getUsersInMyCategoriesPaginated(userId, {
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 10,
+        search: search || '',
+        role: role || '',
+        status: status || '',
+      });
+    }
+
+    // Otherwise return simple list (legacy)
     const users = await this.subAdminService.getUsersInMyCategories(userId);
     console.log('[subadmin.controller.getUsers] returning users:', users.length);
     return users;
   }
+
+  /**
+   * GET /subadmin/users/stats
+   * Get user statistics for subadmin's categories
+   */
+  @Get('users/stats')
+  async getUsersStats(@CurrentUser() user: UserPayload) {
+    const userId = user?.id ?? user?.userId;
+    if (!userId) {
+      throw new Error('Invalid user payload: missing userId');
+    }
+
+    return await this.subAdminService.getUsersStatsInMyCategories(userId);
+  }
+
+  /**
+   * PATCH /subadmin/users/:id/status
+   * Update user status (active/suspended)
+   */
+  @Patch('users/:id/status')
+  async updateUserStatus(
+    @CurrentUser() user: UserPayload,
+    @Param('id') targetUserId: string,
+    @Body() body: { status: string },
+  ) {
+    const userId = user?.id ?? user?.userId;
+    if (!userId) {
+      throw new Error('Invalid user payload: missing userId');
+    }
+
+    return await this.subAdminService.updateUserStatusBySubAdmin(userId, targetUserId, body.status);
+  }
+
+  /**
+   * POST /subadmin/users/:id/reset-password
+   * Reset user password
+   */
+  @Post('users/:id/reset-password')
+  async resetUserPassword(
+    @CurrentUser() user: UserPayload,
+    @Param('id') targetUserId: string,
+    @Body() body?: { password?: string },
+  ) {
+    const userId = user?.id ?? user?.userId;
+    if (!userId) {
+      throw new Error('Invalid user payload: missing userId');
+    }
+
+    return await this.subAdminService.resetUserPasswordBySubAdmin(userId, targetUserId, body?.password);
+  }
+
+  /**
+   * PATCH /subadmin/users/:id/profile
+   * Update user name and role (excluding super_admin/sub_admin)
+   */
+  @Patch('users/:id/profile')
+  async updateUserProfile(
+    @CurrentUser() user: UserPayload,
+    @Param('id') targetUserId: string,
+    @Body() body: { name?: string; role?: string },
+  ) {
+    const userId = user?.id ?? user?.userId;
+    if (!userId) {
+      throw new Error('Invalid user payload: missing userId');
+    }
+
+    return await this.subAdminService.updateUserProfileBySubAdmin(userId, targetUserId, body);
+  }
+
 
   /**
    * GET /subadmin/research/website

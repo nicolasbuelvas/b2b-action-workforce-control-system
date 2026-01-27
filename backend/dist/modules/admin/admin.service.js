@@ -317,6 +317,24 @@ let AdminService = class AdminService {
         await this.userRepo.update(id, { status: status });
         return { success: true };
     }
+    async updateUserProfile(id, payload) {
+        const user = await this.userRepo.findOne({ where: { id }, relations: ['roles', 'roles.role'] });
+        if (!user)
+            throw new common_1.NotFoundException('User not found');
+        if (payload.name && payload.name.trim().length > 0) {
+            user.name = payload.name.trim();
+        }
+        if (payload.role) {
+            const roleEntity = await this.roleRepo.findOne({ where: { name: payload.role } });
+            if (!roleEntity) {
+                throw new common_1.BadRequestException('Invalid role');
+            }
+            await this.userRoleRepo.delete({ userId: user.id });
+            await this.userRoleRepo.save({ userId: user.id, roleId: roleEntity.id });
+        }
+        await this.userRepo.save(user);
+        return { success: true };
+    }
     async resetUserPassword(id, newPassword) {
         const user = await this.userRepo.findOne({ where: { id } });
         if (!user)
