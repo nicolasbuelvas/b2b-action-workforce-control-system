@@ -23,15 +23,6 @@ import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
 import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
-import {
-  LinkedInInquiryTask,
-  LinkedInInquiryStatus,
-} from '../linkedin/entities/linkedin-inquiry-task.entity';
-import {
-  LinkedInAction,
-  LinkedInActionStatus,
-} from '../linkedin/entities/linkedin-action.entity';
-import { LinkedInSubmissionSnapshot } from '../linkedin/entities/linkedin-submission-snapshot.entity';
 import { LinkedInProfile } from '../research/entities/linkedin-profile.entity';
 
 @Injectable()
@@ -349,16 +340,17 @@ export class AuditService {
     }
 
     // Fetch completed LinkedIn inquiry tasks from auditor's assigned categories
-    const taskRepo = this.inquiryTaskRepo.manager.getRepository(LinkedInInquiryTask);
-    const tasks = await taskRepo
+    // Using InquiryTask with platform = LINKEDIN filter
+    const tasks = await this.inquiryTaskRepo
       .createQueryBuilder('task')
-      .where('task.status = :status', { status: LinkedInInquiryStatus.COMPLETED })
+      .where('task.status = :status', { status: InquiryStatus.COMPLETED })
+      .andWhere('task.platform = :platform', { platform: 'LINKEDIN' })
       .andWhere('task.categoryId IN (:...categoryIds)', { categoryIds })
       .orderBy('task.createdAt', 'ASC')
       .getMany();
 
-    const snapshotRepo = this.inquiryTaskRepo.manager.getRepository(LinkedInSubmissionSnapshot);
-    const actionRepo = this.inquiryTaskRepo.manager.getRepository(LinkedInAction);
+    const actionRepo = this.inquiryTaskRepo.manager.getRepository(InquiryAction);
+    const snapshotRepo = this.inquiryTaskRepo.manager.getRepository(InquirySubmissionSnapshot);
 
     const enriched = await Promise.all(
       tasks.map(async task => {
@@ -384,6 +376,13 @@ export class AuditService {
       }),
     );
 
+    // Map action index to display names
+    const actionTypeMap = {
+      1: 'LINKEDIN_OUTREACH',
+      2: 'LINKEDIN_EMAIL_REQUEST',
+      3: 'LINKEDIN_CATALOGUE',
+    };
+
     return enriched.map(item => ({
       id: item.task.id,
       categoryId: item.task.categoryId,
@@ -395,14 +394,13 @@ export class AuditService {
       status: item.task.status,
       createdAt: item.task.createdAt,
       actions: item.actions.map(action => {
-        const snapshot = item.snapshots.find(s => s.actionId === action.id);
+        const snapshot = item.snapshots.find(s => s.inquiryActionId === action.id);
         return {
           id: action.id,
-          actionType: action.actionType,
+          actionType: actionTypeMap[action.actionIndex] || `STEP_${action.actionIndex}`,
           status: action.status,
           screenshotUrl: snapshot?.screenshotPath ? `/api/screenshots/${action.id}` : null,
           isDuplicate: snapshot?.isDuplicate || false,
-          snapshot,
         };
       }),
     }));
@@ -414,13 +412,16 @@ export class AuditService {
     dto: AuditResearchDto,
     auditorUserId: string,
   ) {
-    const taskRepo = this.inquiryTaskRepo.manager.getRepository(LinkedInInquiryTask);
-    const actionRepo = this.inquiryTaskRepo.manager.getRepository(LinkedInAction);
-    const snapshotRepo = this.inquiryTaskRepo.manager.getRepository(LinkedInSubmissionSnapshot);
+    const actionRepo = this.inquiryTaskRepo.manager.getRepository(InquiryAction);
+    const snapshotRepo = this.inquiryTaskRepo.manager.getRepository(InquirySubmissionSnapshot);
 
-    const task = await taskRepo.findOne({ where: { id: inquiryTaskId } });
+    const task = await this.inquiryTaskRepo.findOne({ where: { id: inquiryTaskId } });
     if (!task) {
-      throw new BadRequestException('LinkedIn inquiry task not found');
+      throw new BadRequestException('Inquiry task not found');
+    }
+
+    if (task.platform !== 'LINKEDIN') {
+      throw new BadRequestException('Task is not a LinkedIn inquiry task');
     }
 
     const action = await actionRepo.findOne({ where: { id: actionId } });
@@ -432,7 +433,7 @@ export class AuditService {
       throw new BadRequestException('Action does not belong to this task');
     }
 
-    const snapshot = await snapshotRepo.findOne({ where: { actionId } });
+    const snapshot = await snapshotRepo.findOne({ where: { inquiryActionId: actionId } });
     if (!snapshot) {
       throw new BadRequestException('Snapshot not found');
     }
@@ -446,7 +447,7 @@ export class AuditService {
     }
 
     action.status =
-      dto.decision === 'APPROVED' ? LinkedInActionStatus.APPROVED : LinkedInActionStatus.REJECTED;
+      dto.decision === 'APPROVED' ? 'APPROVED' : 'REJECTED';
     action.reviewedAt = new Date();
     await actionRepo.save(action);
 
@@ -455,16 +456,16 @@ export class AuditService {
       where: { inquiryTaskId },
     });
 
-    const allApproved = allActions.every(a => a.status === LinkedInActionStatus.APPROVED);
-    const anyRejected = allActions.some(a => a.status === LinkedInActionStatus.REJECTED);
+    const allApproved = allActions.every(a => a.status === 'APPROVED');
+    const anyRejected = allActions.some(a => a.status === 'REJECTED');
 
     if (allApproved) {
-      task.status = LinkedInInquiryStatus.APPROVED;
+      task.status = InquiryStatus.APPROVED;
     } else if (anyRejected) {
-      task.status = LinkedInInquiryStatus.REJECTED;
+      task.status = InquiryStatus.REJECTED;
     }
 
-    return taskRepo.save(task);
+    return this.inquiryTaskRepo.save(task);
   }
 }
 

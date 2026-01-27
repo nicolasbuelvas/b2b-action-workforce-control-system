@@ -51,6 +51,27 @@ export interface PendingInquirySubmission {
   isDuplicate: boolean;
 }
 
+export interface LinkedInInquiryAction {
+  id: string;
+  actionType: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  screenshotUrl: string | null;
+  isDuplicate: boolean;
+}
+
+export interface PendingLinkedInInquirySubmission {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  assignedToUserId: string;
+  workerName: string;
+  workerEmail: string;
+  targetId: string;
+  status: string;
+  createdAt: string;
+  actions: LinkedInInquiryAction[];
+}
+
 export interface AuditDecision {
   decision: 'APPROVED' | 'REJECTED';
   rejectionReasonId?: string;
@@ -74,6 +95,16 @@ export const auditApi = {
 
   auditInquiry: async (taskId: string, decision: AuditDecision): Promise<any> => {
     const response = await axios.post(`/audit/inquiry/${taskId}`, decision);
+    return response.data;
+  },
+
+  getPendingLinkedInInquiry: async (): Promise<PendingLinkedInInquirySubmission[]> => {
+    const response = await axios.get('/audit/linkedin-inquiry/pending');
+    return response.data;
+  },
+
+  auditLinkedInInquiry: async (taskId: string, actionId: string, decision: AuditDecision): Promise<any> => {
+    const response = await axios.post(`/audit/linkedin-inquiry/${taskId}/actions/${actionId}`, decision);
     return response.data;
   },
 };

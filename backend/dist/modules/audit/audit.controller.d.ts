@@ -52,16 +52,15 @@ export declare class AuditController {
         workerName: string;
         workerEmail: string;
         targetId: string;
-        status: import("../linkedin/entities/linkedin-inquiry-task.entity").LinkedInInquiryStatus;
+        status: import("../inquiry/entities/inquiry-task.entity").InquiryStatus;
         createdAt: Date;
         actions: {
             id: string;
-            actionType: import("../linkedin/entities/linkedin-action.entity").LinkedInActionType;
-            status: import("../linkedin/entities/linkedin-action.entity").LinkedInActionStatus;
+            actionType: any;
+            status: import("../inquiry/entities/inquiry-action.entity").InquiryActionStatus;
             screenshotUrl: string;
             isDuplicate: boolean;
-            snapshot: import("../linkedin/entities/linkedin-submission-snapshot.entity").LinkedInSubmissionSnapshot;
         }[];
     }[]>;
-    auditLinkedInInquiry(inquiryTaskId: string, actionId: string, dto: AuditResearchDto, auditorUserId: string): Promise<import("../linkedin/entities/linkedin-inquiry-task.entity").LinkedInInquiryTask>;
+    auditLinkedInInquiry(inquiryTaskId: string, actionId: string, dto: AuditResearchDto, auditorUserId: string): Promise<import("../inquiry/entities/inquiry-task.entity").InquiryTask>;
 }

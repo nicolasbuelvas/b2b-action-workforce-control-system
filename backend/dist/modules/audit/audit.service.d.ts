@@ -8,14 +8,11 @@ import { Category } from '../categories/entities/category.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
 import { Company } from '../research/entities/company.entity';
 import { User } from '../users/entities/user.entity';
-import { InquiryTask } from '../inquiry/entities/inquiry-task.entity';
+import { InquiryTask, InquiryStatus } from '../inquiry/entities/inquiry-task.entity';
 import { InquiryAction } from '../inquiry/entities/inquiry-action.entity';
 import { OutreachRecord } from '../inquiry/entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from '../inquiry/entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
-import { LinkedInInquiryTask, LinkedInInquiryStatus } from '../linkedin/entities/linkedin-inquiry-task.entity';
-import { LinkedInActionStatus } from '../linkedin/entities/linkedin-action.entity';
-import { LinkedInSubmissionSnapshot } from '../linkedin/entities/linkedin-submission-snapshot.entity';
 import { LinkedInProfile } from '../research/entities/linkedin-profile.entity';
 export declare class AuditService {
     private readonly researchRepo;
@@ -82,16 +79,15 @@ export declare class AuditService {
         workerName: string;
         workerEmail: string;
         targetId: string;
-        status: LinkedInInquiryStatus;
+        status: InquiryStatus;
         createdAt: Date;
         actions: {
             id: string;
-            actionType: import("../linkedin/entities/linkedin-action.entity").LinkedInActionType;
-            status: LinkedInActionStatus;
+            actionType: any;
+            status: import("../inquiry/entities/inquiry-action.entity").InquiryActionStatus;
             screenshotUrl: string;
             isDuplicate: boolean;
-            snapshot: LinkedInSubmissionSnapshot;
         }[];
     }[]>;
-    auditLinkedInInquiry(inquiryTaskId: string, actionId: string, dto: AuditResearchDto, auditorUserId: string): Promise<LinkedInInquiryTask>;
+    auditLinkedInInquiry(inquiryTaskId: string, actionId: string, dto: AuditResearchDto, auditorUserId: string): Promise<InquiryTask>;
 }
