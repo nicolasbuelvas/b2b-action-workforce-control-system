@@ -145,4 +145,32 @@ export declare class AdminController {
         success: boolean;
         message: string;
     }>;
+    getCompanyTypes(): Promise<import("../subadmin/entities/company-type.entity").CompanyType[]>;
+    createCompanyType(body: {
+        name: string;
+        description?: string;
+    }): Promise<import("../subadmin/entities/company-type.entity").CompanyType>;
+    updateCompanyType(id: string, body: {
+        name?: string;
+        description?: string;
+        isActive?: boolean;
+    }): Promise<import("../subadmin/entities/company-type.entity").CompanyType>;
+    deleteCompanyType(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    getJobTypes(): Promise<import("../subadmin/entities/job-type.entity").JobType[]>;
+    createJobType(body: {
+        name: string;
+        description?: string;
+    }): Promise<import("../subadmin/entities/job-type.entity").JobType>;
+    updateJobType(id: string, body: {
+        name?: string;
+        description?: string;
+        isActive?: boolean;
+    }): Promise<import("../subadmin/entities/job-type.entity").JobType>;
+    deleteJobType(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

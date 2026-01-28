@@ -19,6 +19,7 @@ import { InquirySubmissionSnapshot } from './entities/inquiry-submission-snapsho
 
 import { ScreenshotsService } from '../screenshots/screenshots.service';
 import { CooldownService } from '../cooldown/cooldown.service';
+import { DailyLimitValidationService } from '../../common/services/daily-limit-validation.service';
 
 import { SubmitInquiryDto } from './dto/submit-inquiry.dto';
 import { ResearchTask, ResearchStatus } from '../research/entities/research-task.entity';
@@ -59,6 +60,7 @@ export class InquiryService {
 
     private readonly screenshotsService: ScreenshotsService,
     private readonly cooldownService: CooldownService,
+    private readonly dailyLimitValidationService: DailyLimitValidationService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -270,6 +272,7 @@ export class InquiryService {
     dto: SubmitInquiryDto,
     screenshotBuffer: Buffer,
     userId: string,
+    roles: string[] = [],
   ) {
     console.log('[SERVICE-SUBMIT] ========== START =========');
     console.log('[SERVICE-SUBMIT] User:', userId);
@@ -339,6 +342,36 @@ export class InquiryService {
           throw new BadRequestException('There is already a pending action');
         }
       }
+
+        // Enforce daily limits + last contact cooldown
+        const actionType = task.platform === InquiryPlatform.LINKEDIN ? 'LinkedIn Inquiry' : 'Website Inquiry';
+        const role = this.resolveUserRole(roles, 'inquirer');
+        let targetIdentifier = task.targetId;
+
+        const researchTaskForTarget = await manager.getRepository(ResearchTask).findOne({
+          where: { targetId: task.targetId, categoryId: task.categoryId },
+        });
+
+        if (researchTaskForTarget?.targetType === 'COMPANY') {
+          const company = await manager.getRepository(Company).findOne({
+            where: { id: researchTaskForTarget.targetId },
+          });
+          if (company) {
+            targetIdentifier = company.normalizedDomain || company.domain;
+          }
+        }
+
+        const validation = await this.dailyLimitValidationService.validateTaskSubmission(
+          userId,
+          task.categoryId,
+          role,
+          actionType,
+          targetIdentifier,
+        );
+
+        if (!validation.allowed) {
+          throw new BadRequestException(validation.reason || 'Daily limit validation failed');
+        }
 
       // Enforce cooldown for website flow; skip for LinkedIn 3-step so user can finish all steps consecutively
       if (task.platform !== InquiryPlatform.LINKEDIN) {
@@ -518,6 +551,13 @@ export class InquiryService {
       }
       
       await manager.getRepository(InquiryTask).save(task);
+
+      await this.dailyLimitValidationService.recordContact(
+        targetIdentifier,
+        task.categoryId,
+        userId,
+        'inquiry',
+      );
       console.log('[SERVICE-SUBMIT] Task status updated:', task.status);
 
       console.log('[SERVICE-SUBMIT] Transaction completed successfully');
@@ -532,5 +572,13 @@ export class InquiryService {
     console.log('[SERVICE-SUBMIT] ========== SUCCESS =========');
 
     return result;
+  }
+
+  private resolveUserRole(roles: string[], type: 'researcher' | 'inquirer' | 'auditor'): string {
+    if (!roles || roles.length === 0) {
+      return type === 'researcher' ? 'Researcher' : type === 'inquirer' ? 'Inquirer' : 'Auditor';
+    }
+    const match = roles.find(r => r.toLowerCase().includes(type));
+    return match || roles[0];
   }
 }

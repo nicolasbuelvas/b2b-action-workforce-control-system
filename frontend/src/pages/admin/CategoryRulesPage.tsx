@@ -42,6 +42,12 @@ export default function CategoryRulesPage() {
   const [selectedRules, setSelectedRules] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRule, setEditingRule] = useState<CategoryRule | null>(null);
+  
+  // New filter states
+  const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterRole, setFilterRole] = useState<string>('');
+  const [filterActionType, setFilterActionType] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -119,11 +125,24 @@ export default function CategoryRulesPage() {
     );
   };
 
-  const filteredRules = rules.filter(rule =>
-    rule.category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rule.actionType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rule.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Enhanced filtering logic with dropdown filters
+  const filteredRules = rules.filter(rule => {
+    const matchesSearch = 
+      rule.category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rule.actionType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rule.role.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = !filterCategory || rule.categoryId === filterCategory;
+    const matchesRole = !filterRole || rule.role === filterRole;
+    const matchesActionType = !filterActionType || rule.actionType === filterActionType;
+    const matchesStatus = !filterStatus || rule.status === filterStatus;
+
+    return matchesSearch && matchesCategory && matchesRole && matchesActionType && matchesStatus;
+  });
+
+  // Get unique values for dropdown filters
+  const uniqueRoles = Array.from(new Set(rules.map(r => r.role)));
+  const uniqueActionTypes = Array.from(new Set(rules.map(r => r.actionType)));
 
   const activeRules = rules.filter(r => r.status === 'active').length;
 
@@ -171,7 +190,44 @@ export default function CategoryRulesPage() {
             />
           </div>
           <div className="filter-group">
-            <select className="select-input">
+            <select 
+              className="select-input"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+            >
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+            
+            <select 
+              className="select-input"
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+            >
+              <option value="">All Roles</option>
+              {uniqueRoles.map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+            
+            <select 
+              className="select-input"
+              value={filterActionType}
+              onChange={(e) => setFilterActionType(e.target.value)}
+            >
+              <option value="">All Action Types</option>
+              {uniqueActionTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+            
+            <select 
+              className="select-input"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
               <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>

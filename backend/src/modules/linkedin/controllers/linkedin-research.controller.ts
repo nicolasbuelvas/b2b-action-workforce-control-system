@@ -39,7 +39,8 @@ export class LinkedInResearchController {
     @Param('taskId') taskId: string,
     @CurrentUser('userId') userId: string,
     @Body() dto: CreateLinkedInResearchDto,
+    @CurrentUser('roles') roles: string[],
   ) {
-    return this.linkedInResearchService.submitResearch(taskId, userId, dto);
+    return this.linkedInResearchService.submitResearch(taskId, userId, dto, roles);
   }
 }

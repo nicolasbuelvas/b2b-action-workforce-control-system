@@ -22,13 +22,14 @@ const outreach_record_entity_1 = require("./entities/outreach-record.entity");
 const inquiry_submission_snapshot_entity_1 = require("./entities/inquiry-submission-snapshot.entity");
 const screenshots_service_1 = require("../screenshots/screenshots.service");
 const cooldown_service_1 = require("../cooldown/cooldown.service");
+const daily_limit_validation_service_1 = require("../../common/services/daily-limit-validation.service");
 const research_task_entity_1 = require("../research/entities/research-task.entity");
 const research_submission_entity_1 = require("../research/entities/research-submission.entity");
 const company_entity_1 = require("../research/entities/company.entity");
 const category_entity_1 = require("../categories/entities/category.entity");
 const user_category_entity_1 = require("../categories/entities/user-category.entity");
 let InquiryService = class InquiryService {
-    constructor(actionRepo, taskRepo, outreachRepo, snapshotRepo, researchRepo, submissionRepo, companyRepo, categoryRepo, userCategoryRepo, screenshotsService, cooldownService, dataSource) {
+    constructor(actionRepo, taskRepo, outreachRepo, snapshotRepo, researchRepo, submissionRepo, companyRepo, categoryRepo, userCategoryRepo, screenshotsService, cooldownService, dailyLimitValidationService, dataSource) {
         this.actionRepo = actionRepo;
         this.taskRepo = taskRepo;
         this.outreachRepo = outreachRepo;
@@ -40,6 +41,7 @@ let InquiryService = class InquiryService {
         this.userCategoryRepo = userCategoryRepo;
         this.screenshotsService = screenshotsService;
         this.cooldownService = cooldownService;
+        this.dailyLimitValidationService = dailyLimitValidationService;
         this.dataSource = dataSource;
     }
     async getAvailableTasks(userId, type) {
@@ -187,7 +189,7 @@ let InquiryService = class InquiryService {
         task.status = inquiry_task_entity_1.InquiryStatus.IN_PROGRESS;
         return this.taskRepo.save(task);
     }
-    async submitInquiry(dto, screenshotBuffer, userId) {
+    async submitInquiry(dto, screenshotBuffer, userId, roles = []) {
         console.log('[SERVICE-SUBMIT] ========== START =========');
         console.log('[SERVICE-SUBMIT] User:', userId);
         console.log('[SERVICE-SUBMIT] Task:', dto.inquiryTaskId);
@@ -237,6 +239,24 @@ let InquiryService = class InquiryService {
                     console.error('[SERVICE-SUBMIT] ERROR: Pending action exists');
                     throw new common_1.BadRequestException('There is already a pending action');
                 }
+            }
+            const actionType = task.platform === inquiry_task_entity_1.InquiryPlatform.LINKEDIN ? 'LinkedIn Inquiry' : 'Website Inquiry';
+            const role = this.resolveUserRole(roles, 'inquirer');
+            let targetIdentifier = task.targetId;
+            const researchTaskForTarget = await manager.getRepository(research_task_entity_1.ResearchTask).findOne({
+                where: { targetId: task.targetId, categoryId: task.categoryId },
+            });
+            if (researchTaskForTarget?.targetType === 'COMPANY') {
+                const company = await manager.getRepository(company_entity_1.Company).findOne({
+                    where: { id: researchTaskForTarget.targetId },
+                });
+                if (company) {
+                    targetIdentifier = company.normalizedDomain || company.domain;
+                }
+            }
+            const validation = await this.dailyLimitValidationService.validateTaskSubmission(userId, task.categoryId, role, actionType, targetIdentifier);
+            if (!validation.allowed) {
+                throw new common_1.BadRequestException(validation.reason || 'Daily limit validation failed');
             }
             if (task.platform !== inquiry_task_entity_1.InquiryPlatform.LINKEDIN) {
                 console.log('[SERVICE-SUBMIT] Enforcing cooldown...');
@@ -380,6 +400,7 @@ let InquiryService = class InquiryService {
                 console.log('[SERVICE-SUBMIT] Task remains IN_PROGRESS (waiting for more steps)...');
             }
             await manager.getRepository(inquiry_task_entity_1.InquiryTask).save(task);
+            await this.dailyLimitValidationService.recordContact(targetIdentifier, task.categoryId, userId, 'inquiry');
             console.log('[SERVICE-SUBMIT] Task status updated:', task.status);
             console.log('[SERVICE-SUBMIT] Transaction completed successfully');
             return {
@@ -389,6 +410,13 @@ let InquiryService = class InquiryService {
         });
         console.log('[SERVICE-SUBMIT] ========== SUCCESS =========');
         return result;
+    }
+    resolveUserRole(roles, type) {
+        if (!roles || roles.length === 0) {
+            return type === 'researcher' ? 'Researcher' : type === 'inquirer' ? 'Inquirer' : 'Auditor';
+        }
+        const match = roles.find(r => r.toLowerCase().includes(type));
+        return match || roles[0];
     }
 };
 exports.InquiryService = InquiryService;
@@ -414,6 +442,7 @@ exports.InquiryService = InquiryService = __decorate([
         typeorm_2.Repository,
         screenshots_service_1.ScreenshotsService,
         cooldown_service_1.CooldownService,
+        daily_limit_validation_service_1.DailyLimitValidationService,
         typeorm_2.DataSource])
 ], InquiryService);
 //# sourceMappingURL=inquiry.service.js.map

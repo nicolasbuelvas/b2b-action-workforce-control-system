@@ -94,6 +94,30 @@ let AdminController = class AdminController {
     deleteDisapprovalReason(id) {
         return this.adminService.deleteDisapprovalReason(id);
     }
+    getCompanyTypes() {
+        return this.adminService.getCompanyTypes();
+    }
+    createCompanyType(body) {
+        return this.adminService.createCompanyType(body);
+    }
+    updateCompanyType(id, body) {
+        return this.adminService.updateCompanyType(id, body);
+    }
+    deleteCompanyType(id) {
+        return this.adminService.deleteCompanyType(id);
+    }
+    getJobTypes() {
+        return this.adminService.getJobTypes();
+    }
+    createJobType(body) {
+        return this.adminService.createJobType(body);
+    }
+    updateJobType(id, body) {
+        return this.adminService.updateJobType(id, body);
+    }
+    deleteJobType(id) {
+        return this.adminService.deleteJobType(id);
+    }
 };
 exports.AdminController = AdminController;
 __decorate([
@@ -235,6 +259,62 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], AdminController.prototype, "deleteDisapprovalReason", null);
+__decorate([
+    (0, common_1.Get)('company-types'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getCompanyTypes", null);
+__decorate([
+    (0, common_1.Post)('company-types'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "createCompanyType", null);
+__decorate([
+    (0, common_1.Patch)('company-types/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateCompanyType", null);
+__decorate([
+    (0, common_1.Delete)('company-types/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteCompanyType", null);
+__decorate([
+    (0, common_1.Get)('job-types'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "getJobTypes", null);
+__decorate([
+    (0, common_1.Post)('job-types'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "createJobType", null);
+__decorate([
+    (0, common_1.Patch)('job-types/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "updateJobType", null);
+__decorate([
+    (0, common_1.Delete)('job-types/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AdminController.prototype, "deleteJobType", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('super_admin'),

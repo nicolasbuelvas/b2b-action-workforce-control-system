@@ -9,6 +9,8 @@ import { Category } from '../categories/entities/category.entity';
 import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
 import { DisapprovalReason } from '../subadmin/entities/disapproval-reason.entity';
+import { CompanyType } from '../subadmin/entities/company-type.entity';
+import { JobType } from '../subadmin/entities/job-type.entity';
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
 import { RemoveUserFromCategoryDto } from './dto/remove-user-category.dto';
@@ -23,7 +25,9 @@ export declare class AdminService {
     private readonly subAdminCategoryRepo;
     private readonly userCategoryRepo;
     private readonly disapprovalReasonRepo;
-    constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>, inquiryActionRepo: Repository<InquiryAction>, researchTaskRepo: Repository<ResearchTask>, researchAuditRepo: Repository<ResearchAudit>, categoryRepo: Repository<Category>, subAdminCategoryRepo: Repository<SubAdminCategory>, userCategoryRepo: Repository<UserCategory>, disapprovalReasonRepo: Repository<DisapprovalReason>);
+    private readonly companyTypeRepo;
+    private readonly jobTypeRepo;
+    constructor(userRepo: Repository<User>, roleRepo: Repository<Role>, userRoleRepo: Repository<UserRole>, inquiryActionRepo: Repository<InquiryAction>, researchTaskRepo: Repository<ResearchTask>, researchAuditRepo: Repository<ResearchAudit>, categoryRepo: Repository<Category>, subAdminCategoryRepo: Repository<SubAdminCategory>, userCategoryRepo: Repository<UserCategory>, disapprovalReasonRepo: Repository<DisapprovalReason>, companyTypeRepo: Repository<CompanyType>, jobTypeRepo: Repository<JobType>);
     getDashboard(): Promise<{
         totalUsers: number;
         totalResearchers: number;
@@ -169,6 +173,34 @@ export declare class AdminService {
         isActive?: boolean;
     }): Promise<DisapprovalReason>;
     deleteDisapprovalReason(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    getCompanyTypes(): Promise<CompanyType[]>;
+    createCompanyType(data: {
+        name: string;
+        description?: string;
+    }): Promise<CompanyType>;
+    updateCompanyType(id: string, data: {
+        name?: string;
+        description?: string;
+        isActive?: boolean;
+    }): Promise<CompanyType>;
+    deleteCompanyType(id: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    getJobTypes(): Promise<JobType[]>;
+    createJobType(data: {
+        name: string;
+        description?: string;
+    }): Promise<JobType>;
+    updateJobType(id: string, data: {
+        name?: string;
+        description?: string;
+        isActive?: boolean;
+    }): Promise<JobType>;
+    deleteJobType(id: string): Promise<{
         success: boolean;
         message: string;
     }>;

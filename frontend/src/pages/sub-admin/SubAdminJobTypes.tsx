@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { client } from '../../api/client';
+import axios from '../../api/axios';
 import './SubAdminCRUD.css';
 
 interface JobType {
@@ -26,7 +26,7 @@ export default function SubAdminJobTypes(): JSX.Element {
   const loadJobTypes = async () => {
     try {
       setLoading(true);
-      const response = await client.get('/subadmin/job-types');
+      const response = await axios.get('/subadmin/job-types');
       setJobTypes(response.data || []);
       setError(null);
     } catch (err: any) {
@@ -52,9 +52,9 @@ export default function SubAdminJobTypes(): JSX.Element {
     e.preventDefault();
     try {
       if (editingItem) {
-        await client.patch(`/subadmin/job-types/${editingItem.id}`, formData);
+        await axios.patch(`/subadmin/job-types/${editingItem.id}`, formData);
       } else {
-        await client.post('/subadmin/job-types', formData);
+        await axios.post('/subadmin/job-types', formData);
       }
       setShowModal(false);
       loadJobTypes();
@@ -65,10 +65,23 @@ export default function SubAdminJobTypes(): JSX.Element {
 
   const handleToggleActive = async (item: JobType) => {
     try {
-      await client.patch(`/subadmin/job-types/${item.id}`, { isActive: !item.isActive });
+      await axios.patch(`/subadmin/job-types/${item.id}`, { isActive: !item.isActive });
       loadJobTypes();
     } catch (err: any) {
       alert('Failed to update status');
+    }
+  };
+
+  const handleDelete = async (item: JobType) => {
+    if (!window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/subadmin/job-types/${item.id}`);
+      loadJobTypes();
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete job type');
     }
   };
 
@@ -118,6 +131,9 @@ export default function SubAdminJobTypes(): JSX.Element {
                         </button>
                         <button className="btn-sm btn-outline" onClick={() => handleToggleActive(item)}>
                           {item.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button className="btn-sm btn-danger" onClick={() => handleDelete(item)}>
+                          Delete
                         </button>
                       </div>
                     </td>

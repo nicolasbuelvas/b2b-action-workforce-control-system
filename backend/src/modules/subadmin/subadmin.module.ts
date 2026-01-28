@@ -17,6 +17,7 @@ import { JobType } from './entities/job-type.entity';
 import { DisapprovalReason } from './entities/disapproval-reason.entity';
 import { Role } from '../roles/entities/role.entity';
 import { UserRole } from '../roles/entities/user-role.entity';
+import { CategoryRule } from '../category-rules/entities/category-rule.entity';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { UserRole } from '../roles/entities/user-role.entity';
       CompanyType,
       JobType,
       DisapprovalReason,
+      CategoryRule,
     ]),
   ],
   providers: [SubAdminService],

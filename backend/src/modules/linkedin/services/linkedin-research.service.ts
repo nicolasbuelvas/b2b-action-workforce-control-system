@@ -7,6 +7,7 @@ import {
 } from '../entities/linkedin-research-task.entity';
 import { LinkedInResearchSubmission } from '../entities/linkedin-research-submission.entity';
 import { CreateLinkedInResearchDto } from '../dto/create-linkedin-research.dto';
+import { DailyLimitValidationService } from '../../../common/services/daily-limit-validation.service';
 
 @Injectable()
 export class LinkedInResearchService {
@@ -16,6 +17,7 @@ export class LinkedInResearchService {
 
     @InjectRepository(LinkedInResearchSubmission)
     private readonly submissionRepo: Repository<LinkedInResearchSubmission>,
+    private readonly dailyLimitValidationService: DailyLimitValidationService,
   ) {}
 
   async getWebsiteTasks(userId: string): Promise<LinkedInResearchTask[]> {
@@ -54,6 +56,7 @@ export class LinkedInResearchService {
     taskId: string,
     userId: string,
     dto: CreateLinkedInResearchDto,
+    roles: string[] = [],
   ): Promise<LinkedInResearchSubmission> {
     // Validate input
     if (!dto.contactName || !dto.contactName.trim()) {
@@ -87,6 +90,21 @@ export class LinkedInResearchService {
       throw new BadRequestException('Task is not in progress');
     }
 
+    const role = this.resolveUserRole(roles, 'researcher');
+    const targetIdentifier = dto.linkedinProfileUrl.trim();
+
+    const validation = await this.dailyLimitValidationService.validateTaskSubmission(
+      userId,
+      task.categoryId,
+      role,
+      'LinkedIn Research',
+      targetIdentifier,
+    );
+
+    if (!validation.allowed) {
+      throw new BadRequestException(validation.reason || 'Daily limit validation failed');
+    }
+
     // Create submission
     const submission = this.submissionRepo.create({
       researchTaskId: taskId,
@@ -103,6 +121,21 @@ export class LinkedInResearchService {
     task.status = LinkedInResearchStatus.SUBMITTED;
     await this.taskRepo.save(task);
 
+    await this.dailyLimitValidationService.recordContact(
+      targetIdentifier,
+      task.categoryId,
+      userId,
+      'research',
+    );
+
     return submission;
+  }
+
+  private resolveUserRole(roles: string[], type: 'researcher' | 'inquirer' | 'auditor'): string {
+    if (!roles || roles.length === 0) {
+      return type === 'researcher' ? 'Researcher' : type === 'inquirer' ? 'Inquirer' : 'Auditor';
+    }
+    const match = roles.find(r => r.toLowerCase().includes(type));
+    return match || roles[0];
   }
 }

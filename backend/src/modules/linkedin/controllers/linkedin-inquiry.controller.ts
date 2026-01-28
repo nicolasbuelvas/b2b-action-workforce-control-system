@@ -43,6 +43,7 @@ export class LinkedInInquiryController {
   async submitOutreach(
     @Param('taskId') taskId: string,
     @CurrentUser('userId') userId: string,
+    @CurrentUser('roles') roles: string[],
     @UploadedFile() file: any,
     @Body() dto: SubmitLinkedInActionDto,
   ) {
@@ -52,6 +53,7 @@ export class LinkedInInquiryController {
       LinkedInActionType.OUTREACH,
       userId,
       dtoWithFile,
+      roles,
     );
   }
 
@@ -61,6 +63,7 @@ export class LinkedInInquiryController {
   async submitAskForEmail(
     @Param('taskId') taskId: string,
     @CurrentUser('userId') userId: string,
+    @CurrentUser('roles') roles: string[],
     @UploadedFile() file: any,
     @Body() dto: SubmitLinkedInActionDto,
   ) {
@@ -70,6 +73,7 @@ export class LinkedInInquiryController {
       LinkedInActionType.ASK_FOR_EMAIL,
       userId,
       dtoWithFile,
+      roles,
     );
   }
 
@@ -79,6 +83,7 @@ export class LinkedInInquiryController {
   async submitSendCatalogue(
     @Param('taskId') taskId: string,
     @CurrentUser('userId') userId: string,
+    @CurrentUser('roles') roles: string[],
     @UploadedFile() file: any,
     @Body() dto: SubmitLinkedInActionDto,
   ) {
@@ -88,6 +93,7 @@ export class LinkedInInquiryController {
       LinkedInActionType.SEND_CATALOGUE,
       userId,
       dtoWithFile,
+      roles,
     );
   }
 }

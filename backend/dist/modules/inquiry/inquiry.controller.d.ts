@@ -8,7 +8,7 @@ export declare class InquiryController {
         inquiryTaskId?: string;
         researchTaskId?: string;
     }, userId: string): Promise<import("./entities/inquiry-task.entity").InquiryTask>;
-    submitInquiry(body: any, file: any, userId: string): Promise<{
+    submitInquiry(body: any, file: any, userId: string, roles: string[]): Promise<{
         action: {
             inquiryTaskId: string;
             actionIndex: number;

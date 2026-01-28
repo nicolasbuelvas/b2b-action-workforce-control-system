@@ -13,6 +13,7 @@ import {
 import { LinkedInSubmissionSnapshot } from '../entities/linkedin-submission-snapshot.entity';
 import { LinkedInResearchSubmission } from '../entities/linkedin-research-submission.entity';
 import { ScreenshotsService } from '../../screenshots/screenshots.service';
+import { DailyLimitValidationService } from '../../../common/services/daily-limit-validation.service';
 import { SubmitLinkedInActionDto } from '../dto/submit-linkedin-action.dto';
 
 @Injectable()
@@ -31,6 +32,7 @@ export class LinkedInInquiryService {
     private readonly researchSubmissionRepo: Repository<LinkedInResearchSubmission>,
 
     private readonly screenshotsService: ScreenshotsService,
+    private readonly dailyLimitValidationService: DailyLimitValidationService,
   ) {}
 
   async getLinkedInTasks(userId: string): Promise<LinkedInInquiryTask[]> {
@@ -95,6 +97,7 @@ export class LinkedInInquiryService {
     actionType: LinkedInActionType,
     userId: string,
     dto: SubmitLinkedInActionDto,
+    roles: string[] = [],
   ): Promise<any> {
     // Verify task exists and is assigned to user
     const task = await this.taskRepo.findOne({ where: { id: taskId } });
@@ -114,6 +117,21 @@ export class LinkedInInquiryService {
 
     if (!researchSubmission) {
       throw new BadRequestException('Research submission not found');
+    }
+
+    const role = this.resolveUserRole(roles, 'inquirer');
+    const targetIdentifier = researchSubmission.linkedinProfileUrl;
+
+    const validation = await this.dailyLimitValidationService.validateTaskSubmission(
+      userId,
+      task.categoryId,
+      role,
+      'LinkedIn Inquiry',
+      targetIdentifier,
+    );
+
+    if (!validation.allowed) {
+      throw new BadRequestException(validation.reason || 'Daily limit validation failed');
     }
 
     // Enforce strict action ordering
@@ -198,11 +216,26 @@ export class LinkedInInquiryService {
       await this.taskRepo.save(task);
     }
 
+    await this.dailyLimitValidationService.recordContact(
+      targetIdentifier,
+      task.categoryId,
+      userId,
+      'inquiry',
+    );
+
     return {
       actionId: action.id,
       snapshot: snapshot,
       isDuplicate: screenshotResult.isDuplicate,
     };
+  }
+
+  private resolveUserRole(roles: string[], type: 'researcher' | 'inquirer' | 'auditor'): string {
+    if (!roles || roles.length === 0) {
+      return type === 'researcher' ? 'Researcher' : type === 'inquirer' ? 'Inquirer' : 'Auditor';
+    }
+    const match = roles.find(r => r.toLowerCase().includes(type));
+    return match || roles[0];
   }
 
   private async enforceActionOrdering(

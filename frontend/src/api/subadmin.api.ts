@@ -465,3 +465,59 @@ export async function createInquiryTasks(
     return createLinkedInInquiryTasks(categoryId, items);
   }
 }
+// ===============================
+// CATEGORY RULES (Daily Limits)
+// ===============================
+
+export interface CategoryRule {
+  id: string;
+  categoryId: string;
+  category: {
+    id: string;
+    name: string;
+  };
+  actionType: string;
+  role: string;
+  dailyLimitOverride: number | null;
+  cooldownDaysOverride: number | null;
+  requiredActions: number;
+  screenshotRequired: boolean;
+  status: 'active' | 'inactive';
+  priority: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Get category rules for SubAdmin's assigned categories only
+ */
+export async function getSubAdminCategoryRules(): Promise<CategoryRule[]> {
+  const response = await client.get('/subadmin/category-rules');
+  return response.data;
+}
+
+/**
+ * Update daily limit for a category rule
+ */
+export async function updateCategoryRuleDailyLimit(
+  ruleId: string,
+  dailyLimitOverride: number | null
+): Promise<CategoryRule> {
+  const response = await client.patch(`/subadmin/category-rules/${ruleId}/daily-limit`, {
+    dailyLimitOverride,
+  });
+  return response.data;
+}
+
+/**
+ * Update cooldown days for a category rule
+ */
+export async function updateCategoryRuleCooldown(
+  ruleId: string,
+  cooldownDaysOverride: number | null
+): Promise<CategoryRule> {
+  const response = await client.patch(`/subadmin/category-rules/${ruleId}/cooldown`, {
+    cooldownDaysOverride,
+  });
+  return response.data;
+}

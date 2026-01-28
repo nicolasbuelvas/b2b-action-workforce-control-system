@@ -750,6 +750,18 @@ export class SubAdminController {
   }
 
   /**
+   * DELETE /subadmin/company-types/:id
+   * Delete company type
+   */
+  @Delete('company-types/:id')
+  async deleteCompanyType(
+    @CurrentUser() user: UserPayload,
+    @Param('id') id: string,
+  ) {
+    return await this.subAdminService.deleteCompanyType(id);
+  }
+
+  /**
    * GET /subadmin/job-types
    * Get all job types
    */
@@ -784,6 +796,18 @@ export class SubAdminController {
   }
 
   /**
+   * DELETE /subadmin/job-types/:id
+   * Delete job type
+   */
+  @Delete('job-types/:id')
+  async deleteJobType(
+    @CurrentUser() user: UserPayload,
+    @Param('id') id: string,
+  ) {
+    return await this.subAdminService.deleteJobType(id);
+  }
+
+  /**
    * GET /subadmin/country-stats
    * Get country statistics
    */
@@ -793,5 +817,67 @@ export class SubAdminController {
     @Query('period') period = 'last7',
   ) {
     return [];
+  }
+
+  // ===============================
+  // CATEGORY RULES (Daily Limits)
+  // ===============================
+
+  /**
+   * GET /subadmin/category-rules
+   * Get all category rules for sub-admin's categories
+   */
+  @Get('category-rules')
+  async getCategoryRules(@CurrentUser() user: UserPayload) {
+    const userId = user?.id ?? user?.userId;
+    if (!userId) {
+      throw new Error('Invalid user payload: missing userId');
+    }
+
+    return await this.subAdminService.getCategoryRulesForSubAdmin(userId);
+  }
+
+  /**
+   * PATCH /subadmin/category-rules/:id/daily-limit
+   * Update daily limit for a category rule
+   */
+  @Patch('category-rules/:id/daily-limit')
+  async updateDailyLimit(
+    @CurrentUser() user: UserPayload,
+    @Param('id') id: string,
+    @Body() body: { dailyLimitOverride: number | null },
+  ) {
+    const userId = user?.id ?? user?.userId;
+    if (!userId) {
+      throw new Error('Invalid user payload: missing userId');
+    }
+
+    return await this.subAdminService.updateCategoryRuleDailyLimit(
+      userId,
+      id,
+      body.dailyLimitOverride,
+    );
+  }
+
+  /**
+   * PATCH /subadmin/category-rules/:id/cooldown
+   * Update cooldown days for a category rule
+   */
+  @Patch('category-rules/:id/cooldown')
+  async updateCooldown(
+    @CurrentUser() user: UserPayload,
+    @Param('id') id: string,
+    @Body() body: { cooldownDaysOverride: number | null },
+  ) {
+    const userId = user?.id ?? user?.userId;
+    if (!userId) {
+      throw new Error('Invalid user payload: missing userId');
+    }
+
+    return await this.subAdminService.updateCategoryRuleCooldown(
+      userId,
+      id,
+      body.cooldownDaysOverride,
+    );
   }
 }

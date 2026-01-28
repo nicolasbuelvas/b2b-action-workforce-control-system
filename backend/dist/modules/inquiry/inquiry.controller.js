@@ -37,7 +37,7 @@ let InquiryController = class InquiryController {
         }
         return this.inquiryService.takeInquiry(researchTaskId, userId);
     }
-    async submitInquiry(body, file, userId) {
+    async submitInquiry(body, file, userId, roles) {
         try {
             console.log('[INQUIRY-SUBMIT] ========== REQUEST START =========');
             console.log('[INQUIRY-SUBMIT] UserId:', userId);
@@ -79,7 +79,7 @@ let InquiryController = class InquiryController {
                 actionType: body.actionType,
             };
             console.log('[INQUIRY-SUBMIT] DTO constructed:', dto);
-            const result = await this.inquiryService.submitInquiry(dto, file.buffer, userId);
+            const result = await this.inquiryService.submitInquiry(dto, file.buffer, userId, roles);
             console.log('[INQUIRY-SUBMIT] ========== REQUEST SUCCESS =========');
             return result;
         }
@@ -122,8 +122,9 @@ __decorate([
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.UploadedFile)()),
     __param(2, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __param(3, (0, current_user_decorator_1.CurrentUser)('roles')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, String]),
+    __metadata("design:paramtypes", [Object, Object, String, Array]),
     __metadata("design:returntype", Promise)
 ], InquiryController.prototype, "submitInquiry", null);
 exports.InquiryController = InquiryController = __decorate([

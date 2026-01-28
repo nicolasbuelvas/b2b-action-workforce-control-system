@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { client } from '../../api/client';
+import axios from '../../api/axios';
 import './SubAdminCRUD.css';
 
 interface CompanyType {
@@ -26,7 +26,7 @@ export default function SubAdminCompanyTypes(): JSX.Element {
   const loadCompanyTypes = async () => {
     try {
       setLoading(true);
-      const response = await client.get('/subadmin/company-types');
+      const response = await axios.get('/subadmin/company-types');
       setCompanyTypes(response.data || []);
       setError(null);
     } catch (err: any) {
@@ -52,9 +52,9 @@ export default function SubAdminCompanyTypes(): JSX.Element {
     e.preventDefault();
     try {
       if (editingItem) {
-        await client.patch(`/subadmin/company-types/${editingItem.id}`, formData);
+        await axios.patch(`/subadmin/company-types/${editingItem.id}`, formData);
       } else {
-        await client.post('/subadmin/company-types', formData);
+        await axios.post('/subadmin/company-types', formData);
       }
       setShowModal(false);
       loadCompanyTypes();
@@ -65,10 +65,23 @@ export default function SubAdminCompanyTypes(): JSX.Element {
 
   const handleToggleActive = async (item: CompanyType) => {
     try {
-      await client.patch(`/subadmin/company-types/${item.id}`, { isActive: !item.isActive });
+      await axios.patch(`/subadmin/company-types/${item.id}`, { isActive: !item.isActive });
       loadCompanyTypes();
     } catch (err: any) {
       alert('Failed to update status');
+    }
+  };
+
+  const handleDelete = async (item: CompanyType) => {
+    if (!window.confirm(`Are you sure you want to delete "${item.name}"?`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/subadmin/company-types/${item.id}`);
+      loadCompanyTypes();
+    } catch (err: any) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete company type');
     }
   };
 
@@ -118,6 +131,9 @@ export default function SubAdminCompanyTypes(): JSX.Element {
                         </button>
                         <button className="btn-sm btn-outline" onClick={() => handleToggleActive(item)}>
                           {item.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button className="btn-sm btn-danger" onClick={() => handleDelete(item)}>
+                          Delete
                         </button>
                       </div>
                     </td>

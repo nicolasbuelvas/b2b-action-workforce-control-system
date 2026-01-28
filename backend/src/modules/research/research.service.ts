@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, IsNull, In } from 'typeorm';
 
 import { normalizeDomain } from '../../common/utils/normalization.util';
+import { DailyLimitValidationService } from '../../common/services/daily-limit-validation.service';
 import { Company } from './entities/company.entity';
 import {
   ResearchTask,
@@ -24,6 +25,8 @@ import { LinkedInProfile } from './entities/linkedin-profile.entity';
 export class ResearchService {
   constructor(
     private readonly dataSource: DataSource,
+
+    private readonly dailyLimitValidationService: DailyLimitValidationService,
 
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
@@ -199,7 +202,7 @@ export class ResearchService {
     });
   }
 
-  async submitTaskData(dto: SubmitResearchDto, userId: string) {
+  async submitTaskData(dto: SubmitResearchDto, userId: string, roles: string[] = []) {
     console.log('[submitTaskData] START - dto:', JSON.stringify(dto), 'userId:', userId);
     console.log('[submitTaskData] userId TYPE:', typeof userId, 'VALUE:', JSON.stringify(userId));
     
@@ -247,6 +250,35 @@ export class ResearchService {
         if (dto.language && !dto.language.trim()) {
           throw new BadRequestException('Language is required');
         }
+      }
+
+      // Enforce daily limits + last contact cooldown
+      const actionType = task.targetType === 'COMPANY' ? 'Website Research' : 'LinkedIn Research';
+      const role = this.resolveUserRole(roles, 'researcher');
+      let targetIdentifier = task.targetId;
+
+      if (task.targetType === 'COMPANY') {
+        const company = await manager.findOne(Company, { where: { id: task.targetId } });
+        if (company) {
+          targetIdentifier = company.normalizedDomain || company.domain;
+        }
+      } else if (task.targetId) {
+        const profile = await manager.findOne(LinkedInProfile, { where: { id: task.targetId } });
+        if (profile) {
+          targetIdentifier = profile.normalizedUrl || profile.url;
+        }
+      }
+
+      const validation = await this.dailyLimitValidationService.validateTaskSubmission(
+        userId,
+        task.categoryId,
+        role,
+        actionType,
+        targetIdentifier,
+      );
+
+      if (!validation.allowed) {
+        throw new BadRequestException(validation.reason || 'Daily limit validation failed');
       }
 
       // Create submission record
@@ -298,12 +330,25 @@ export class ResearchService {
       task.status = ResearchStatus.SUBMITTED;
       await manager.save(ResearchTask, task);
 
+      await this.dailyLimitValidationService.recordContact(
+        targetIdentifier,
+        task.categoryId,
+        userId,
+        'research',
+      );
+
       return {
         taskId: task.id,
         submissionId: submission.id,
         message: 'Research submitted successfully and awaiting audit',
       };
     });
+  }
+
+  private resolveUserRole(roles: string[], type: 'researcher' | 'inquirer' | 'auditor'): string {
+    if (!roles || roles.length === 0) return type === 'researcher' ? 'Researcher' : type === 'inquirer' ? 'Inquirer' : 'Auditor';
+    const match = roles.find(r => r.toLowerCase().includes(type));
+    return match || roles[0];
   }
 
   async submit(dto: CreateResearchDto, userId: string) {

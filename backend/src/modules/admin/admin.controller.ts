@@ -172,4 +172,64 @@ export class AdminController {
   ) {
     return this.adminService.deleteDisapprovalReason(id);
   }
+
+  /**
+   * COMPANY TYPES (SUPER ADMIN)
+   */
+  @Get('company-types')
+  getCompanyTypes() {
+    return this.adminService.getCompanyTypes();
+  }
+
+  @Post('company-types')
+  createCompanyType(
+    @Body() body: { name: string; description?: string },
+  ) {
+    return this.adminService.createCompanyType(body);
+  }
+
+  @Patch('company-types/:id')
+  updateCompanyType(
+    @Param('id') id: string,
+    @Body() body: { name?: string; description?: string; isActive?: boolean },
+  ) {
+    return this.adminService.updateCompanyType(id, body);
+  }
+
+  @Delete('company-types/:id')
+  deleteCompanyType(
+    @Param('id') id: string,
+  ) {
+    return this.adminService.deleteCompanyType(id);
+  }
+
+  /**
+   * JOB TYPES (SUPER ADMIN)
+   */
+  @Get('job-types')
+  getJobTypes() {
+    return this.adminService.getJobTypes();
+  }
+
+  @Post('job-types')
+  createJobType(
+    @Body() body: { name: string; description?: string },
+  ) {
+    return this.adminService.createJobType(body);
+  }
+
+  @Patch('job-types/:id')
+  updateJobType(
+    @Param('id') id: string,
+    @Body() body: { name?: string; description?: string; isActive?: boolean },
+  ) {
+    return this.adminService.updateJobType(id, body);
+  }
+
+  @Delete('job-types/:id')
+  deleteJobType(
+    @Param('id') id: string,
+  ) {
+    return this.adminService.deleteJobType(id);
+  }
 }

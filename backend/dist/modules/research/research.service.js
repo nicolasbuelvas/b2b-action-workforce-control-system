@@ -17,14 +17,16 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const normalization_util_1 = require("../../common/utils/normalization.util");
+const daily_limit_validation_service_1 = require("../../common/services/daily-limit-validation.service");
 const company_entity_1 = require("./entities/company.entity");
 const research_task_entity_1 = require("./entities/research-task.entity");
 const research_submission_entity_1 = require("./entities/research-submission.entity");
 const user_category_entity_1 = require("../categories/entities/user-category.entity");
 const linkedin_profile_entity_1 = require("./entities/linkedin-profile.entity");
 let ResearchService = class ResearchService {
-    constructor(dataSource, companyRepo, researchRepo, submissionRepo, userCategoryRepo, linkedinProfileRepo) {
+    constructor(dataSource, dailyLimitValidationService, companyRepo, researchRepo, submissionRepo, userCategoryRepo, linkedinProfileRepo) {
         this.dataSource = dataSource;
+        this.dailyLimitValidationService = dailyLimitValidationService;
         this.companyRepo = companyRepo;
         this.researchRepo = researchRepo;
         this.submissionRepo = submissionRepo;
@@ -151,7 +153,7 @@ let ResearchService = class ResearchService {
             return savedTask;
         });
     }
-    async submitTaskData(dto, userId) {
+    async submitTaskData(dto, userId, roles = []) {
         console.log('[submitTaskData] START - dto:', JSON.stringify(dto), 'userId:', userId);
         console.log('[submitTaskData] userId TYPE:', typeof userId, 'VALUE:', JSON.stringify(userId));
         return this.dataSource.transaction(async (manager) => {
@@ -193,6 +195,25 @@ let ResearchService = class ResearchService {
                     throw new common_1.BadRequestException('Language is required');
                 }
             }
+            const actionType = task.targetType === 'COMPANY' ? 'Website Research' : 'LinkedIn Research';
+            const role = this.resolveUserRole(roles, 'researcher');
+            let targetIdentifier = task.targetId;
+            if (task.targetType === 'COMPANY') {
+                const company = await manager.findOne(company_entity_1.Company, { where: { id: task.targetId } });
+                if (company) {
+                    targetIdentifier = company.normalizedDomain || company.domain;
+                }
+            }
+            else if (task.targetId) {
+                const profile = await manager.findOne(linkedin_profile_entity_1.LinkedInProfile, { where: { id: task.targetId } });
+                if (profile) {
+                    targetIdentifier = profile.normalizedUrl || profile.url;
+                }
+            }
+            const validation = await this.dailyLimitValidationService.validateTaskSubmission(userId, task.categoryId, role, actionType, targetIdentifier);
+            if (!validation.allowed) {
+                throw new common_1.BadRequestException(validation.reason || 'Daily limit validation failed');
+            }
             const submission = manager.create(research_submission_entity_1.ResearchSubmission, {
                 researchTaskId: task.id,
                 language: dto.language,
@@ -227,12 +248,19 @@ let ResearchService = class ResearchService {
             }
             task.status = research_task_entity_1.ResearchStatus.SUBMITTED;
             await manager.save(research_task_entity_1.ResearchTask, task);
+            await this.dailyLimitValidationService.recordContact(targetIdentifier, task.categoryId, userId, 'research');
             return {
                 taskId: task.id,
                 submissionId: submission.id,
                 message: 'Research submitted successfully and awaiting audit',
             };
         });
+    }
+    resolveUserRole(roles, type) {
+        if (!roles || roles.length === 0)
+            return type === 'researcher' ? 'Researcher' : type === 'inquirer' ? 'Inquirer' : 'Auditor';
+        const match = roles.find(r => r.toLowerCase().includes(type));
+        return match || roles[0];
     }
     async submit(dto, userId) {
         if (dto.targetType !== 'COMPANY') {
@@ -286,12 +314,13 @@ let ResearchService = class ResearchService {
 exports.ResearchService = ResearchService;
 exports.ResearchService = ResearchService = __decorate([
     (0, common_1.Injectable)(),
-    __param(1, (0, typeorm_1.InjectRepository)(company_entity_1.Company)),
-    __param(2, (0, typeorm_1.InjectRepository)(research_task_entity_1.ResearchTask)),
-    __param(3, (0, typeorm_1.InjectRepository)(research_submission_entity_1.ResearchSubmission)),
-    __param(4, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
-    __param(5, (0, typeorm_1.InjectRepository)(linkedin_profile_entity_1.LinkedInProfile)),
+    __param(2, (0, typeorm_1.InjectRepository)(company_entity_1.Company)),
+    __param(3, (0, typeorm_1.InjectRepository)(research_task_entity_1.ResearchTask)),
+    __param(4, (0, typeorm_1.InjectRepository)(research_submission_entity_1.ResearchSubmission)),
+    __param(5, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
+    __param(6, (0, typeorm_1.InjectRepository)(linkedin_profile_entity_1.LinkedInProfile)),
     __metadata("design:paramtypes", [typeorm_2.DataSource,
+        daily_limit_validation_service_1.DailyLimitValidationService,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

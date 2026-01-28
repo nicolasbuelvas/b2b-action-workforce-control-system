@@ -44,8 +44,9 @@ export class ResearchController {
   submitTask(
     @Body() dto: SubmitResearchDto,
     @CurrentUser('userId') userId: string,
+    @CurrentUser('roles') roles: string[],
   ) {
-    return this.researchService.submitTaskData(dto, userId);
+    return this.researchService.submitTaskData(dto, userId, roles);
   }
 
   @Post()

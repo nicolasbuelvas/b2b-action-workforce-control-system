@@ -14,10 +14,12 @@ import { Category } from '../categories/entities/category.entity';
 import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
 import { DisapprovalReason } from '../subadmin/entities/disapproval-reason.entity';
+import { CompanyType } from '../subadmin/entities/company-type.entity';
+import { JobType } from '../subadmin/entities/job-type.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role, UserRole, InquiryAction, ResearchTask, ResearchAudit, Category, SubAdminCategory, UserCategory, DisapprovalReason]),
+    TypeOrmModule.forFeature([User, Role, UserRole, InquiryAction, ResearchTask, ResearchAudit, Category, SubAdminCategory, UserCategory, DisapprovalReason, CompanyType, JobType]),
   ],
   controllers: [AdminController],
   providers: [AdminService],

@@ -60,8 +60,10 @@ const category_entity_1 = require("../categories/entities/category.entity");
 const sub_admin_category_entity_1 = require("../categories/entities/sub-admin-category.entity");
 const user_category_entity_1 = require("../categories/entities/user-category.entity");
 const disapproval_reason_entity_1 = require("../subadmin/entities/disapproval-reason.entity");
+const company_type_entity_1 = require("../subadmin/entities/company-type.entity");
+const job_type_entity_1 = require("../subadmin/entities/job-type.entity");
 let AdminService = class AdminService {
-    constructor(userRepo, roleRepo, userRoleRepo, inquiryActionRepo, researchTaskRepo, researchAuditRepo, categoryRepo, subAdminCategoryRepo, userCategoryRepo, disapprovalReasonRepo) {
+    constructor(userRepo, roleRepo, userRoleRepo, inquiryActionRepo, researchTaskRepo, researchAuditRepo, categoryRepo, subAdminCategoryRepo, userCategoryRepo, disapprovalReasonRepo, companyTypeRepo, jobTypeRepo) {
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.userRoleRepo = userRoleRepo;
@@ -72,6 +74,8 @@ let AdminService = class AdminService {
         this.subAdminCategoryRepo = subAdminCategoryRepo;
         this.userCategoryRepo = userCategoryRepo;
         this.disapprovalReasonRepo = disapprovalReasonRepo;
+        this.companyTypeRepo = companyTypeRepo;
+        this.jobTypeRepo = jobTypeRepo;
     }
     async getDashboard() {
         const totalUsers = await this.userRepo.count();
@@ -505,6 +509,98 @@ let AdminService = class AdminService {
         await this.disapprovalReasonRepo.delete(id);
         return { success: true, message: 'Disapproval reason deleted successfully' };
     }
+    async getCompanyTypes() {
+        return await this.companyTypeRepo.find({ order: { name: 'ASC' } });
+    }
+    async createCompanyType(data) {
+        if (!data.name?.trim()) {
+            throw new common_1.BadRequestException('Name is required');
+        }
+        const existing = await this.companyTypeRepo.findOne({ where: { name: data.name } });
+        if (existing) {
+            throw new common_1.BadRequestException('Company type with this name already exists');
+        }
+        const companyType = this.companyTypeRepo.create({
+            name: data.name.trim(),
+            description: data.description?.trim() || null,
+            isActive: true,
+        });
+        return await this.companyTypeRepo.save(companyType);
+    }
+    async updateCompanyType(id, data) {
+        const companyType = await this.companyTypeRepo.findOne({ where: { id } });
+        if (!companyType) {
+            throw new common_1.BadRequestException('Company type not found');
+        }
+        if (data.name && data.name !== companyType.name) {
+            const existing = await this.companyTypeRepo.findOne({ where: { name: data.name } });
+            if (existing) {
+                throw new common_1.BadRequestException('Company type with this name already exists');
+            }
+            companyType.name = data.name.trim();
+        }
+        if (data.description !== undefined) {
+            companyType.description = data.description?.trim() || null;
+        }
+        if (data.isActive !== undefined) {
+            companyType.isActive = data.isActive;
+        }
+        return await this.companyTypeRepo.save(companyType);
+    }
+    async deleteCompanyType(id) {
+        const companyType = await this.companyTypeRepo.findOne({ where: { id } });
+        if (!companyType) {
+            throw new common_1.BadRequestException('Company type not found');
+        }
+        await this.companyTypeRepo.delete(id);
+        return { success: true, message: 'Company type deleted successfully' };
+    }
+    async getJobTypes() {
+        return await this.jobTypeRepo.find({ order: { name: 'ASC' } });
+    }
+    async createJobType(data) {
+        if (!data.name?.trim()) {
+            throw new common_1.BadRequestException('Name is required');
+        }
+        const existing = await this.jobTypeRepo.findOne({ where: { name: data.name } });
+        if (existing) {
+            throw new common_1.BadRequestException('Job type with this name already exists');
+        }
+        const jobType = this.jobTypeRepo.create({
+            name: data.name.trim(),
+            description: data.description?.trim() || null,
+            isActive: true,
+        });
+        return await this.jobTypeRepo.save(jobType);
+    }
+    async updateJobType(id, data) {
+        const jobType = await this.jobTypeRepo.findOne({ where: { id } });
+        if (!jobType) {
+            throw new common_1.BadRequestException('Job type not found');
+        }
+        if (data.name && data.name !== jobType.name) {
+            const existing = await this.jobTypeRepo.findOne({ where: { name: data.name } });
+            if (existing) {
+                throw new common_1.BadRequestException('Job type with this name already exists');
+            }
+            jobType.name = data.name.trim();
+        }
+        if (data.description !== undefined) {
+            jobType.description = data.description?.trim() || null;
+        }
+        if (data.isActive !== undefined) {
+            jobType.isActive = data.isActive;
+        }
+        return await this.jobTypeRepo.save(jobType);
+    }
+    async deleteJobType(id) {
+        const jobType = await this.jobTypeRepo.findOne({ where: { id } });
+        if (!jobType) {
+            throw new common_1.BadRequestException('Job type not found');
+        }
+        await this.jobTypeRepo.delete(id);
+        return { success: true, message: 'Job type deleted successfully' };
+    }
 };
 exports.AdminService = AdminService;
 exports.AdminService = AdminService = __decorate([
@@ -519,7 +615,11 @@ exports.AdminService = AdminService = __decorate([
     __param(7, (0, typeorm_1.InjectRepository)(sub_admin_category_entity_1.SubAdminCategory)),
     __param(8, (0, typeorm_1.InjectRepository)(user_category_entity_1.UserCategory)),
     __param(9, (0, typeorm_1.InjectRepository)(disapproval_reason_entity_1.DisapprovalReason)),
+    __param(10, (0, typeorm_1.InjectRepository)(company_type_entity_1.CompanyType)),
+    __param(11, (0, typeorm_1.InjectRepository)(job_type_entity_1.JobType)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

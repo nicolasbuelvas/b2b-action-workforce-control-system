@@ -5,6 +5,7 @@ import { OutreachRecord } from './entities/outreach-record.entity';
 import { InquirySubmissionSnapshot } from './entities/inquiry-submission-snapshot.entity';
 import { ScreenshotsService } from '../screenshots/screenshots.service';
 import { CooldownService } from '../cooldown/cooldown.service';
+import { DailyLimitValidationService } from '../../common/services/daily-limit-validation.service';
 import { SubmitInquiryDto } from './dto/submit-inquiry.dto';
 import { ResearchTask } from '../research/entities/research-task.entity';
 import { ResearchSubmission } from '../research/entities/research-submission.entity';
@@ -23,11 +24,12 @@ export declare class InquiryService {
     private readonly userCategoryRepo;
     private readonly screenshotsService;
     private readonly cooldownService;
+    private readonly dailyLimitValidationService;
     private readonly dataSource;
-    constructor(actionRepo: Repository<InquiryAction>, taskRepo: Repository<InquiryTask>, outreachRepo: Repository<OutreachRecord>, snapshotRepo: Repository<InquirySubmissionSnapshot>, researchRepo: Repository<ResearchTask>, submissionRepo: Repository<ResearchSubmission>, companyRepo: Repository<Company>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, screenshotsService: ScreenshotsService, cooldownService: CooldownService, dataSource: DataSource);
+    constructor(actionRepo: Repository<InquiryAction>, taskRepo: Repository<InquiryTask>, outreachRepo: Repository<OutreachRecord>, snapshotRepo: Repository<InquirySubmissionSnapshot>, researchRepo: Repository<ResearchTask>, submissionRepo: Repository<ResearchSubmission>, companyRepo: Repository<Company>, categoryRepo: Repository<Category>, userCategoryRepo: Repository<UserCategory>, screenshotsService: ScreenshotsService, cooldownService: CooldownService, dailyLimitValidationService: DailyLimitValidationService, dataSource: DataSource);
     getAvailableTasks(userId: string, type: 'website' | 'linkedin'): Promise<any[]>;
     takeInquiry(researchTaskId: string, userId: string): Promise<InquiryTask>;
-    submitInquiry(dto: SubmitInquiryDto, screenshotBuffer: Buffer, userId: string): Promise<{
+    submitInquiry(dto: SubmitInquiryDto, screenshotBuffer: Buffer, userId: string, roles?: string[]): Promise<{
         action: {
             inquiryTaskId: string;
             actionIndex: number;
@@ -36,4 +38,5 @@ export declare class InquiryService {
         } & InquiryAction;
         screenshotDuplicate: any;
     }>;
+    private resolveUserRole;
 }

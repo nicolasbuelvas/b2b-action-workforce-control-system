@@ -13,6 +13,8 @@ import { Category } from '../categories/entities/category.entity';
 import { SubAdminCategory } from '../categories/entities/sub-admin-category.entity';
 import { UserCategory } from '../categories/entities/user-category.entity';
 import { DisapprovalReason } from '../subadmin/entities/disapproval-reason.entity';
+import { CompanyType } from '../subadmin/entities/company-type.entity';
+import { JobType } from '../subadmin/entities/job-type.entity';
 
 import { CreateSubAdminDto } from './dto/create-sub-admin.dto';
 import { AssignUserToCategoriesDto } from './dto/assign-user-categories.dto';
@@ -50,6 +52,12 @@ export class AdminService {
 
     @InjectRepository(DisapprovalReason)
     private readonly disapprovalReasonRepo: Repository<DisapprovalReason>,
+
+    @InjectRepository(CompanyType)
+    private readonly companyTypeRepo: Repository<CompanyType>,
+
+    @InjectRepository(JobType)
+    private readonly jobTypeRepo: Repository<JobType>,
   ) {}
 
   async getDashboard() {
@@ -604,5 +612,131 @@ export class AdminService {
 
     await this.disapprovalReasonRepo.delete(id);
     return { success: true, message: 'Disapproval reason deleted successfully' };
+  }
+
+  // ========= COMPANY TYPES (SUPER ADMIN) =========
+
+  async getCompanyTypes() {
+    return await this.companyTypeRepo.find({ order: { name: 'ASC' } });
+  }
+
+  async createCompanyType(data: { name: string; description?: string }) {
+    if (!data.name?.trim()) {
+      throw new BadRequestException('Name is required');
+    }
+
+    const existing = await this.companyTypeRepo.findOne({ where: { name: data.name } });
+    if (existing) {
+      throw new BadRequestException('Company type with this name already exists');
+    }
+
+    const companyType = this.companyTypeRepo.create({
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      isActive: true,
+    });
+
+    return await this.companyTypeRepo.save(companyType);
+  }
+
+  async updateCompanyType(
+    id: string,
+    data: { name?: string; description?: string; isActive?: boolean }
+  ) {
+    const companyType = await this.companyTypeRepo.findOne({ where: { id } });
+    if (!companyType) {
+      throw new BadRequestException('Company type not found');
+    }
+
+    if (data.name && data.name !== companyType.name) {
+      const existing = await this.companyTypeRepo.findOne({ where: { name: data.name } });
+      if (existing) {
+        throw new BadRequestException('Company type with this name already exists');
+      }
+      companyType.name = data.name.trim();
+    }
+
+    if (data.description !== undefined) {
+      companyType.description = data.description?.trim() || null;
+    }
+
+    if (data.isActive !== undefined) {
+      companyType.isActive = data.isActive;
+    }
+
+    return await this.companyTypeRepo.save(companyType);
+  }
+
+  async deleteCompanyType(id: string) {
+    const companyType = await this.companyTypeRepo.findOne({ where: { id } });
+    if (!companyType) {
+      throw new BadRequestException('Company type not found');
+    }
+
+    await this.companyTypeRepo.delete(id);
+    return { success: true, message: 'Company type deleted successfully' };
+  }
+
+  // ========= JOB TYPES (SUPER ADMIN) =========
+
+  async getJobTypes() {
+    return await this.jobTypeRepo.find({ order: { name: 'ASC' } });
+  }
+
+  async createJobType(data: { name: string; description?: string }) {
+    if (!data.name?.trim()) {
+      throw new BadRequestException('Name is required');
+    }
+
+    const existing = await this.jobTypeRepo.findOne({ where: { name: data.name } });
+    if (existing) {
+      throw new BadRequestException('Job type with this name already exists');
+    }
+
+    const jobType = this.jobTypeRepo.create({
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      isActive: true,
+    });
+
+    return await this.jobTypeRepo.save(jobType);
+  }
+
+  async updateJobType(
+    id: string,
+    data: { name?: string; description?: string; isActive?: boolean }
+  ) {
+    const jobType = await this.jobTypeRepo.findOne({ where: { id } });
+    if (!jobType) {
+      throw new BadRequestException('Job type not found');
+    }
+
+    if (data.name && data.name !== jobType.name) {
+      const existing = await this.jobTypeRepo.findOne({ where: { name: data.name } });
+      if (existing) {
+        throw new BadRequestException('Job type with this name already exists');
+      }
+      jobType.name = data.name.trim();
+    }
+
+    if (data.description !== undefined) {
+      jobType.description = data.description?.trim() || null;
+    }
+
+    if (data.isActive !== undefined) {
+      jobType.isActive = data.isActive;
+    }
+
+    return await this.jobTypeRepo.save(jobType);
+  }
+
+  async deleteJobType(id: string) {
+    const jobType = await this.jobTypeRepo.findOne({ where: { id } });
+    if (!jobType) {
+      throw new BadRequestException('Job type not found');
+    }
+
+    await this.jobTypeRepo.delete(id);
+    return { success: true, message: 'Job type deleted successfully' };
   }
 }

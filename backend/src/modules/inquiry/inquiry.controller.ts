@@ -60,6 +60,7 @@ export class InquiryController {
     @Body() body: any,
     @UploadedFile() file: any,
     @CurrentUser('userId') userId: string,
+    @CurrentUser('roles') roles: string[],
   ) {
     try {
       console.log('[INQUIRY-SUBMIT] ========== REQUEST START =========');
@@ -119,6 +120,7 @@ export class InquiryController {
         dto,
         file.buffer,
         userId,
+        roles,
       );
 
       console.log('[INQUIRY-SUBMIT] ========== REQUEST SUCCESS =========');

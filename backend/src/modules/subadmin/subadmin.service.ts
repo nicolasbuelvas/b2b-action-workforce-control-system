@@ -14,6 +14,7 @@ import { User } from '../users/entities/user.entity';
 import { CompanyType } from './entities/company-type.entity';
 import { JobType } from './entities/job-type.entity';
 import { DisapprovalReason } from './entities/disapproval-reason.entity';
+import { CategoryRule } from '../category-rules/entities/category-rule.entity';
 import { Role } from '../roles/entities/role.entity';
 import { UserRole } from '../roles/entities/user-role.entity';
 import * as bcrypt from 'bcrypt';
@@ -52,6 +53,8 @@ export class SubAdminService {
     private readonly jobTypeRepo: Repository<JobType>,
     @InjectRepository(DisapprovalReason)
     private readonly disapprovalReasonRepo: Repository<DisapprovalReason>,
+    @InjectRepository(CategoryRule)
+    private readonly categoryRuleRepo: Repository<CategoryRule>,
   ) {}
 
   /**
@@ -1544,6 +1547,26 @@ export class SubAdminService {
     return await this.jobTypeRepo.save(jobType);
   }
 
+  async deleteCompanyType(id: string) {
+    const companyType = await this.companyTypeRepo.findOne({ where: { id } });
+    if (!companyType) {
+      throw new BadRequestException('Company type not found');
+    }
+
+    await this.companyTypeRepo.delete(id);
+    return { success: true, message: 'Company type deleted successfully' };
+  }
+
+  async deleteJobType(id: string) {
+    const jobType = await this.jobTypeRepo.findOne({ where: { id } });
+    if (!jobType) {
+      throw new BadRequestException('Job type not found');
+    }
+
+    await this.jobTypeRepo.delete(id);
+    return { success: true, message: 'Job type deleted successfully' };
+  }
+
   // ========= DISAPPROVAL REASONS CRUD =========
 
   private async getSubAdminCategoryIds(userId: string): Promise<string[]> {
@@ -1720,5 +1743,76 @@ export class SubAdminService {
 
     await this.disapprovalReasonRepo.delete(id);
     return { success: true, message: 'Disapproval reason deleted successfully' };
+  }
+
+  // ===============================
+  // CATEGORY RULES (Daily Limits)
+  // ===============================
+
+  /**
+   * Get all category rules for sub-admin's categories only
+   */
+  async getCategoryRulesForSubAdmin(subAdminUserId: string) {
+    const myCategories = await this.getSubAdminCategoryIds(subAdminUserId);
+    
+    if (myCategories.length === 0) {
+      return [];
+    }
+
+    return this.categoryRuleRepo.find({
+      where: { categoryId: In(myCategories) },
+      relations: ['category'],
+      order: { priority: 'DESC', createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Update daily limit override for a specific category rule
+   * SubAdmin can only update rules for their assigned categories
+   */
+  async updateCategoryRuleDailyLimit(
+    subAdminUserId: string,
+    ruleId: string,
+    dailyLimitOverride: number | null,
+  ) {
+    const myCategories = await this.getSubAdminCategoryIds(subAdminUserId);
+
+    const rule = await this.categoryRuleRepo.findOne({ where: { id: ruleId } });
+    if (!rule) {
+      throw new BadRequestException('Category rule not found');
+    }
+
+    // Check if this rule's category belongs to this sub-admin
+    if (!myCategories.includes(rule.categoryId)) {
+      throw new ForbiddenException('You can only update rules for your assigned categories');
+    }
+
+    rule.dailyLimitOverride = dailyLimitOverride;
+    return await this.categoryRuleRepo.save(rule);
+  }
+
+  /**
+   * Update cooldown days override for a specific category rule
+   * SubAdmin can only update rules for their assigned categories
+   */
+  async updateCategoryRuleCooldown(
+    subAdminUserId: string,
+    ruleId: string,
+    cooldownDaysOverride: number | null,
+  ) {
+    const myCategories = await this.getSubAdminCategoryIds(subAdminUserId);
+
+    const rule = await this.categoryRuleRepo.findOne({ where: { id: ruleId } });
+    if (!rule) {
+      throw new BadRequestException('Category rule not found');
+    }
+
+    // Check if this rule's category belongs to this sub-admin
+    if (!myCategories.includes(rule.categoryId)) {
+      throw new ForbiddenException('You can only update rules for your assigned categories');
+    }
+
+    rule.cooldownDaysOverride = cooldownDaysOverride;
+    return await this.categoryRuleRepo.save(rule);
   }
 }

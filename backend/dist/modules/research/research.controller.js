@@ -34,8 +34,8 @@ let ResearchController = class ResearchController {
     claimTask(taskId, userId) {
         return this.researchService.claimTask(taskId, userId);
     }
-    submitTask(dto, userId) {
-        return this.researchService.submitTaskData(dto, userId);
+    submitTask(dto, userId, roles) {
+        return this.researchService.submitTaskData(dto, userId, roles);
     }
     submit(dto, userId) {
         return this.researchService.submit(dto, userId);
@@ -74,8 +74,9 @@ __decorate([
     (0, roles_decorator_1.Roles)('website_researcher', 'linkedin_researcher'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, current_user_decorator_1.CurrentUser)('userId')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)('roles')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [submit_research_dto_1.SubmitResearchDto, String]),
+    __metadata("design:paramtypes", [submit_research_dto_1.SubmitResearchDto, String, Array]),
     __metadata("design:returntype", void 0)
 ], ResearchController.prototype, "submitTask", null);
 __decorate([

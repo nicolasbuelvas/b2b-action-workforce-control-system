@@ -63,6 +63,8 @@ import CategoriesPage from '../pages/admin/CategoriesPage';
 import CategoryRulesPage from '../pages/admin/CategoryRulesPage';
 import ActionConfigPage from '../pages/admin/ActionConfigPage';
 import AdminDisapprovalReasonsPage from '../pages/admin/AdminDisapprovalReasonsPage';
+import AdminCompanyTypesPage from '../pages/admin/AdminCompanyTypesPage';
+import AdminJobTypesPage from '../pages/admin/AdminJobTypesPage';
 import PricingPage from '../pages/admin/PricingPage';
 import RolePerformancePage from '../pages/admin/RolePerformancePage';
 import SystemLogsPage from '../pages/admin/SystemLogsPage';
@@ -108,6 +110,8 @@ export default function AppRouter() {
           <Route path="category-rules" element={<CategoryRulesPage />} />
           <Route path="action-config" element={<ActionConfigPage />} />
           <Route path="disapproval-reasons" element={<AdminDisapprovalReasonsPage />} />
+          <Route path="company-types" element={<AdminCompanyTypesPage />} />
+          <Route path="job-types" element={<AdminJobTypesPage />} />
           <Route path="pricing" element={<PricingPage />} />
           <Route path="role-performance" element={<RolePerformancePage />} />
           <Route path="logs" element={<SystemLogsPage />} />

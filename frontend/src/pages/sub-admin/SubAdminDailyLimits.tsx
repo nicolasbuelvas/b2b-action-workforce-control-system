@@ -1,32 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { client } from '../../api/client';
-import { getSubAdminCategories } from '../../api/subadmin.api';
+import { 
+  getSubAdminCategoryRules,
+  updateCategoryRuleDailyLimit,
+  updateCategoryRuleCooldown,
+  CategoryRule 
+} from '../../api/subadmin.api';
 import './SubAdminCRUD.css';
 
-interface DailyLimit {
-  id: string;
-  categoryId: string;
-  categoryName: string;
-  role: string;
-  maxTasksPerDay: number;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  isActive: boolean;
-}
-
 export default function SubAdminDailyLimits(): JSX.Element {
-  const [limits, setLimits] = useState<DailyLimit[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [rules, setRules] = useState<CategoryRule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({
-    categoryId: '',
-    role: 'website_researcher',
-    maxTasksPerDay: 50,
-  });
+  const [editingRule, setEditingRule] = useState<CategoryRule | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterRole, setFilterRole] = useState<string>('');
+  const [filterActionType, setFilterActionType] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -35,41 +22,49 @@ export default function SubAdminDailyLimits(): JSX.Element {
   const loadData = async () => {
     try {
       setLoading(true);
-      const categoriesData = await getSubAdminCategories();
-      setCategories(categoriesData);
-
-      // Placeholder - backend endpoint to be implemented
-      // const response = await client.get('/subadmin/daily-limits');
-      // setLimits(response.data || []);
-      setLimits([]);
+      const rulesData = await getSubAdminCategoryRules();
+      setRules(rulesData);
     } catch (err: any) {
-      console.error('Failed to load data', err);
+      console.error('Failed to load category rules', err);
+      alert('Failed to load daily limits data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreate = () => {
-    setFormData({
-      categoryId: categories[0]?.id || '',
-      role: 'website_researcher',
-      maxTasksPerDay: 50,
-    });
-    setShowModal(true);
+  const handleEditRule = (rule: CategoryRule) => {
+    setEditingRule({ ...rule });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveAll = async () => {
+    if (!editingRule) return;
+
     try {
-      // Placeholder - backend endpoint to be implemented
-      // await client.post('/subadmin/daily-limits', formData);
-      alert('Daily limits functionality - backend endpoint to be implemented');
-      setShowModal(false);
-      loadData();
+      await Promise.all([
+        updateCategoryRuleDailyLimit(editingRule.id, editingRule.dailyLimitOverride),
+        updateCategoryRuleCooldown(editingRule.id, editingRule.cooldownDaysOverride),
+      ]);
+      await loadData();
+      setEditingRule(null);
+      alert('Daily limit settings updated successfully');
     } catch (err: any) {
-      alert('Failed to set daily limit');
+      console.error('Failed to update settings', err);
+      alert('Failed to update settings');
     }
   };
+
+  // Get unique values for filters
+  const uniqueCategories = Array.from(new Set(rules.map(r => r.category.name)));
+  const uniqueRoles = Array.from(new Set(rules.map(r => r.role)));
+  const uniqueActionTypes = Array.from(new Set(rules.map(r => r.actionType)));
+
+  // Filter rules
+  const filteredRules = rules.filter(rule => {
+    const matchesCategory = !filterCategory || rule.category.name === filterCategory;
+    const matchesRole = !filterRole || rule.role === filterRole;
+    const matchesActionType = !filterActionType || rule.actionType === filterActionType;
+    return matchesCategory && matchesRole && matchesActionType;
+  });
 
   return (
     <div className="sa-crud-page">
@@ -77,13 +72,46 @@ export default function SubAdminDailyLimits(): JSX.Element {
         <div>
           <h2>Daily Task Limits</h2>
           <p className="muted">
-            Configure maximum daily task quotas per role per category
+            Configure daily limits and cooldown periods for roles in your assigned categories
           </p>
         </div>
-        <button className="btn-primary" onClick={handleCreate}>
-          + Set Limit
-        </button>
       </header>
+
+      {/* Filters */}
+      <div className="sa-filter-bar" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <select 
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
+        >
+          <option value="">All Categories</option>
+          {uniqueCategories.map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+
+        <select 
+          value={filterRole}
+          onChange={(e) => setFilterRole(e.target.value)}
+          style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
+        >
+          <option value="">All Roles</option>
+          {uniqueRoles.map(role => (
+            <option key={role} value={role}>{role}</option>
+          ))}
+        </select>
+
+        <select 
+          value={filterActionType}
+          onChange={(e) => setFilterActionType(e.target.value)}
+          style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ddd' }}
+        >
+          <option value="">All Action Types</option>
+          {uniqueActionTypes.map(type => (
+            <option key={type} value={type}>{type}</option>
+          ))}
+        </select>
+      </div>
 
       <main className="sa-main">
         {loading && <div className="loading-state">Loading limits...</div>}
@@ -94,20 +122,45 @@ export default function SubAdminDailyLimits(): JSX.Element {
               <thead>
                 <tr>
                   <th>Category</th>
+                  <th>Action Type</th>
                   <th>Role</th>
-                  <th>Max Tasks/Day</th>
+                  <th>Daily Limit</th>
+                  <th>Cooldown (Days)</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {limits.map((limit) => (
-                  <tr key={limit.id}>
-                    <td className="font-semibold">{limit.categoryName}</td>
-                    <td>{limit.role}</td>
-                    <td>{limit.maxTasksPerDay}</td>
+                {filteredRules.map((rule) => (
+                  <tr key={rule.id}>
+                    <td className="font-semibold">{rule.category.name}</td>
+                    <td>{rule.actionType}</td>
+                    <td>{rule.role}</td>
+                    <td>
+                      {rule.dailyLimitOverride !== null 
+                        ? rule.dailyLimitOverride 
+                        : <span className="muted">Not set</span>
+                      }
+                    </td>
+                    <td>
+                      {rule.cooldownDaysOverride !== null 
+                        ? rule.cooldownDaysOverride 
+                        : <span className="muted">Not set</span>
+                      }
+                    </td>
+                    <td>
+                      <span className={`badge ${rule.status === 'active' ? 'badge-success' : 'badge-inactive'}`}>
+                        {rule.status}
+                      </span>
+                    </td>
                     <td>
                       <div className="action-buttons">
-                        <button className="btn-sm btn-secondary">Edit</button>
+                        <button 
+                          className="btn-sm btn-secondary"
+                          onClick={() => handleEditRule(rule)}
+                        >
+                          Edit Limits
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -115,84 +168,76 @@ export default function SubAdminDailyLimits(): JSX.Element {
               </tbody>
             </table>
 
-            {limits.length === 0 && (
+            {filteredRules.length === 0 && (
               <div className="empty-state">
-                <p>No daily limits configured yet.</p>
-                <button className="btn-primary" onClick={handleCreate}>
-                  Set First Limit
-                </button>
+                <p>No rules found for your assigned categories{filterCategory || filterRole || filterActionType ? ' with the selected filters' : ''}.</p>
               </div>
             )}
           </div>
         )}
       </main>
 
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+      {/* Edit Modal */}
+      {editingRule && (
+        <div className="modal-overlay" onClick={() => setEditingRule(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Set Daily Limit</h3>
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="categoryId">Category *</label>
-                <select
-                  id="categoryId"
-                  value={formData.categoryId}
-                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="role">Role *</label>
-                <select
-                  id="role"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  required
-                >
-                  <optgroup label="Research">
-                    <option value="website_researcher">Website Researcher</option>
-                    <option value="linkedin_researcher">LinkedIn Researcher</option>
-                  </optgroup>
-                  <optgroup label="Inquiry">
-                    <option value="website_inquirer">Website Inquirer</option>
-                    <option value="linkedin_inquirer">LinkedIn Inquirer</option>
-                  </optgroup>
-                  <optgroup label="Audit">
-                    <option value="website_research_auditor">Website Research Auditor</option>
-                    <option value="linkedin_research_auditor">LinkedIn Research Auditor</option>
-                    <option value="website_inquirer_auditor">Website Inquirer Auditor</option>
-                    <option value="linkedin_inquirer_auditor">LinkedIn Inquirer Auditor</option>
-                  </optgroup>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="maxTasksPerDay">Max Tasks per Day *</label>
-                <input
-                  type="number"
-                  id="maxTasksPerDay"
-                  value={formData.maxTasksPerDay}
-                  onChange={(e) => setFormData({ ...formData, maxTasksPerDay: parseInt(e.target.value) })}
-                  required
-                  min="1"
-                  max="1000"
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary">
-                  Set Limit
-                </button>
-              </div>
-            </form>
+            <h3>Edit Daily Limits</h3>
+            <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f5f5f5', borderRadius: '4px' }}>
+              <p><strong>Category:</strong> {editingRule.category.name}</p>
+              <p><strong>Action Type:</strong> {editingRule.actionType}</p>
+              <p><strong>Role:</strong> {editingRule.role}</p>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="dailyLimit">Daily Task Limit</label>
+              <input
+                type="number"
+                id="dailyLimit"
+                value={editingRule.dailyLimitOverride ?? ''}
+                onChange={(e) => setEditingRule({
+                  ...editingRule,
+                  dailyLimitOverride: e.target.value ? parseInt(e.target.value) : null
+                })}
+                placeholder="No limit (leave empty)"
+                min="0"
+                max="1000"
+              />
+              <small className="muted">Maximum tasks per day for this role in this category. Leave empty for no limit.</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="cooldown">Cooldown Period (Days)</label>
+              <input
+                type="number"
+                id="cooldown"
+                value={editingRule.cooldownDaysOverride ?? ''}
+                onChange={(e) => setEditingRule({
+                  ...editingRule,
+                  cooldownDaysOverride: e.target.value ? parseInt(e.target.value) : null
+                })}
+                placeholder="No cooldown (leave empty)"
+                min="0"
+                max="365"
+              />
+              <small className="muted">Minimum days between contacting the same company/URL. Leave empty for no cooldown.</small>
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={() => setEditingRule(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                className="btn-primary"
+                onClick={handleSaveAll}
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       )}

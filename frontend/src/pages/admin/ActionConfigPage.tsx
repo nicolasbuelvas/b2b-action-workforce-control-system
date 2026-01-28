@@ -127,16 +127,10 @@ const ActionConfigPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [globalLists, setGlobalLists] = useState<{
     blacklist: GlobalListItem[];
-    companyTypes: GlobalListItem[];
-    jobTypes: GlobalListItem[];
   }>({
     blacklist: [],
-    companyTypes: [],
-    jobTypes: [],
   });
-  const [globalListType, setGlobalListType] = useState<
-    'blacklist' | 'companyTypes' | 'jobTypes'
-  >('blacklist');
+  const [globalListType, setGlobalListType] = useState<'blacklist'>('blacklist');
   const [showGlobalListModal, setShowGlobalListModal] = useState(false);
   const [globalListInput, setGlobalListInput] = useState('');
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
@@ -149,14 +143,12 @@ const ActionConfigPage: React.FC = () => {
     Promise.all([
       fetchActionsConfig(),
       fetchGlobalList('blacklist'),
-      fetchGlobalList('companyTypes'),
-      fetchGlobalList('jobTypes'),
       fetchNotices(),
     ]).then(
-      ([actions, blacklist, companyTypes, jobTypes, notices]) => {
+      ([actions, blacklist, notices]) => {
         setActions(actions);
         setFilteredActions(actions);
-        setGlobalLists({ blacklist, companyTypes, jobTypes });
+        setGlobalLists({ blacklist });
         setNotices(notices);
         setLoading(false);
       }
@@ -323,22 +315,6 @@ const ActionConfigPage: React.FC = () => {
             }}
           >
             Company Blacklist
-          </button>
-          <button
-            onClick={() => {
-              setGlobalListType('companyTypes');
-              setShowGlobalListModal(true);
-            }}
-          >
-            Company Types
-          </button>
-          <button
-            onClick={() => {
-              setGlobalListType('jobTypes');
-              setShowGlobalListModal(true);
-            }}
-          >
-            Job Types
           </button>
         </div>
       </section>
@@ -622,11 +598,7 @@ const ActionConfigPage: React.FC = () => {
       {showGlobalListModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2>
-              {globalListType === 'blacklist' && 'Company Blacklist'}
-              {globalListType === 'companyTypes' && 'Company Types'}
-              {globalListType === 'jobTypes' && 'Job Types'}
-            </h2>
+            <h2>Company Blacklist</h2>
             <div>
               <ul>
                 {globalLists[globalListType].map((item) => (
