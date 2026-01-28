@@ -64,25 +64,47 @@ export default function UserCategoryAssignment() {
       return;
     }
     
+    console.debug('[UserCategoryAssignment] Selecting user:', { id: user.id, name: user.name, role: user.role });
+    
     setSelectedUser(user);
-    setLoading(true);
+    setUserCategories([]); // Clear previous selection immediately
+    
     try {
       const cats = await getUserCategories(user.id);
-      setUserCategories(cats.map((c: any) => c.id));
+      console.debug('[UserCategoryAssignment] Retrieved categories for user:', {
+        userId: user.id,
+        role: user.role,
+        categoriesLength: cats.length,
+        categoryIds: cats.map((c: any) => c.id),
+        rawData: cats
+      });
+      
+      const categoryIds = cats.map((c: any) => c.id);
+      setUserCategories(categoryIds);
+      
+      console.debug('[UserCategoryAssignment] State updated with categories:', categoryIds);
     } catch (err) {
-      console.error('Failed to load user categories:', err);
+      console.error('[UserCategoryAssignment] Failed to load user categories:', err);
       setUserCategories([]);
-    } finally {
-      setLoading(false);
     }
   };
 
   const toggleCategory = (categoryId: string) => {
-    setUserCategories(prev =>
-      prev.includes(categoryId)
+    console.debug('[UserCategoryAssignment] Toggle category:', {
+      categoryId,
+      selectedUser: selectedUser?.id,
+      currentCategories: userCategories,
+      isCurrentlySelected: userCategories.includes(categoryId)
+    });
+    
+    setUserCategories(prev => {
+      const updated = prev.includes(categoryId)
         ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    );
+        : [...prev, categoryId];
+      
+      console.debug('[UserCategoryAssignment] New categories state:', updated);
+      return updated;
+    });
   };
 
   const handleSave = async () => {
@@ -91,11 +113,30 @@ export default function UserCategoryAssignment() {
       return;
     }
 
+    console.debug('[UserCategoryAssignment] Saving categories:', {
+      userId: selectedUser.id,
+      role: selectedUser.role,
+      categories: userCategories,
+      count: userCategories.length
+    });
+
     setSaving(true);
     try {
       await assignUserToCategories(selectedUser.id, userCategories);
+      console.debug('[UserCategoryAssignment] Save successful');
       alert('Categories assigned successfully!');
+      // Categories saved successfully - state already reflects the correct selection
     } catch (err: any) {
+      console.error('[UserCategoryAssignment] Failed to assign categories:', err);
+      // Revert to backend state on error
+      try {
+        const cats = await getUserCategories(selectedUser.id);
+        const categoryIds = cats.map((c: any) => c.id);
+        console.debug('[UserCategoryAssignment] Reverted to backend state:', categoryIds);
+        setUserCategories(categoryIds);
+      } catch (revertErr) {
+        console.error('[UserCategoryAssignment] Failed to revert categories:', revertErr);
+      }
       alert(err.response?.data?.message || 'Failed to assign categories');
     } finally {
       setSaving(false);

@@ -19,27 +19,35 @@ __decorate([
     __metadata("design:type", String)
 ], ActionPrice.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 50 }),
+    (0, typeorm_1.Column)({ length: 50, name: 'role_id' }),
     __metadata("design:type", String)
-], ActionPrice.prototype, "role", void 0);
+], ActionPrice.prototype, "roleId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 50 }),
+    (0, typeorm_1.Column)({ length: 50, name: 'action_type' }),
     __metadata("design:type", String)
 ], ActionPrice.prototype, "actionType", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2 }),
-    __metadata("design:type", String)
+    __metadata("design:type", Number)
 ], ActionPrice.prototype, "amount", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)(),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, default: 1.0, name: 'bonus_multiplier' }),
+    __metadata("design:type", Number)
+], ActionPrice.prototype, "bonusMultiplier", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true, length: 255 }),
+    __metadata("design:type", String)
+], ActionPrice.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], ActionPrice.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.UpdateDateColumn)(),
+    (0, typeorm_1.UpdateDateColumn)({ name: 'updated_at' }),
     __metadata("design:type", Date)
 ], ActionPrice.prototype, "updatedAt", void 0);
 exports.ActionPrice = ActionPrice = __decorate([
     (0, typeorm_1.Entity)('action_prices'),
-    (0, typeorm_1.Index)(['role', 'actionType'], { unique: true })
+    (0, typeorm_1.Index)(['roleId', 'actionType'], { unique: true })
 ], ActionPrice);
 //# sourceMappingURL=action-price.entity.js.map

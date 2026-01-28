@@ -19,7 +19,7 @@ __decorate([
     __metadata("design:type", String)
 ], PaymentRecord.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'user_id' }),
     __metadata("design:type", String)
 ], PaymentRecord.prototype, "userId", void 0);
 __decorate([
@@ -27,27 +27,31 @@ __decorate([
     __metadata("design:type", String)
 ], PaymentRecord.prototype, "role", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'action_id' }),
     __metadata("design:type", String)
 ], PaymentRecord.prototype, "actionId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 50 }),
+    (0, typeorm_1.Column)({ length: 50, name: 'action_type' }),
     __metadata("design:type", String)
 ], PaymentRecord.prototype, "actionType", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2 }),
-    __metadata("design:type", String)
+    __metadata("design:type", Number)
 ], PaymentRecord.prototype, "amount", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: 'pending' }),
     __metadata("design:type", String)
 ], PaymentRecord.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)(),
+    (0, typeorm_1.Column)({ nullable: true, length: 50 }),
+    __metadata("design:type", String)
+], PaymentRecord.prototype, "category", void 0);
+__decorate([
+    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], PaymentRecord.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.UpdateDateColumn)(),
+    (0, typeorm_1.UpdateDateColumn)({ name: 'updated_at' }),
     __metadata("design:type", Date)
 ], PaymentRecord.prototype, "updatedAt", void 0);
 exports.PaymentRecord = PaymentRecord = __decorate([

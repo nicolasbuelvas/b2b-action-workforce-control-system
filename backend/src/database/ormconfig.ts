@@ -1,4 +1,5 @@
-import { DataSourceOptions } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
+import 'dotenv/config';
 
 export const ormConfig: DataSourceOptions = {
   type: 'postgres',
@@ -20,3 +21,5 @@ export const ormConfig: DataSourceOptions = {
       ? { rejectUnauthorized: false }
       : false,
 };
+
+export const AppDataSource = new DataSource(ormConfig);

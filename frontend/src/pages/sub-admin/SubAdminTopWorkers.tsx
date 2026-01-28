@@ -6,11 +6,10 @@ type WorkerStats = {
   userId: string;
   name: string;
   email: string;
-  totalActions: number;
-  approved: number;
-  rejected: number;
-  avgReviewTimeMinutes: number;
-  lastActiveAt: string;
+  roleName: string;
+  totalCompleted: number;
+  researchCompleted: number;
+  inquiryCompleted: number;
 };
 
 export default function SubAdminTopWorkers(): JSX.Element {
@@ -40,13 +39,30 @@ export default function SubAdminTopWorkers(): JSX.Element {
     fetchWorkers();
   }, [fetchWorkers]);
 
+  // Group workers by role
+  const workersByRole = workers.reduce((acc, worker) => {
+    const role = worker.roleName;
+    if (!acc[role]) {
+      acc[role] = [];
+    }
+    acc[role].push(worker);
+    return acc;
+  }, {} as Record<string, WorkerStats[]>);
+
+  const formatRoleName = (roleName: string): string => {
+    return roleName
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   return (
     <div className="sa-top-workers">
       <header className="hdr">
         <div>
-          <h1>Top Workers</h1>
+          <h1>Top Workers by Role</h1>
           <p className="muted">
-            Productivity and quality metrics per reviewer. Backend-sourced.
+            Top 3 performers per role based on completed tasks
           </p>
         </div>
 
@@ -64,62 +80,42 @@ export default function SubAdminTopWorkers(): JSX.Element {
       {loading && <div className="loader">Loading workers…</div>}
       {error && <div className="error">{error}</div>}
       {!loading && !error && workers.length === 0 && (
-        <div className="empty">No worker data for this period.</div>
+        <div className="empty">No worker data available for your categories.</div>
       )}
 
       {!loading && !error && workers.length > 0 && (
-        <table className="workers-table">
-          <thead>
-            <tr>
-              <th>Worker</th>
-              <th>Actions</th>
-              <th>Approved</th>
-              <th>Rejected</th>
-              <th>Approval %</th>
-              <th>Avg Review Time</th>
-              <th>Last Active</th>
-            </tr>
-          </thead>
-          <tbody>
-            {workers.map((w) => {
-              const approvalRate =
-                w.totalActions > 0
-                  ? Math.round((w.approved / w.totalActions) * 100)
-                  : 0;
-
-              return (
-                <tr key={w.userId}>
-                  <td>
-                    <div className="worker">
-                      <strong>{w.name}</strong>
-                      <span className="muted small">{w.email}</span>
+        <div className="roles-container">
+          {Object.entries(workersByRole).map(([role, roleWorkers]) => (
+            <section key={role} className="role-section">
+              <h2 className="role-title">{formatRoleName(role)}</h2>
+              <div className="workers-grid">
+                {roleWorkers.map((worker, index) => (
+                  <div key={worker.userId} className="worker-card">
+                    <div className="rank-badge">#{index + 1}</div>
+                    <div className="worker-info">
+                      <h3>{worker.name}</h3>
+                      <p className="worker-email">{worker.email}</p>
                     </div>
-                  </td>
-                  <td>{w.totalActions}</td>
-                  <td>{w.approved}</td>
-                  <td>{w.rejected}</td>
-                  <td>
-                    <span
-                      className={
-                        approvalRate >= 85
-                          ? 'rate good'
-                          : approvalRate >= 65
-                          ? 'rate warn'
-                          : 'rate bad'
-                      }
-                    >
-                      {approvalRate}%
-                    </span>
-                  </td>
-                  <td>{w.avgReviewTimeMinutes} min</td>
-                  <td className="small muted">
-                    {new Date(w.lastActiveAt).toLocaleString()}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    <div className="worker-stats">
+                      <div className="stat">
+                        <label>Total Completed</label>
+                        <span className="stat-value">{worker.totalCompleted}</span>
+                      </div>
+                      <div className="stat">
+                        <label>Research</label>
+                        <span className="stat-value">{worker.researchCompleted}</span>
+                      </div>
+                      <div className="stat">
+                        <label>Inquiry</label>
+                        <span className="stat-value">{worker.inquiryCompleted}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       )}
     </div>
   );

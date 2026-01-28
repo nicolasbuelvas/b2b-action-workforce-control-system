@@ -62,6 +62,7 @@ import CreateUserPage from '../pages/admin/CreateUserPage';
 import CategoriesPage from '../pages/admin/CategoriesPage';
 import CategoryRulesPage from '../pages/admin/CategoryRulesPage';
 import ActionConfigPage from '../pages/admin/ActionConfigPage';
+import CompanyBlacklistPage from '../pages/admin/CompanyBlacklistPage';
 import AdminDisapprovalReasonsPage from '../pages/admin/AdminDisapprovalReasonsPage';
 import AdminCompanyTypesPage from '../pages/admin/AdminCompanyTypesPage';
 import AdminJobTypesPage from '../pages/admin/AdminJobTypesPage';
@@ -109,12 +110,17 @@ export default function AppRouter() {
           <Route path="user-categories" element={<UserCategoryAssignment />} />
           <Route path="category-rules" element={<CategoryRulesPage />} />
           <Route path="action-config" element={<ActionConfigPage />} />
+          <Route path="company-blacklist" element={<CompanyBlacklistPage />} />
           <Route path="disapproval-reasons" element={<AdminDisapprovalReasonsPage />} />
           <Route path="company-types" element={<AdminCompanyTypesPage />} />
           <Route path="job-types" element={<AdminJobTypesPage />} />
           <Route path="pricing" element={<PricingPage />} />
           <Route path="role-performance" element={<RolePerformancePage />} />
           <Route path="logs" element={<SystemLogsPage />} />
+          
+          {/* Communication */}
+          <Route path="notices" element={<SubAdminNotices />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 
@@ -170,6 +176,7 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<WebsiteResearcherDashboard />} />
           <Route path="tasks" element={<WebsiteResearchTasksPage />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 
@@ -179,6 +186,7 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<LinkedinResearcherDashboard />} />
           <Route path="tasks" element={<LinkedinResearchTasksPage />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 
@@ -189,6 +197,7 @@ export default function AppRouter() {
           <Route path="dashboard" element={<WebsiteInquirerDashboard />} />
           <Route path="tasks" element={<WebsiteInquiryTasksPage />} />
           <Route path="uploads" element={<WebsiteEvidenceUploadsPage />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 
@@ -199,6 +208,7 @@ export default function AppRouter() {
           <Route path="dashboard" element={<LinkedinInquirerDashboard />} />
           <Route path="tasks" element={<LinkedinInquiryTasksPage />} />
           <Route path="uploads" element={<LinkedinEvidenceUploadsPage />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 
@@ -208,6 +218,7 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<WebsiteAuditorDashboard />} />
           <Route path="pending" element={<WebsiteAuditorPendingPage />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 
@@ -217,6 +228,7 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<LinkedinAuditorDashboard />} />
           <Route path="pending" element={<LinkedinAuditorPendingPage />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 
@@ -226,6 +238,7 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<WebsiteResearchAuditorDashboard />} />
           <Route path="pending" element={<WebsiteResearchAuditorPendingPage />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 
@@ -235,6 +248,7 @@ export default function AppRouter() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<LinkedinResearchAuditorDashboard />} />
           <Route path="pending" element={<LinkedinResearchAuditorPendingPage />} />
+          <Route path="messages" element={<SubAdminMessages />} />
         </Route>
       </Route>
 

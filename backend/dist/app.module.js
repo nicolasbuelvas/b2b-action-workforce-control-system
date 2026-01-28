@@ -28,6 +28,7 @@ const admin_module_1 = require("./modules/admin/admin.module");
 const category_rules_module_1 = require("./modules/category-rules/category-rules.module");
 const subadmin_module_1 = require("./modules/subadmin/subadmin.module");
 const daily_limit_validation_module_1 = require("./common/daily-limit-validation.module");
+const messages_module_1 = require("./modules/messages/messages.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -61,6 +62,7 @@ exports.AppModule = AppModule = __decorate([
             category_rules_module_1.CategoryRulesModule,
             subadmin_module_1.SubAdminModule,
             daily_limit_validation_module_1.DailyLimitValidationModule,
+            messages_module_1.MessagesModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

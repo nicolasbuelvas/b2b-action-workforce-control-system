@@ -10,6 +10,7 @@ exports.PaymentsModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const payments_service_1 = require("./payments.service");
+const payments_controller_1 = require("./payments.controller");
 const action_price_entity_1 = require("./entities/action-price.entity");
 const payment_record_entity_1 = require("./entities/payment-record.entity");
 let PaymentsModule = class PaymentsModule {
@@ -19,6 +20,7 @@ exports.PaymentsModule = PaymentsModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([action_price_entity_1.ActionPrice, payment_record_entity_1.PaymentRecord])],
         providers: [payments_service_1.PaymentsService],
+        controllers: [payments_controller_1.PaymentsController],
         exports: [payments_service_1.PaymentsService],
     })
 ], PaymentsModule);

@@ -67,34 +67,131 @@ interface GlobalListItem {
   name: string;
 }
 
-interface NoticeConfig {
-  id: string;
-  recipientRole: Role;
-  category: string;
-  userId?: string;
-  message: string;
-  createdAt: string;
-}
-
 // --- API pattern: Use fetch directly, matching other pages ---
 const API_BASE = '/api/actions';
 
 async function fetchActionsConfig(): Promise<ActionConfig[]> {
   try {
     const res = await fetch(API_BASE);
+    if (res.status === 404) {
+      console.warn('Actions endpoint not yet implemented.');
+      return [];
+    }
     if (!res.ok) return [];
     return await res.json();
   } catch {
+    console.warn('Failed to fetch actions.');
     return [];
   }
 }
 
-// For global lists, use safe placeholders (empty arrays) if endpoints do not exist
+// Fetch global list items
 async function fetchGlobalList(type: string): Promise<GlobalListItem[]> {
-  return [];
+  try {
+    const res = await fetch(`${API_BASE}/global-lists/${type}`);
+    if (res.status === 404) {
+      console.warn(`Global lists endpoint not yet implemented.`);
+      return [];
+    }
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    console.warn('Failed to fetch global lists.');
+    return [];
+  }
 }
-async function fetchNotices(): Promise<NoticeConfig[]> {
-  return [];
+
+// Add item to global list
+async function addGlobalListItem(type: string, item: { name: string }): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/global-lists/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
+    });
+  } catch (error) {
+    console.error('Failed to add item to global list:', error);
+  }
+}
+
+// Delete from global list
+async function deleteGlobalListItem(type: string, id: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/global-lists/${type}/${id}`, { method: 'DELETE' });
+  } catch (error) {
+    console.error('Failed to delete global list item:', error);
+  }
+}
+
+// Update global list item
+async function updateGlobalListItem(type: string, id: string, item: { name: string }): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/global-lists/${type}/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
+    });
+  } catch (error) {
+    console.error('Failed to update global list item:', error);
+  }
+}
+
+// Create new action config
+async function createActionConfig(config: Omit<ActionConfig, 'id'>): Promise<ActionConfig> {
+  try {
+    const res = await fetch(API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+    if (!res.ok) throw new Error('Failed to create action');
+    return await res.json();
+  } catch (error) {
+    console.error('Failed to create action:', error);
+    throw error;
+  }
+}
+
+// Update action config
+async function updateActionConfig(id: string, config: Partial<ActionConfig>): Promise<ActionConfig> {
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+    if (!res.ok) throw new Error('Failed to update action');
+    return await res.json();
+  } catch (error) {
+    console.error('Failed to update action:', error);
+    throw error;
+  }
+}
+
+// Delete action config
+async function deleteActionConfig(id: string): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete action');
+  } catch (error) {
+    console.error('Failed to delete action:', error);
+    throw error;
+  }
+}
+
+// Toggle action enable/disable
+async function toggleActionStatus(id: string, enabled: boolean): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE}/${id}/enable`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) throw new Error('Failed to toggle action status');
+  } catch (error) {
+    console.error('Failed to toggle action status:', error);
+    throw error;
+  }
 }
 
 // --- Main Component ---
@@ -133,9 +230,6 @@ const ActionConfigPage: React.FC = () => {
   const [globalListType, setGlobalListType] = useState<'blacklist'>('blacklist');
   const [showGlobalListModal, setShowGlobalListModal] = useState(false);
   const [globalListInput, setGlobalListInput] = useState('');
-  const [noticeModalOpen, setNoticeModalOpen] = useState(false);
-  const [notices, setNotices] = useState<NoticeConfig[]>([]);
-  const [noticeForm, setNoticeForm] = useState<Partial<NoticeConfig>>({});
 
   // --- Fetch Data ---
   useEffect(() => {
@@ -143,13 +237,11 @@ const ActionConfigPage: React.FC = () => {
     Promise.all([
       fetchActionsConfig(),
       fetchGlobalList('blacklist'),
-      fetchNotices(),
     ]).then(
-      ([actions, blacklist, notices]) => {
+      ([actions, blacklist]) => {
         setActions(actions);
         setFilteredActions(actions);
         setGlobalLists({ blacklist });
-        setNotices(notices);
         setLoading(false);
       }
     );
@@ -175,88 +267,109 @@ const ActionConfigPage: React.FC = () => {
   }, [search, actions]);
 
   // --- Handlers ---
-  // For create/update/delete, use safe stubs that do nothing if API does not exist
   const handleEdit = (action: ActionConfig) => setEditAction(action);
+  
   const handleDelete = async (id: string) => {
-    setActions((prev) => prev.filter((a) => a.id !== id));
-    setFilteredActions((prev) => prev.filter((a) => a.id !== id));
-    // TODO: Implement API call if endpoint exists
+    if (!window.confirm('Are you sure you want to delete this action?')) return;
+    try {
+      await deleteActionConfig(id);
+      setActions((prev) => prev.filter((a) => a.id !== id));
+      setFilteredActions((prev) => prev.filter((a) => a.id !== id));
+    } catch (error) {
+      console.error('Delete failed:', error);
+      alert('Failed to delete action');
+    }
   };
+  
   const handleEnableToggle = async (id: string, enabled: boolean) => {
-    setActions((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, enabled } : a))
-    );
-    setFilteredActions((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, enabled } : a))
-    );
-    // TODO: Implement API call if endpoint exists
+    try {
+      await toggleActionStatus(id, enabled);
+      setActions((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, enabled } : a))
+      );
+      setFilteredActions((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, enabled } : a))
+      );
+    } catch (error) {
+      console.error('Toggle failed:', error);
+      alert('Failed to update action status');
+    }
   };
+  
   const handleSaveEdit = async (updated: ActionConfig) => {
-    setActions((prev) =>
-      prev.map((a) => (a.id === updated.id ? updated : a))
-    );
-    setFilteredActions((prev) =>
-      prev.map((a) => (a.id === updated.id ? updated : a))
-    );
-    setEditAction(null);
-    // TODO: Implement API call if endpoint exists
+    try {
+      await updateActionConfig(updated.id, updated);
+      setActions((prev) =>
+        prev.map((a) => (a.id === updated.id ? updated : a))
+      );
+      setFilteredActions((prev) =>
+        prev.map((a) => (a.id === updated.id ? updated : a))
+      );
+      setEditAction(null);
+    } catch (error) {
+      console.error('Update failed:', error);
+      alert('Failed to update action');
+    }
   };
+  
   const handleCreate = async (newConfig: ActionConfig) => {
-    setActions((prev) => [...prev, newConfig]);
-    setFilteredActions((prev) => [...prev, newConfig]);
-    setShowCreateModal(false);
-    // TODO: Implement API call if endpoint exists
+    try {
+      const created = await createActionConfig(newConfig);
+      setActions((prev) => [...prev, created]);
+      setFilteredActions((prev) => [...prev, created]);
+      setShowCreateModal(false);
+    } catch (error) {
+      console.error('Create failed:', error);
+      alert('Failed to create action');
+    }
   };
 
   // --- Global List Handlers ---
   const handleAddGlobalListItem = async () => {
     if (!globalListInput.trim()) return;
-    setGlobalLists((prev) => ({
-      ...prev,
-      [globalListType]: [
-        ...prev[globalListType],
-        { id: Date.now().toString(), name: globalListInput.trim() },
-      ],
-    }));
-    setGlobalListInput('');
-    // TODO: Implement API call if endpoint exists
+    try {
+      await addGlobalListItem(globalListType, { name: globalListInput.trim() });
+      const updated = await fetchGlobalList(globalListType);
+      setGlobalLists((prev) => ({
+        ...prev,
+        [globalListType]: updated,
+      }));
+      setGlobalListInput('');
+    } catch (error) {
+      console.error('Add global list item failed:', error);
+      alert('Failed to add item');
+    }
   };
+  
   const handleDeleteGlobalListItem = async (id: string) => {
-    setGlobalLists((prev) => ({
-      ...prev,
-      [globalListType]: prev[globalListType].filter((item) => item.id !== id),
-    }));
-    // TODO: Implement API call if endpoint exists
+    try {
+      await deleteGlobalListItem(globalListType, id);
+      setGlobalLists((prev) => ({
+        ...prev,
+        [globalListType]: prev[globalListType].filter((item) => item.id !== id),
+      }));
+    } catch (error) {
+      console.error('Delete global list item failed:', error);
+      alert('Failed to delete item');
+    }
   };
+  
   const handleEditGlobalListItem = async (id: string, name: string) => {
-    setGlobalLists((prev) => ({
-      ...prev,
-      [globalListType]: prev[globalListType].map((item) =>
-        item.id === id ? { ...item, name } : item
-      ),
-    }));
-    // TODO: Implement API call if endpoint exists
+    try {
+      await updateGlobalListItem(globalListType, id, { name });
+      setGlobalLists((prev) => ({
+        ...prev,
+        [globalListType]: prev[globalListType].map((item) =>
+          item.id === id ? { ...item, name } : item
+        ),
+      }));
+    } catch (error) {
+      console.error('Update global list item failed:', error);
+      alert('Failed to update item');
+    }
   };
 
-  // --- Notice Handlers ---
-  const handleAddNotice = async () => {
-    if (!noticeForm.message || !noticeForm.recipientRole || !noticeForm.category)
-      return;
-    setNotices((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        recipientRole: noticeForm.recipientRole!,
-        category: noticeForm.category!,
-        userId: noticeForm.userId,
-        message: noticeForm.message!,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
-    setNoticeModalOpen(false);
-    setNoticeForm({});
-    // TODO: Implement API call if endpoint exists
-  };
+
 
   // --- Stats ---
   const totalActions = actions.length;
@@ -302,21 +415,6 @@ const ActionConfigPage: React.FC = () => {
         <StatCard title="Enabled" value={enabledActions} />
         <StatCard title="Roles Covered" value={rolesCovered} />
         <StatCard title="Actions Requiring Approval" value={approvalRequiredCount} />
-      </section>
-
-      {/* Global Management */}
-      <section style={{ margin: '20px 0' }}>
-        <h3>Global Management</h3>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => {
-              setGlobalListType('blacklist');
-              setShowGlobalListModal(true);
-            }}
-          >
-            Company Blacklist
-          </button>
-        </div>
       </section>
 
       {/* Search/Filter */}
@@ -651,95 +749,7 @@ const ActionConfigPage: React.FC = () => {
         </div>
       )}
 
-      {/* Notice System */}
-      <section style={{ margin: '30px 0' }}>
-        <h3>Notice System</h3>
-        <button onClick={() => setNoticeModalOpen(true)}>Configure Notice</button>
-        {noticeModalOpen && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <h2>Send Notice</h2>
-              <div className="form-group">
-                <label>Recipient Role</label>
-                <select
-                  value={noticeForm.recipientRole || ''}
-                  onChange={(e) =>
-                    setNoticeForm((f) => ({
-                      ...f,
-                      recipientRole: e.target.value as Role,
-                    }))
-                  }
-                >
-                  <option value="">Select Role</option>
-                  {roles.map((r) => (
-                    <option key={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <input
-                  value={noticeForm.category || ''}
-                  onChange={(e) =>
-                    setNoticeForm((f) => ({ ...f, category: e.target.value }))
-                  }
-                  placeholder="Category"
-                />
-              </div>
-              <div className="form-group">
-                <label>Specific User (optional)</label>
-                <input
-                  value={noticeForm.userId || ''}
-                  onChange={(e) =>
-                    setNoticeForm((f) => ({ ...f, userId: e.target.value }))
-                  }
-                  placeholder="Enter user email or ID"
-                />
-              </div>
-              <div className="form-group">
-                <label>Message</label>
-                <textarea
-                  rows={3}
-                  value={noticeForm.message || ''}
-                  onChange={(e) =>
-                    setNoticeForm((f) => ({ ...f, message: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" onClick={() => setNoticeModalOpen(false)}>
-                  Close
-                </button>
-                <button type="button" onClick={handleAddNotice}>
-                  Send
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        <div style={{ marginTop: 16 }}>
-          <h4>Sent Notices</h4>
-          <ul>
-            {notices.map((n) => (
-              <li key={n.id}>
-                <b>{n.recipientRole}</b> | {n.category} |{' '}
-                {n.userId ? n.userId : 'All'}
-                <br />
-                <span>{n.message}</span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: '#999',
-                    marginLeft: 8,
-                  }}
-                >
-                  {new Date(n.createdAt).toLocaleString()}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+
     </div>
   );
 };

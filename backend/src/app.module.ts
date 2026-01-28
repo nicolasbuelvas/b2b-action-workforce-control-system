@@ -28,6 +28,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { CategoryRulesModule } from './modules/category-rules/category-rules.module';
 import { SubAdminModule } from './modules/subadmin/subadmin.module';
 import { DailyLimitValidationModule } from './common/daily-limit-validation.module';
+import { MessagesModule } from './modules/messages/messages.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { DailyLimitValidationModule } from './common/daily-limit-validation.modu
     CategoryRulesModule,
     SubAdminModule,
     DailyLimitValidationModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

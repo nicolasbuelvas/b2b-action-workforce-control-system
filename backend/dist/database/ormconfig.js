@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ormConfig = void 0;
+exports.AppDataSource = exports.ormConfig = void 0;
+const typeorm_1 = require("typeorm");
+require("dotenv/config");
 exports.ormConfig = {
     type: 'postgres',
     host: process.env.DB_HOST || 'localhost',
@@ -17,4 +19,5 @@ exports.ormConfig = {
         ? { rejectUnauthorized: false }
         : false,
 };
+exports.AppDataSource = new typeorm_1.DataSource(exports.ormConfig);
 //# sourceMappingURL=ormconfig.js.map

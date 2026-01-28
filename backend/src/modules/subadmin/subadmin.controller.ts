@@ -22,11 +22,12 @@ interface UserPayload {
   id?: string;
   userId?: string;
   email?: string;
+  role?: string;
 }
 
 @Controller('subadmin')
 @UseGuards(JwtGuard, RolesGuard)
-@Roles('sub_admin')
+@Roles('sub_admin', 'super_admin')
 export class SubAdminController {
   constructor(private readonly subAdminService: SubAdminService) {}
 
@@ -37,13 +38,14 @@ export class SubAdminController {
   @Get('categories')
   async getCategories(@CurrentUser() user: UserPayload) {
     const userId = user?.id ?? user?.userId;
-    console.log('[subadmin.controller.getCategories] user:', user, 'resolvedUserId:', userId);
+    const userRole = user?.role;
+    console.log('[subadmin.controller.getCategories] user:', user, 'resolvedUserId:', userId, 'role:', userRole);
 
     if (!userId) {
       throw new Error('Invalid user payload: missing userId');
     }
 
-    const categories = await this.subAdminService.getUserCategories(userId);
+    const categories = await this.subAdminService.getUserCategories(userId, userRole);
     console.log('[subadmin.controller.getCategories] returning categories:', categories.length);
     return categories;
   }
@@ -166,14 +168,15 @@ export class SubAdminController {
     @Query('limit') limit = 50,
     @Query('offset') offset = 0,
   ) {
+    const userId = user?.id ?? user?.userId;
     const result = await this.subAdminService.getWebsiteResearchTasks(
-      user.id,
+      userId,
       categoryId,
       status,
       Math.min(limit, 100), // Max 100 per request
       offset,
     );
-    return result.data;
+    return result;
   }
 
   /**
@@ -188,14 +191,15 @@ export class SubAdminController {
     @Query('limit') limit = 50,
     @Query('offset') offset = 0,
   ) {
+    const userId = user?.id ?? user?.userId;
     const result = await this.subAdminService.getLinkedInResearchTasks(
-      user.id,
+      userId,
       categoryId,
       status,
       Math.min(limit, 100),
       offset,
     );
-    return result.data;
+    return result;
   }
 
   /**
@@ -579,28 +583,6 @@ export class SubAdminController {
     );
   }
 
-  /**
-   * GET /subadmin/messages
-   * Get messages for sub-admin
-   */
-  @Get('messages')
-  async getMessages(@CurrentUser() user: UserPayload) {
-    // Return empty array for now - can be implemented later
-    return [];
-  }
-
-  /**
-   * POST /subadmin/messages/:id/read
-   * Mark message as read
-   */
-  @Patch('messages/:id/read')
-  async markMessageRead(
-    @CurrentUser() user: UserPayload,
-    @Param('id') messageId: string,
-  ) {
-    // Return success for now
-    return { success: true };
-  }
 
   /**
    * GET /subadmin/performance
@@ -626,23 +608,6 @@ export class SubAdminController {
     return await this.subAdminService.getTopWorkers(user.id, period);
   }
 
-  /**
-   * GET /subadmin/templates
-   * Get message templates
-   */
-  @Get('templates')
-  async getTemplates(@CurrentUser() user: UserPayload) {
-    return [];
-  }
-
-  /**
-   * GET /subadmin/notices
-   * Get system notices
-   */
-  @Get('notices')
-  async getNotices(@CurrentUser() user: UserPayload) {
-    return [];
-  }
 
   /**
    * GET /subadmin/disapproval-reasons
@@ -881,3 +846,6 @@ export class SubAdminController {
     );
   }
 }
+
+
+

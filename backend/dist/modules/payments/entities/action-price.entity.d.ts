@@ -1,8 +1,10 @@
 export declare class ActionPrice {
     id: string;
-    role: string;
+    roleId: string;
     actionType: string;
-    amount: string;
+    amount: number;
+    bonusMultiplier: number;
+    description: string;
     createdAt: Date;
     updatedAt: Date;
 }

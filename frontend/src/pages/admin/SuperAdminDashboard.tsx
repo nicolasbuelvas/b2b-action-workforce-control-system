@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getAdminDashboard, getAdminCategories, getTopWorkers, getSystemLogs } from '../../api/admin.api';
 import StatCard from '../../components/cards/StatCard';
 import DataTable from '../../components/tables/DataTable';
@@ -45,6 +46,7 @@ interface LogData {
 }
 
 export default function SuperAdminDashboard() {
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [topWorkers, setTopWorkers] = useState<TopWorkersData | null>(null);
@@ -254,7 +256,7 @@ export default function SuperAdminDashboard() {
           <div className="sa-card sa-full-height">
             <div className="sa-card-header">
               <h3>System Activity Logs</h3>
-              <button className="btn-link">View All Logs</button>
+              <button className="btn-link" onClick={() => navigate('/admin/system-logs')}>View All Logs</button>
             </div>
             
             <div className="activity-feed">

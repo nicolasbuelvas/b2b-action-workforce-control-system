@@ -1,5 +1,6 @@
 import React from 'react';
 import './WebsiteResearcherDashboard.css';
+import { PaymentSummaryCard } from '../../../components/cards/PaymentSummaryCard';
 
 export default function WebsiteResearcherDashboard() {
   /**
@@ -32,6 +33,9 @@ export default function WebsiteResearcherDashboard() {
           </p>
         </div>
       </header>
+
+      {/* PAYMENT SUMMARY */}
+      <PaymentSummaryCard />
 
       {/* CONTENT */}
       <div className="res-content-grid">

@@ -60,8 +60,18 @@ export class SubAdminService {
   /**
    * Get categories assigned to sub-admin
    */
-  async getUserCategories(userId: string): Promise<Category[]> {
-    console.log(`[getUserCategories] START - userId: ${userId}`);
+  async getUserCategories(userId: string, userRole?: string): Promise<Category[]> {
+    console.log(`[getUserCategories] START - userId: ${userId}, role: ${userRole}`);
+    
+    // Super admin sees ALL categories
+    if (userRole === 'super_admin') {
+      const allCategories = await this.categoryRepo.find({
+        where: { isActive: true },
+      });
+      console.log(`[getUserCategories] SUPER_ADMIN - Returning ${allCategories.length} active categories`);
+      return allCategories;
+    }
+    
     console.log(`[getUserCategories] userId type: ${typeof userId}`);
     console.log(`[getUserCategories] userId valid: ${!!userId && userId !== 'undefined' && userId !== 'null'}`);
     
@@ -394,58 +404,91 @@ export class SubAdminService {
       await this.validateCategoryAccess(userId, categoryId);
     }
 
-    // Get user's assigned categories
-    const userCategories = await this.userCategoryRepo.find({
+    // Get user's assigned categories - check both tables (for sub-admins and workers)
+    let subAdminCats = await this.userCategoryRepo.find({
       where: { userId },
       select: ['categoryId'],
     });
 
-    if (userCategories.length === 0) {
+    let userCats = await this.userCategoryRepo.find({
+      where: { userId },
+      select: ['categoryId'],
+    });
+
+    const allCategoryIds = [
+      ...subAdminCats.map(sac => sac.categoryId),
+      ...userCats.map(uc => uc.categoryId),
+    ];
+
+    // Remove duplicates
+    const categoryIds = [...new Set(allCategoryIds)];
+
+    if (categoryIds.length === 0) {
       return { data: [], total: 0 };
     }
 
-    const categoryIds = userCategories.map(uc => uc.categoryId);
     const filterCategoryIds = categoryId ? [categoryId] : categoryIds;
 
-    let query = this.researchTaskRepo
-      .createQueryBuilder('task')
-      .leftJoin(Company, 'company', 'task.targetId::uuid = company.id')
-      .leftJoin(Category, 'category', 'category.id = task.categoryId')
-      .where('task.targettype = :targetType', { targetType: 'COMPANY' })
-      .andWhere('task.categoryId IN (:...categoryIds)', {
-        categoryIds: filterCategoryIds,
-      });
+    // Build WHERE clause for category filtering
+    const categoryPlaceholders = filterCategoryIds.map((_, idx) => `$${idx + 2}`).join(',');
+
+    // Use raw SQL for count
+    let countQuery = `
+      SELECT COUNT(*)::integer as count
+      FROM research_tasks t
+      WHERE t.targettype = $1
+      AND t."categoryId" IN (${categoryPlaceholders})
+    `;
+    let countParams: any[] = ['COMPANY', ...filterCategoryIds];
 
     if (status) {
-      query = query.andWhere('task.status = :status', { status });
+      countQuery += ` AND t.status = $${filterCategoryIds.length + 2}`;
+      countParams.push(status);
     }
 
-    const total = await query.getCount();
-    const rows = await query
-      .select([
-        'task.id as id',
-        'task.status as status',
-        'task.createdAt as created_at',
-        'company.domain as company_domain',
-        'company.name as company_name',
-        'company.country as company_country',
-        'category.name as category_name',
-      ])
-      .orderBy('task.createdAt', 'DESC')
-      .skip(offset)
-      .take(limit)
-      .getRawMany();
+    const countResult = await this.researchTaskRepo.query(countQuery, countParams);
+    const total = countResult[0]?.count || 0;
+
+    // Get data using raw query
+    let dataQuery = `
+      SELECT 
+        t.id,
+        t.status,
+        t."createdAt",
+        c.name as "companyName",
+        c.domain as "companyDomain",
+        c.country as country,
+        cat.name as "categoryName"
+      FROM research_tasks t
+      LEFT JOIN companies c ON c.id::text = t."targetId"
+      LEFT JOIN categories cat ON cat.id::text = t."categoryId"
+      WHERE t.targettype = $1
+      AND t."categoryId" IN (${categoryPlaceholders})
+    `;
+    let dataParams: any[] = ['COMPANY', ...filterCategoryIds];
+    let paramIndex = filterCategoryIds.length + 2;
+
+    if (status) {
+      dataQuery += ` AND t.status = $${paramIndex}`;
+      dataParams.push(status);
+      paramIndex++;
+    }
+
+    dataQuery += ` ORDER BY t."createdAt" DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    dataParams.push(limit, offset);
+
+    const rawTasks = await this.researchTaskRepo.query(dataQuery, dataParams);
 
     // Transform to match frontend expectations
-    const transformedTasks = rows.map((row: any) => ({
-      id: row.id,
-      profileUrl: row.company_domain || '',
-      companyName: row.company_name || row.company_domain || 'Unknown',
-      country: row.company_country || 'Unknown',
-      category: row.category_name || 'Unknown',
+    const transformedTasks = rawTasks.map((task: any) => ({
+      id: task.id,
+      profileUrl: task.companyDomain || '',
+      companyName: task.companyName || task.companyDomain || 'Unknown',
+      country: task.country || 'Unknown',
+      category: task.categoryName || 'Unknown',
       submittedBy: 'Researcher',
-      status: (row.status || '').toLowerCase(),
-      createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+      status: (task.status || '').toLowerCase(),
+      createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : undefined,
     }));
 
     return { data: transformedTasks, total };
@@ -466,57 +509,91 @@ export class SubAdminService {
       await this.validateCategoryAccess(userId, categoryId);
     }
 
-    // Get user's assigned categories
-    const userCategories = await this.userCategoryRepo.find({
+    // Get user's assigned categories - check both tables (for sub-admins and workers)
+    let subAdminCats = await this.userCategoryRepo.find({
       where: { userId },
       select: ['categoryId'],
     });
 
-    if (userCategories.length === 0) {
+    let userCats = await this.userCategoryRepo.find({
+      where: { userId },
+      select: ['categoryId'],
+    });
+
+    const allCategoryIds = [
+      ...subAdminCats.map(sac => sac.categoryId),
+      ...userCats.map(uc => uc.categoryId),
+    ];
+
+    // Remove duplicates
+    const categoryIds = [...new Set(allCategoryIds)];
+
+    if (categoryIds.length === 0) {
       return { data: [], total: 0 };
     }
 
-    const categoryIds = userCategories.map(uc => uc.categoryId);
     const filterCategoryIds = categoryId ? [categoryId] : categoryIds;
 
-    let query = this.researchTaskRepo
-      .createQueryBuilder('task')
-      .leftJoin(LinkedInProfile, 'profile', "task.targettype = 'LINKEDIN_PROFILE' AND profile.id::text = task.targetId")
-      .leftJoin(Category, 'category', 'category.id = task.categoryId')
-      .where('task.targettype IN (:...targetTypes)', { targetTypes: ['LINKEDIN_PROFILE', 'LINKEDIN'] })
-      .andWhere('task.categoryId IN (:...categoryIds)', {
-        categoryIds: filterCategoryIds,
-      });
+    // Build WHERE clause for category filtering
+    const categoryPlaceholders = filterCategoryIds.map((_, idx) => `$${idx + 2}`).join(',');
+
+    // Use raw SQL for count
+    let countQuery = `
+      SELECT COUNT(*)::integer as count
+      FROM research_tasks t
+      WHERE t.targettype = $1
+      AND t."categoryId" IN (${categoryPlaceholders})
+    `;
+    let countParams: any[] = ['LINKEDIN_PROFILE', ...filterCategoryIds];
 
     if (status) {
-      query = query.andWhere('task.status = :status', { status });
+      countQuery += ` AND t.status = $${filterCategoryIds.length + 2}`;
+      countParams.push(status);
     }
 
-    const total = await query.getCount();
-    const rows = await query
-      .select([
-        'task.id as id',
-        'task.status as status',
-        'task.createdAt as created_at',
-        'profile.url as profile_url',
-        'task.targetId as target_id',
-        'category.name as category_name',
-      ])
-      .orderBy('task.createdAt', 'DESC')
-      .skip(offset)
-      .take(limit)
-      .getRawMany();
+    const countResult = await this.researchTaskRepo.query(countQuery, countParams);
+    const total = countResult[0]?.count || 0;
+
+    // Get data using raw query
+    let dataQuery = `
+      SELECT 
+        t.id,
+        t.status,
+        t."createdAt",
+        p.contact_name as "profileName",
+        p.url as "profileUrl",
+        p.country,
+        cat.name as "categoryName"
+      FROM research_tasks t
+      LEFT JOIN linkedin_profiles p ON p.id::text = t."targetId"
+      LEFT JOIN categories cat ON cat.id::text = t."categoryId"
+      WHERE t.targettype = $1
+      AND t."categoryId" IN (${categoryPlaceholders})
+    `;
+    let dataParams: any[] = ['LINKEDIN_PROFILE', ...filterCategoryIds];
+    let paramIndex = filterCategoryIds.length + 2;
+
+    if (status) {
+      dataQuery += ` AND t.status = $${paramIndex}`;
+      dataParams.push(status);
+      paramIndex++;
+    }
+
+    dataQuery += ` ORDER BY t."createdAt" DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    dataParams.push(limit, offset);
+
+    const rawTasks = await this.researchTaskRepo.query(dataQuery, dataParams);
 
     // Transform to match frontend expectations
-    const transformedTasks = rows.map((row: any) => ({
-      id: row.id,
-      profileUrl: row.profile_url || row.target_id || '',
-      companyName: 'LinkedIn Profile',
-      country: 'N/A',
-      category: row.category_name || 'Unknown',
-      submittedBy: 'Researcher',
-      status: (row.status || '').toLowerCase(),
-      createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+    const transformedTasks = rawTasks.map((task: any) => ({
+      id: task.id,
+      profileUrl: task.profileUrl || '',
+      profileName: task.profileName || 'LinkedIn Profile',
+      country: task.country || 'Unknown',
+      category: task.categoryName || 'Unknown',
+      categoryName: task.categoryName || 'Unknown',
+      status: (task.status || '').toLowerCase(),
+      createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : undefined,
     }));
 
     return { data: transformedTasks, total };
@@ -538,42 +615,119 @@ export class SubAdminService {
       await this.validateCategoryAccess(userId, categoryId);
     }
 
-    // Get user's assigned categories
-    const userCategories = await this.userCategoryRepo.find({
+    // Get user's assigned categories - check both tables (for sub-admins and workers)
+    let subAdminCats = await this.userCategoryRepo.find({
       where: { userId },
       select: ['categoryId'],
     });
 
-    if (userCategories.length === 0) {
+    let userCats = await this.userCategoryRepo.find({
+      where: { userId },
+      select: ['categoryId'],
+    });
+
+    const allCategoryIds = [
+      ...subAdminCats.map(sac => sac.categoryId),
+      ...userCats.map(uc => uc.categoryId),
+    ];
+
+    // Remove duplicates
+    const categoryIds = [...new Set(allCategoryIds)];
+
+    if (categoryIds.length === 0) {
       return { data: [], total: 0 };
     }
 
-    const categoryIds = userCategories.map(uc => uc.categoryId);
     const filterCategoryIds = categoryId ? [categoryId] : categoryIds;
 
-    let query = this.inquiryTaskRepo
-      .createQueryBuilder('task')
-      .where('task.categoryId IN (:...categoryIds)', {
-        categoryIds: filterCategoryIds,
-      });
+    // Build WHERE clause for category filtering
+    const categoryPlaceholders = filterCategoryIds.map((_, idx) => `$${idx + 1}`).join(',');
+
+    // Use raw SQL for count
+    let countQuery = `
+      SELECT COUNT(*)::integer as count
+      FROM inquiry_tasks t
+      WHERE t."categoryId" IN (${categoryPlaceholders})
+    `;
+    let countParams: any[] = [...filterCategoryIds];
+    let paramIndex = filterCategoryIds.length + 1;
 
     if (platform) {
-      query = query.andWhere('task.platform = :platform', { platform });
+      countQuery += ` AND t.platform = $${paramIndex}`;
+      countParams.push(platform);
+      paramIndex++;
     }
 
     if (status) {
-      query = query.andWhere('task.status = :status', { status });
+      countQuery += ` AND t.status = $${paramIndex}`;
+      countParams.push(status);
+      paramIndex++;
     }
 
-    const total = await query.getCount();
-    const tasks = await query
-      .leftJoinAndSelect('task.researchTask', 'researchTask')
-      .orderBy('task.createdAt', 'DESC')
-      .skip(offset)
-      .take(limit)
-      .getMany();
+    const countResult = await this.inquiryTaskRepo.query(countQuery, countParams);
+    const total = countResult[0]?.count || 0;
 
-    return { data: tasks, total };
+    // Get data using raw query - join through research_tasks for proper data access
+    let dataQuery = `
+      SELECT 
+        t.id,
+        t.status,
+        t.platform,
+        t."createdAt",
+        t."assignedToUserId",
+        t.research_task_id as "researchTaskId",
+        c.name as "companyName",
+        c.domain as "companyDomain",
+        c.country as country,
+        p.contact_name as "profileName",
+        p.url as "profileUrl",
+        cat.name as "categoryName",
+        rt.status as "researchTaskStatus"
+      FROM inquiry_tasks t
+      LEFT JOIN research_tasks rt ON rt.id = t.research_task_id
+      LEFT JOIN companies c ON c.id::text = rt."targetId" AND rt.targettype = 'COMPANY'
+      LEFT JOIN linkedin_profiles p ON p.id::text = rt."targetId" AND rt.targettype = 'LINKEDIN_PROFILE'
+      LEFT JOIN categories cat ON cat.id::text = t."categoryId"
+      WHERE t."categoryId" IN (${categoryPlaceholders})
+    `;
+    let dataParams: any[] = [...filterCategoryIds];
+    paramIndex = filterCategoryIds.length + 1;
+
+    if (platform) {
+      dataQuery += ` AND t.platform = $${paramIndex}`;
+      dataParams.push(platform);
+      paramIndex++;
+    }
+
+    if (status) {
+      dataQuery += ` AND t.status = $${paramIndex}`;
+      dataParams.push(status);
+      paramIndex++;
+    }
+
+    dataQuery += ` ORDER BY t."createdAt" DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    dataParams.push(limit, offset);
+
+    const rawTasks = await this.inquiryTaskRepo.query(dataQuery, dataParams);
+
+    // Transform raw results to match expected structure
+    const transformedTasks = rawTasks.map((row: any) => ({
+      id: row.id,
+      status: row.status,
+      platform: row.platform,
+      createdAt: row.createdAt,
+      assignedToUserId: row.assignedToUserId,
+      researchTaskId: row.researchTaskId,
+      companyName: row.companyName,
+      companyDomain: row.companyDomain,
+      country: row.country,
+      profileName: row.profileName,
+      profileUrl: row.profileUrl,
+      categoryName: row.categoryName,
+      researchTask: row.researchTaskId ? { status: row.researchTaskStatus } : null,
+    }));
+
+    return { data: transformedTasks, total };
   }
 
   /**
@@ -1008,6 +1162,9 @@ export class SubAdminService {
   /**
    * Get all pending research tasks across categories for sub-admin
    */
+  /**
+   * Get all pending research tasks across categories for sub-admin review
+   */
   async getPendingResearchTasks(
     userId: string,
     limit = 50,
@@ -1024,41 +1181,60 @@ export class SubAdminService {
 
     const categoryIds = userCategories.map(uc => uc.categoryId);
 
-    const query = this.researchTaskRepo
-      .createQueryBuilder('task')
-      .where('task.categoryId IN (:...categoryIds)', { categoryIds })
-      .andWhere('task.status = :status', { status: ResearchStatus.PENDING });
+    // Build WHERE clause for category filtering
+    const categoryPlaceholders = categoryIds.map((_, idx) => `$${idx + 1}`).join(',');
 
-    const total = await query.getCount();
-    const rows = await query
-      .leftJoin(Company, 'company', 'task.targettype = :companyType AND task.targetId::uuid = company.id', {
-        companyType: 'COMPANY',
-      })
-      .leftJoin(LinkedInProfile, 'profile', 'task.targettype = :linkedinType AND task.targetId::uuid = profile.id', {
-        linkedinType: 'LINKEDIN_PROFILE',
-      })
-      .leftJoin(Category, 'category', 'category.id = task.categoryId')
-      .select([
-        'task.id as id',
-        'task.status as status',
-        'task.targettype as target_type',
-        'task.createdAt as created_at',
-        'category.name as category_name',
-        'company.domain as company_domain',
-        'company.country as company_country',
-        'profile.url as profile_url',
-      ])
-      .orderBy('task.createdAt', 'ASC')
-      .skip(offset)
-      .take(limit)
-      .getRawMany();
+    // Use raw SQL for count
+    const countQuery = `
+      SELECT COUNT(*)::integer as count
+      FROM research_tasks t
+      WHERE t."categoryId" IN (${categoryPlaceholders})
+      AND t.status = $${categoryIds.length + 1}
+    `;
+    const countParams: any[] = [...categoryIds, ResearchStatus.SUBMITTED];
+
+    const countResult = await this.researchTaskRepo.query(countQuery, countParams);
+    const total = countResult[0]?.count || 0;
+
+    // Get data using raw query
+    const dataQuery = `
+      SELECT 
+        t.id,
+        t.status,
+        t.targettype as target_type,
+        t."createdAt" as created_at,
+        cat.name as category_name,
+        c.name as company_name,
+        c.domain as company_domain,
+        c.country as company_country,
+        p.contact_name as profile_name,
+        p.url as profile_url,
+        p.country as profile_country
+      FROM research_tasks t
+      LEFT JOIN companies c ON c.id::text = t."targetId" AND t.targettype = 'COMPANY'
+      LEFT JOIN linkedin_profiles p ON p.id::text = t."targetId" AND t.targettype = 'LINKEDIN_PROFILE'
+      LEFT JOIN categories cat ON cat.id::text = t."categoryId"
+      WHERE t."categoryId" IN (${categoryPlaceholders})
+      AND t.status = $${categoryIds.length + 1}
+      ORDER BY t."createdAt" DESC
+      LIMIT $${categoryIds.length + 2} OFFSET $${categoryIds.length + 3}
+    `;
+    const dataParams: any[] = [...categoryIds, ResearchStatus.SUBMITTED, limit, offset];
+
+    const rows = await this.researchTaskRepo.query(dataQuery, dataParams);
 
     const data = rows.map((row: any) => ({
       id: row.id,
-      target: row.target_type === 'LINKEDIN_PROFILE' ? row.profile_url || 'LinkedIn profile' : row.company_domain || 'Website',
+      target: row.target_type === 'LINKEDIN_PROFILE' 
+        ? (row.profile_name || row.profile_url || 'LinkedIn profile')
+        : (row.company_name || row.company_domain || 'Website'),
+      targetUrl: row.target_type === 'LINKEDIN_PROFILE' ? row.profile_url : row.company_domain,
       source: row.target_type === 'LINKEDIN_PROFILE' ? 'linkedin' : 'website',
+      platform: row.target_type === 'LINKEDIN_PROFILE' ? 'LINKEDIN' : 'WEBSITE',
       status: (row.status || '').toLowerCase(),
       category: row.category_name || 'Unknown',
+      categoryName: row.category_name || 'Unknown',
+      country: row.target_type === 'LINKEDIN_PROFILE' ? row.profile_country : row.company_country,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
     }));
 
@@ -1084,47 +1260,69 @@ export class SubAdminService {
 
     const categoryIds = userCategories.map(uc => uc.categoryId);
 
-    const query = this.inquiryTaskRepo
-      .createQueryBuilder('task')
-      .where('task.categoryId IN (:...categoryIds)', { categoryIds })
-      .andWhere('task.status = :status', { status: InquiryStatus.PENDING });
+    // Build WHERE clause for category filtering
+    const categoryPlaceholders = categoryIds.map((_, idx) => `$${idx + 1}`).join(',');
 
-    const total = await query.getCount();
-    const rows = await query
-      .leftJoin(Category, 'category', 'category.id = task.categoryId')
-      .leftJoin(Company, 'company', 'task.platform = :web AND task.targetId::uuid = company.id', {
-        web: InquiryPlatform.WEBSITE,
-      })
-      .leftJoin(LinkedInProfile, 'profile', 'task.platform = :li AND task.targetId::uuid = profile.id', {
-        li: InquiryPlatform.LINKEDIN,
-      })
-      .leftJoin(ResearchTask, 'researchTask', 'researchTask.id = task.researchTaskId')
-      .select([
-        'task.id as id',
-        'task.status as status',
-        'task.platform as platform',
-        'task.assignedToUserId as assigned_to',
-        'task.createdAt as created_at',
-        'category.name as category_name',
-        'company.domain as company_domain',
-        'profile.url as profile_url',
-        'researchTask.status as research_status',
-      ])
-      .orderBy('task.createdAt', 'ASC')
-      .skip(offset)
-      .take(limit)
-      .getRawMany();
+    // Use raw SQL for count
+    const countQuery = `
+      SELECT COUNT(*)::integer as count
+      FROM inquiry_tasks t
+      WHERE t."categoryId" IN (${categoryPlaceholders})
+      AND t.status = $${categoryIds.length + 1}
+    `;
+    const countParams: any[] = [...categoryIds, InquiryStatus.COMPLETED];
+
+    const countResult = await this.inquiryTaskRepo.query(countQuery, countParams);
+    const total = countResult[0]?.count || 0;
+
+    // Get data using raw query - join through research_tasks for proper company/profile data
+    const dataQuery = `
+      SELECT 
+        t.id,
+        t.status,
+        t.platform,
+        t."assignedToUserId" as assigned_to,
+        t."createdAt" as created_at,
+        t.research_task_id as research_task_id,
+        cat.name as category_name,
+        c.name as company_name,
+        c.domain as company_domain,
+        c.country as company_country,
+        p.contact_name as profile_name,
+        p.url as profile_url,
+        p.country as profile_country,
+        rt.status as research_status
+      FROM inquiry_tasks t
+      LEFT JOIN research_tasks rt ON rt.id = t.research_task_id
+      LEFT JOIN categories cat ON cat.id::text = t."categoryId"
+      LEFT JOIN companies c ON c.id::text = rt."targetId" AND rt.targettype = 'COMPANY'
+      LEFT JOIN linkedin_profiles p ON p.id::text = rt."targetId" AND rt.targettype = 'LINKEDIN_PROFILE'
+      WHERE t."categoryId" IN (${categoryPlaceholders})
+      AND t.status = $${categoryIds.length + 1}
+      ORDER BY t."createdAt" DESC
+      LIMIT $${categoryIds.length + 2} OFFSET $${categoryIds.length + 3}
+    `;
+    const dataParams: any[] = [...categoryIds, InquiryStatus.COMPLETED, limit, offset];
+
+    const rows = await this.inquiryTaskRepo.query(dataQuery, dataParams);
 
     const data = rows.map((row: any) => {
       const isLinkedIn = row.platform === InquiryPlatform.LINKEDIN;
       return {
         id: row.id,
         channel: isLinkedIn ? 'linkedin' : 'website',
-        target: isLinkedIn ? row.profile_url || 'LinkedIn profile' : row.company_domain || 'Website',
+        platform: row.platform,
+        target: isLinkedIn 
+          ? (row.profile_name || row.profile_url || 'LinkedIn profile')
+          : (row.company_name || row.company_domain || 'Website'),
+        targetUrl: isLinkedIn ? row.profile_url : row.company_domain,
         category: row.category_name || 'Unknown',
+        categoryName: row.category_name || 'Unknown',
+        country: isLinkedIn ? row.profile_country : row.company_country,
         status: (row.status || '').toLowerCase(),
         worker: row.assigned_to || 'Unassigned',
         researchStatus: row.research_status || null,
+        researchTaskId: row.research_task_id,
         createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
       };
     });
@@ -1476,9 +1674,95 @@ export class SubAdminService {
    * Get top workers by performance
    */
   async getTopWorkers(userId: string, period: string) {
-    // For now, return empty array
-    // This would require tracking which sub-admin reviewed which tasks
-    return [];
+    // Get subadmin's categories
+    const userCategories = await this.userCategoryRepo.find({
+      where: { userId },
+      select: ['categoryId'],
+    });
+
+    if (userCategories.length === 0) {
+      return [];
+    }
+
+    const categoryIds = userCategories.map(uc => uc.categoryId);
+
+    // Get all roles except sub_admin and super_admin
+    const roles = await this.roleRepo
+      .createQueryBuilder('role')
+      .where('role.name NOT IN (:...excludedRoles)', { 
+        excludedRoles: ['sub_admin', 'super_admin'] 
+      })
+      .getMany();
+
+    const topWorkersByRole: any[] = [];
+
+    // For each role, find top 3 workers based on completed tasks
+    for (const role of roles) {
+      // Get users with this role and assigned to subadmin's categories
+      const usersWithRole = await this.userRoleRepo
+        .createQueryBuilder('ur')
+        .leftJoinAndSelect('ur.user', 'user')
+        .where('ur.roleId = :roleId', { roleId: role.id })
+        .getMany();
+
+      const userIds = usersWithRole.map(ur => ur.userId);
+
+      if (userIds.length === 0) continue;
+
+      // Filter users to only those in subadmin's categories
+      const userCategoriesInMyScope = await this.userCategoryRepo
+        .createQueryBuilder('uc')
+        .where('uc.userId IN (:...userIds)', { userIds })
+        .andWhere('uc.categoryId IN (:...categoryIds)', { categoryIds })
+        .getMany();
+
+      const filteredUserIds = [...new Set(userCategoriesInMyScope.map(uc => uc.userId))];
+
+      if (filteredUserIds.length === 0) continue;
+
+      // Count completed tasks per user (research + inquiry)
+      const userStats = await Promise.all(
+        filteredUserIds.map(async (uid) => {
+          const researchCompleted = await this.researchTaskRepo
+            .createQueryBuilder('task')
+            .where('task.assignedToUserId = :uid', { uid })
+            .andWhere('task.status = :status', { status: ResearchStatus.COMPLETED })
+            .andWhere('task.categoryId IN (:...categoryIds)', { categoryIds })
+            .getCount();
+
+          const inquiryCompleted = await this.inquiryTaskRepo
+            .createQueryBuilder('task')
+            .where('task.assignedToUserId = :uid', { uid })
+            .andWhere('task.status = :status', { status: InquiryStatus.APPROVED })
+            .andWhere('task.categoryId IN (:...categoryIds)', { categoryIds })
+            .getCount();
+
+          const totalCompleted = researchCompleted + inquiryCompleted;
+
+          const user = await this.userRepo.findOne({ where: { id: uid } });
+
+          return {
+            userId: uid,
+            name: user?.name || 'Unknown',
+            email: user?.email || '',
+            roleName: role.name,
+            totalCompleted,
+            researchCompleted,
+            inquiryCompleted,
+          };
+        })
+      );
+
+      // Sort by total completed (descending) and take top 3
+      const top3 = userStats
+        .filter(s => s.totalCompleted > 0)
+        .sort((a, b) => b.totalCompleted - a.totalCompleted)
+        .slice(0, 3);
+
+      topWorkersByRole.push(...top3);
+    }
+
+    return topWorkersByRole;
   }
 
   // ========= COMPANY TYPES CRUD =========
@@ -1816,3 +2100,4 @@ export class SubAdminService {
     return await this.categoryRuleRepo.save(rule);
   }
 }
+

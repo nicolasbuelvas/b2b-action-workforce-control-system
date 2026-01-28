@@ -5,8 +5,9 @@ export declare class PaymentRecord {
     role: string;
     actionId: string;
     actionType: string;
-    amount: string;
+    amount: number;
     status: PaymentStatus;
+    category?: string;
     createdAt: Date;
     updatedAt: Date;
 }

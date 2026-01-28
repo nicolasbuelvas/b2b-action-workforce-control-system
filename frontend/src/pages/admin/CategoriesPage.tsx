@@ -6,7 +6,8 @@ import {
   updateCategory,
   deleteCategory,
   getUsers,
-  assignUserToCategories, // <-- Use assignUserToCategories instead
+  assignUserToCategories,
+  getUserCategories,
 } from '../../api/admin.api';
 import './categoriesPage.css';
 
@@ -74,17 +75,14 @@ export default function CategoriesPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-
-  /* For sub-admin assignment UI */
-  const [selectedSubAdminIds, setSelectedSubAdminIds] = useState<string[]>([]);
-  const [subAdminQuery, setSubAdminQuery] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   /* ---------- Lifecycle: Load Initial Data ---------- */
   useEffect(() => {
     const initPage = async () => {
       setLoading(true);
-      await Promise.all([loadCategories(), loadSubAdmins()]);
+      await loadSubAdmins();
+      await loadCategories();
       setLoading(false);
     };
     initPage();
@@ -151,12 +149,7 @@ export default function CategoriesPage() {
   });
 
   const availableSubAdminsForSelection = subAdmins.filter((sa) => {
-    const q = subAdminQuery.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      (sa.email || '').toLowerCase().includes(q) ||
-      (sa.name || '').toLowerCase().includes(q)
-    );
+    return sa.role?.toLowerCase() === 'sub_admin';
   });
 
   /* ---------- CRUD Handlers ---------- */
@@ -180,7 +173,7 @@ export default function CategoriesPage() {
       setIsSaving(true);
       const formData = new FormData(e.currentTarget as HTMLFormElement);
 
-      // PATCH payload: only category fields, NO subAdminIds
+      // Update only category fields
       const patchPayload = {
         name: (formData.get('name') as string).trim(),
         isActive: editingCategory.isActive,
@@ -196,26 +189,12 @@ export default function CategoriesPage() {
         },
       };
 
-      // Debug log for PATCH
-      console.debug('[Categories] PATCH /categories/:id payload:', patchPayload);
-
+      console.debug('[Categories] Updating category:', patchPayload);
       await updateCategory(editingCategory.id, patchPayload);
 
-      // Only assign sub-admins if changed
-      const prevIds = (editingCategory.subAdminCategories || []).map(sac => sac.userId).sort();
-      const nextIds = [...selectedSubAdminIds].sort();
-      const assignmentsChanged =
-        prevIds.length !== nextIds.length ||
-        prevIds.some((id, idx) => id !== nextIds[idx]);
-
-      if (assignmentsChanged) {
-        // Assignment from category view is disabled - use User Category Assignment page instead
-        alert('Note: To assign sub-admins to categories, please use the "User Category Assignment" page from the Admin menu');
-      }
-
+      // Reload categories to show updated data
       await loadCategories();
       setEditingCategory(null);
-      setSelectedSubAdminIds([]);
     } catch (err) {
       console.error('Failed to update category:', err);
       alert('Error updating category.');
@@ -247,12 +226,6 @@ export default function CategoriesPage() {
     );
   };
 
-  const toggleSubAdminId = (id: string) => {
-    setSelectedSubAdminIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
   /* ---------- Render Helpers ---------- */
 
   if (loading) return <div className="page-loader">Loading Categories...</div>;
@@ -266,6 +239,7 @@ export default function CategoriesPage() {
           <p>Manage system categories and sub-admin assignments.</p>
         </div>
         <div className="header-actions">
+          <button className="btn-export" onClick={() => loadCategories()}>Refresh</button>
           <button className="btn-export">Export List</button>
           <button className="btn-add-category" onClick={() => setShowCreateModal(true)}>
             + Add Category
@@ -345,16 +319,19 @@ export default function CategoriesPage() {
                   </td>
                   <td>
                     <div className="subadmin-tags">
-                      {/* Step 4: Display assigned sub-admins */}
-                      {cat.subAdminCategories?.length ? (
-                        cat.subAdminCategories.map((sac) => (
+                      {(() => {
+                        const adminList = cat.subAdminCategories || [];
+                        
+                        if (adminList.length === 0) {
+                          return <span className="no-admins">Unassigned</span>;
+                        }
+                        
+                        return adminList.map((sac: any) => (
                           <span key={sac.userId} className="admin-tag">
-                            {sac.user?.name || 'Unknown'}
+                            {sac.user.name}
                           </span>
-                        ))
-                      ) : (
-                        <span className="no-admins">Unassigned</span>
-                      )}
+                        ));
+                      })()}
                     </div>
                   </td>
                   <td className="txt-center">
@@ -373,10 +350,6 @@ export default function CategoriesPage() {
                         className="btn-icon-act edit"
                         onClick={() => {
                           setEditingCategory(cat);
-                          // Prefill selected IDs from relationship
-                          const assignedIds = cat.subAdminCategories?.map(sac => sac.userId) || [];
-                          setSelectedSubAdminIds(assignedIds);
-                          setSubAdminQuery('');
                         }}
                       >
                         Edit
@@ -441,50 +414,6 @@ export default function CategoriesPage() {
                     defaultValue={editingCategory.config?.cooldownRules?.dailyLimits?.auditor ?? 0}
                     required
                   />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginTop: '20px' }}>
-                <label>Assign Sub-Admins</label>
-                <p className="form-help">Select sub-admins who can manage this category.</p>
-                
-                <div className="subadmin-selector">
-                  <input
-                    type="text"
-                    placeholder="Filter by name or email..."
-                    value={subAdminQuery}
-                    onChange={(e) => setSubAdminQuery(e.target.value)}
-                  />
-                  
-                  <div className="subadmin-dropdown" style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #eee', marginTop: '5px' }}>
-                    {availableSubAdminsForSelection.map((sa) => (
-                      <div key={sa.id} className="subadmin-row" style={{ display: 'flex', justifyContent: 'space-between', padding: '8px' }}>
-                        <span>{sa.name} ({sa.email})</span>
-                        <button
-                          type="button"
-                          className={`btn-small ${selectedSubAdminIds.includes(sa.id) ? 'selected' : ''}`}
-                          onClick={() => toggleSubAdminId(sa.id)}
-                        >
-                          {selectedSubAdminIds.includes(sa.id) ? 'Remove' : 'Add'}
-                        </button>
-                      </div>
-                    ))}
-                    {availableSubAdminsForSelection.length === 0 && (
-                      <div style={{ padding: '8px', color: '#999' }}>No sub-admins found</div>
-                    )}
-                  </div>
-
-                  <div className="selected-admins" style={{ marginTop: '10px' }}>
-                    {selectedSubAdminIds.map((id) => {
-                      const user = subAdmins.find(u => u.id === id);
-                      return (
-                        <span key={id} className="admin-tag">
-                          {user?.name || id}
-                          <button type="button" onClick={() => toggleSubAdminId(id)}>×</button>
-                        </span>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
 

@@ -371,12 +371,27 @@ let AdminService = class AdminService {
         if (categories.length !== dto.categoryIds.length) {
             throw new common_1.NotFoundException('One or more categories not found');
         }
-        await this.userCategoryRepo.delete({ userId: dto.userId });
-        const assignments = dto.categoryIds.map(categoryId => ({
-            userId: dto.userId,
-            categoryId,
-        }));
-        await this.userCategoryRepo.save(assignments);
+        const userRoles = await this.userRoleRepo.find({
+            where: { userId: dto.userId },
+            relations: ['role'],
+        });
+        const isSubAdmin = userRoles.some(ur => ur.role.name.toLowerCase() === 'sub_admin');
+        if (isSubAdmin) {
+            await this.subAdminCategoryRepo.delete({ userId: dto.userId });
+            const assignments = dto.categoryIds.map(categoryId => this.subAdminCategoryRepo.create({
+                userId: dto.userId,
+                categoryId,
+            }));
+            await this.subAdminCategoryRepo.save(assignments);
+        }
+        else {
+            await this.userCategoryRepo.delete({ userId: dto.userId });
+            const assignments = dto.categoryIds.map(categoryId => ({
+                userId: dto.userId,
+                categoryId,
+            }));
+            await this.userCategoryRepo.save(assignments);
+        }
         return {
             userId: user.id,
             categories: dto.categoryIds,
@@ -393,15 +408,33 @@ let AdminService = class AdminService {
         };
     }
     async getUserCategories(userId) {
-        const userCategories = await this.userCategoryRepo.find({
+        const userRoles = await this.userRoleRepo.find({
             where: { userId },
-            relations: ['category'],
+            relations: ['role'],
         });
-        return userCategories.map(uc => ({
-            id: uc.category.id,
-            name: uc.category.name,
-            assignedAt: uc.createdAt,
-        }));
+        const isSubAdmin = userRoles.some(ur => ur.role.name.toLowerCase() === 'sub_admin');
+        if (isSubAdmin) {
+            const subAdminCategories = await this.subAdminCategoryRepo.find({
+                where: { userId },
+                relations: ['category'],
+            });
+            return subAdminCategories.map(sac => ({
+                id: sac.category.id,
+                name: sac.category.name,
+                assignedAt: sac.category.createdAt,
+            }));
+        }
+        else {
+            const userCategories = await this.userCategoryRepo.find({
+                where: { userId },
+                relations: ['category'],
+            });
+            return userCategories.map(uc => ({
+                id: uc.category.id,
+                name: uc.category.name,
+                assignedAt: uc.createdAt,
+            }));
+        }
     }
     async getDisapprovalReasons(filters) {
         try {

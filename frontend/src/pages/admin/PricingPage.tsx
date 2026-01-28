@@ -1,587 +1,618 @@
 import React, { useEffect, useState } from 'react';
 import './pricingPage.css';
 import StatCard from '../../components/cards/StatCard';
+import axios from '../../api/axios';
 
 // --- Types ---
-type Role =
-  | 'Website Researcher'
-  | 'LinkedIn Researcher'
-  | 'Website Inquirer'
-  | 'LinkedIn Inquirer'
-  | 'Website Inquirer Auditor'
-  | 'LinkedIn Inquirer Auditor'
-  | 'Website Research Auditor'
-  | 'LinkedIn Research Auditor';
-
-type Status = 'active' | 'inactive';
-
-interface PricingRule {
+interface ActionPrice {
   id: string;
+  roleId: string;
   actionType: string;
-  role: Role;
-  category: string;
-  unitPrice: number;
-  bonus: number;
-  status: Status;
-  effectiveDate: string;
-}
-
-interface WorkerBonus {
-  id: string;
-  workerId: string;
-  role: Role;
-  bonus: number;
-  expiresAt?: string;
-}
-
-interface TopBonusRule {
-  id: string;
-  role: Role;
-  rank: number;
-  bonus: number;
-}
-
-interface WorkerPaymentOverview {
-  workerId: string;
-  name: string;
-  role: Role;
-  category: string;
-  totalEarned: number;
-  totalPaid: number;
-  pending: number;
+  amount: number;
+  bonusMultiplier: number;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface PaymentRecord {
   id: string;
-  workerId: string;
-  role: Role;
-  category: string;
-  periodStart: string;
-  periodEnd: string;
+  userId: string;
+  role: string;
+  actionId: string;
+  actionType: string;
   amount: number;
-  status: 'pending' | 'approved' | 'paid';
-  paymentDate?: string;
-  notes?: string;
+  status: 'pending' | 'approved' | 'paid' | 'rejected';
+  category?: string;
+  createdAt?: string;
 }
 
-interface TopWorker {
-  workerId: string;
-  name: string;
-  role: Role;
-  approvedActions: number;
-  approvalRate: number;
-  rank: number;
+interface PaymentStats {
+  byStatus: Record<string, number>;
+  byRole: Record<string, { count: number; total: number }>;
+  totalAmount: number;
 }
 
 // --- API pattern: Use fetch directly, matching real endpoints ---
-const API_BASE = '/api/pricing';
-
-async function fetchPricingRules(): Promise<PricingRule[]> {
-  try {
-    const res = await fetch(`${API_BASE}/rules`);
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
-
-async function fetchWorkerBonuses(): Promise<WorkerBonus[]> {
-  try {
-    const res = await fetch(`${API_BASE}/worker-bonuses`);
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
-
-async function fetchTopBonusRules(): Promise<TopBonusRule[]> {
-  try {
-    const res = await fetch(`${API_BASE}/top-bonus-rules`);
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
-
-async function fetchPaymentOverview(): Promise<WorkerPaymentOverview[]> {
-  try {
-    const res = await fetch(`${API_BASE}/overview`);
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
-
-async function fetchPaymentRecords(): Promise<PaymentRecord[]> {
-  try {
-    const res = await fetch(`${API_BASE}/records`);
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
-
-async function fetchTopWorkers(role: Role): Promise<TopWorker[]> {
-  try {
-    const res = await fetch(`${API_BASE}/top-workers?role=${encodeURIComponent(role)}`);
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
-  }
-}
-
-// --- Main Component ---
-const roles: Role[] = [
-  'Website Researcher',
-  'LinkedIn Researcher',
-  'Website Inquirer',
-  'LinkedIn Inquirer',
-  'Website Inquirer Auditor',
-  'LinkedIn Inquirer Auditor',
-  'Website Research Auditor',
-  'LinkedIn Research Auditor',
+const ROLES = [
+  'website_researcher',
+  'linkedin_researcher',
+  'website_inquirer',
+  'linkedin_inquirer',
+  'research_auditor',
+  'inquiry_auditor',
+  'linkedin_inquiry_auditor',
+  'linkedin_research_auditor',
 ];
+
+const ACTION_TYPES = {
+  website_researcher: ['submit'],
+  linkedin_researcher: ['submit'],
+  website_inquirer: ['submit'],
+  linkedin_inquirer: ['submit'],
+  research_auditor: ['approve'],
+  inquiry_auditor: ['approve'],
+  linkedin_inquiry_auditor: ['approve'],
+  linkedin_research_auditor: ['approve'],
+};
 
 const PricingPage: React.FC = () => {
   // --- State ---
-  const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
-  const [workerBonuses, setWorkerBonuses] = useState<WorkerBonus[]>([]);
-  const [topBonusRules, setTopBonusRules] = useState<TopBonusRule[]>([]);
-  const [paymentOverview, setPaymentOverview] = useState<WorkerPaymentOverview[]>([]);
-  const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>([]);
-  const [topWorkers, setTopWorkers] = useState<Record<Role, TopWorker[]>>({
-    'Website Researcher': [],
-    'LinkedIn Researcher': [],
-    'Website Inquirer': [],
-    'LinkedIn Inquirer': [],
-    'Website Inquirer Auditor': [],
-    'LinkedIn Inquirer Auditor': [],
-    'Website Research Auditor': [],
-    'LinkedIn Research Auditor': [],
-  });
+  const [prices, setPrices] = useState<ActionPrice[]>([]);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [stats, setStats] = useState<PaymentStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterRole, setFilterRole] = useState<Role | ''>('');
-  const [filterCategory, setFilterCategory] = useState('');
-  const [filterWorker, setFilterWorker] = useState('');
-  const [filterStatus, setFilterStatus] = useState<Status | ''>('');
-  const [editRule, setEditRule] = useState<PricingRule | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pricing' | 'payments'>('pricing');
 
-  // --- Fetch Data ---
+  // Filter/Search
+  const [filterRole, setFilterRole] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Modals
+  const [showPriceModal, setShowPriceModal] = useState(false);
+  const [editingPrice, setEditingPrice] = useState<ActionPrice | null>(null);
+  const [formRole, setFormRole] = useState('');
+  const [formActionType, setFormActionType] = useState('');
+  const [formAmount, setFormAmount] = useState('');
+  const [formBonus, setFormBonus] = useState('1.0');
+  const [formDescription, setFormDescription] = useState('');
+
+  const [selectedPayments, setSelectedPayments] = useState<Set<string>>(new Set());
+
+  // --- Load Data ---
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      fetchPricingRules(),
-      fetchWorkerBonuses(),
-      fetchTopBonusRules(),
-      fetchPaymentOverview(),
-      fetchPaymentRecords(),
-      ...roles.map(role => fetchTopWorkers(role)),
-    ]).then(
-      ([rules, bonuses, topBonuses, overview, records, ...topWorkersArr]) => {
-        setPricingRules(rules);
-        setWorkerBonuses(bonuses);
-        setTopBonusRules(topBonuses);
-        setPaymentOverview(overview);
-        setPaymentRecords(records);
-        const topWorkersObj: Record<Role, TopWorker[]> = {
-          'Website Researcher': [],
-          'LinkedIn Researcher': [],
-          'Website Inquirer': [],
-          'LinkedIn Inquirer': [],
-          'Website Inquirer Auditor': [],
-          'LinkedIn Inquirer Auditor': [],
-          'Website Research Auditor': [],
-          'LinkedIn Research Auditor': [],
-        };
-        roles.forEach((role, idx) => {
-          topWorkersObj[role] = topWorkersArr[idx];
-        });
-        setTopWorkers(topWorkersObj);
-        setLoading(false);
-      }
-    );
+    loadAllData();
   }, []);
 
+  const loadAllData = async () => {
+    try {
+      setLoading(true);
+      const [pricesRes, paymentsRes, statsRes] = await Promise.all([
+        axios.get('/api/payments/prices'),
+        axios.get('/api/payments/all?limit=1000'),
+        axios.get('/api/payments/stats'),
+      ]);
+
+      setPrices(pricesRes.data);
+      setPayments(paymentsRes.data?.data || []);
+      setStats(statsRes.data);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Price Management ---
+
+  const handleCreatePrice = () => {
+    setEditingPrice(null);
+    setFormRole('');
+    setFormActionType('');
+    setFormAmount('');
+    setFormBonus('1.0');
+    setFormDescription('');
+    setShowPriceModal(true);
+  };
+
+  const handleEditPrice = (price: ActionPrice) => {
+    setEditingPrice(price);
+    setFormRole(price.roleId);
+    setFormActionType(price.actionType);
+    setFormAmount(price.amount.toString());
+    setFormBonus(price.bonusMultiplier.toString());
+    setFormDescription(price.description || '');
+    setShowPriceModal(true);
+  };
+
+  const handleSavePrice = async () => {
+    try {
+      setSaving(true);
+
+      if (!formRole || !formActionType || !formAmount) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      const data = {
+        roleId: formRole,
+        actionType: formActionType,
+        amount: parseFloat(formAmount),
+        bonusMultiplier: parseFloat(formBonus),
+        description: formDescription,
+      };
+
+      if (editingPrice) {
+        await axios.patch(`/api/payments/prices/${editingPrice.id}`, {
+          amount: data.amount,
+          bonusMultiplier: data.bonusMultiplier,
+          description: data.description,
+        });
+      } else {
+        await axios.post('/api/payments/prices', data);
+      }
+
+      setShowPriceModal(false);
+      loadAllData();
+    } catch (error) {
+      console.error('Error saving price:', error);
+      alert('Failed to save pricing rule');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePrice = async (id: string) => {
+    if (!window.confirm('Delete this pricing rule?')) return;
+
+    try {
+      await axios.delete(`/api/payments/prices/${id}`);
+      loadAllData();
+    } catch (error) {
+      console.error('Error deleting price:', error);
+      alert('Failed to delete pricing rule');
+    }
+  };
+
+  // --- Payment Management ---
+
+  const handleApprovePayment = async (paymentId: string) => {
+    try {
+      await axios.patch(`/api/payments/approve/${paymentId}`);
+      loadAllData();
+    } catch (error) {
+      console.error('Error approving payment:', error);
+    }
+  };
+
+  const handleProcessPayments = async () => {
+    if (selectedPayments.size === 0) {
+      alert('Select payments to process');
+      return;
+    }
+
+    try {
+      await axios.patch('/api/payments/process', {
+        paymentIds: Array.from(selectedPayments),
+      });
+      setSelectedPayments(new Set());
+      loadAllData();
+    } catch (error) {
+      console.error('Error processing payments:', error);
+      alert('Failed to process payments');
+    }
+  };
+
+  const handleRejectPayment = async (paymentId: string) => {
+    if (!window.confirm('Reject this payment?')) return;
+
+    try {
+      await axios.patch(`/api/payments/reject/${paymentId}`);
+      loadAllData();
+    } catch (error) {
+      console.error('Error rejecting payment:', error);
+    }
+  };
+
   // --- Filtering ---
-  const filteredPricingRules = pricingRules.filter(rule => {
-    if (filterRole && rule.role !== filterRole) return false;
-    if (filterCategory && rule.category !== filterCategory) return false;
-    if (filterStatus && rule.status !== filterStatus) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (
-        !rule.actionType.toLowerCase().includes(q) &&
-        !rule.role.toLowerCase().includes(q) &&
-        !rule.category.toLowerCase().includes(q)
-      )
-        return false;
+
+  const filteredPrices = prices.filter(p => {
+    if (filterRole && p.roleId !== filterRole) return false;
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      if (!p.actionType.includes(q) && !p.roleId.includes(q)) return false;
     }
     return true;
   });
 
-  const filteredPayments = paymentOverview.filter(p => {
+  const filteredPayments = payments.filter(p => {
     if (filterRole && p.role !== filterRole) return false;
-    if (filterCategory && p.category !== filterCategory) return false;
-    if (filterWorker && !p.name.toLowerCase().includes(filterWorker.toLowerCase())) return false;
+    if (filterStatus && p.status !== filterStatus) return false;
     return true;
   });
 
-  // --- Stats ---
-  const totalPending = paymentOverview.reduce((acc, p) => acc + p.pending, 0);
-  const totalPaid = paymentOverview.reduce((acc, p) => acc + p.totalPaid, 0);
-  const outstanding = paymentOverview.reduce((acc, p) => acc + p.totalEarned - p.totalPaid, 0);
-
-  // --- Handlers ---
-  const handleEdit = (rule: PricingRule) => setEditRule(rule);
-  const handleDelete = async (id: string) => {
-    // TODO: Implement API call to delete pricing rule
-    setPricingRules(prev => prev.filter(r => r.id !== id));
-  };
-  const handleEnableToggle = async (id: string, status: Status) => {
-    // TODO: Implement API call to enable/disable pricing rule
-    setPricingRules(prev =>
-      prev.map(r => (r.id === id ? { ...r, status } : r))
-    );
-  };
-  const handleSaveEdit = async (updated: PricingRule) => {
-    // TODO: Implement API call to update pricing rule
-    setPricingRules(prev =>
-      prev.map(r => (r.id === updated.id ? updated : r))
-    );
-    setEditRule(null);
-  };
-  const handleCreate = async (newRule: PricingRule) => {
-    // TODO: Implement API call to create pricing rule
-    setPricingRules(prev => [...prev, newRule]);
-    setShowCreateModal(false);
-  };
-
   // --- Render ---
-  if (loading)
-    return <div className="page-loader">Loading Pricing & Payments...</div>;
 
+  if (loading) {
+    return <div className="page-loader">Loading Pricing & Payments...</div>;
+  }
+
+  const getStatusBadge = (status: string) => {
+    const colors: Record<string, string> = {
+      pending: '#FFC107',
+      approved: '#2196F3',
+      paid: '#4CAF50',
+      rejected: '#F44336',
+    };
+    return <span style={{ color: colors[status] || '#999', fontWeight: 'bold' }}>● {status}</span>;
+  };
   return (
-    <div className="categories-container">
+    <div className="pricing-container">
       {/* Header */}
-      <header className="categories-header">
+      <header className="pricing-header">
         <div className="header-left">
-          <h1>Pricing & Payment Configuration</h1>
-          <p>
-            Manage action-based pricing, bonuses, and payment lifecycle for all roles and categories.
-          </p>
+          <h1>💰 Pricing & Payment Management</h1>
+          <p>Configure action pricing for all roles and manage payment lifecycle</p>
         </div>
         <div className="header-actions">
-          <button className="btn-export" onClick={() => alert('Export coming soon!')}>Export Payments</button>
-          <button className="btn-add-category" onClick={() => setShowCreateModal(true)}>
+          <button className="btn-primary" onClick={handleCreatePrice}>
             + Add Pricing Rule
           </button>
         </div>
       </header>
 
       {/* Stats */}
-      <section className="categories-stats-grid">
-        <StatCard title="Total Pending Payments" value={totalPending.toFixed(2)} />
-        <StatCard title="Total Paid" value={totalPaid.toFixed(2)} />
-        <StatCard title="Outstanding Balance" value={outstanding.toFixed(2)} />
-      </section>
+      {stats && (
+        <section className="pricing-stats">
+          <StatCard
+            title="Pending Payments"
+            value={`${stats.byStatus.pending || 0}`}
+            subtitle={`Amount: $${Object.values(payments)
+              .filter(p => p.status === 'pending')
+              .reduce((sum, p) => sum + p.amount, 0)
+              .toFixed(2)}`}
+          />
+          <StatCard
+            title="Approved (In-Process)"
+            value={`${stats.byStatus.approved || 0}`}
+            subtitle={`Amount: $${Object.values(payments)
+              .filter(p => p.status === 'approved')
+              .reduce((sum, p) => sum + p.amount, 0)
+              .toFixed(2)}`}
+          />
+          <StatCard
+            title="Paid (Completed)"
+            value={`${stats.byStatus.paid || 0}`}
+            subtitle={`Amount: $${Object.values(payments)
+              .filter(p => p.status === 'paid')
+              .reduce((sum, p) => sum + p.amount, 0)
+              .toFixed(2)}`}
+          />
+          <StatCard
+            title="Total Amount"
+            value={`$${stats.totalAmount?.toFixed(2) || '0.00'}`}
+            subtitle={`Across all roles`}
+          />
+        </section>
+      )}
 
-      {/* Filters */}
-      <div className="management-bar">
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="Search by action, role, category..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+      {/* Tabs */}
+      <div className="pricing-tabs">
+        <div className="tab-buttons">
+          <button 
+            className={`tab-button ${activeTab === 'pricing' ? 'active' : ''}`}
+            onClick={() => setActiveTab('pricing')}
+          >
+            Pricing Rules
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'payments' ? 'active' : ''}`}
+            onClick={() => setActiveTab('payments')}
+          >
+            Payment Records
+          </button>
         </div>
-        <div className="filter-group">
-          <select value={filterRole} onChange={e => setFilterRole(e.target.value as Role | '')}>
-            <option value="">All Roles</option>
-            {roles.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-          <input
-            type="text"
-            placeholder="Category"
-            value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Worker"
-            value={filterWorker}
-            onChange={e => setFilterWorker(e.target.value)}
-          />
-          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as Status | '')}>
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          <button className="btn-clear" onClick={() => {
-            setSearch('');
-            setFilterRole('');
-            setFilterCategory('');
-            setFilterWorker('');
-            setFilterStatus('');
-          }}>Clear</button>
-        </div>
-      </div>
 
-      {/* Pricing Rules Table */}
-      <div className="categories-card">
-        <h3>Pricing Rules</h3>
-        <div className="table-responsive">
-          <table className="categories-table">
-            <thead>
-              <tr>
-                <th>Action</th>
-                <th>Role</th>
-                <th>Category</th>
-                <th>Unit Price</th>
-                <th>Bonus</th>
-                <th>Status</th>
-                <th>Effective Date</th>
-                <th className="txt-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPricingRules.map(rule => (
-                <tr key={rule.id}>
-                  <td>{rule.actionType}</td>
-                  <td><span className="category-tag">{rule.role}</span></td>
-                  <td>{rule.category}</td>
-                  <td>
-                    <span className="price-badge">${rule.unitPrice.toFixed(2)}</span>
-                  </td>
-                  <td>
-                    <span className="bonus-badge">+${rule.bonus.toFixed(2)}</span>
-                  </td>
-                  <td>
-                    <span className={`status-pill ${rule.status}`}>
-                      {rule.status === 'active' ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td>{rule.effectiveDate ? new Date(rule.effectiveDate).toLocaleDateString() : '-'}</td>
-                  <td className="txt-right">
-                    <button className="btn-icon-act edit" onClick={() => handleEdit(rule)}>Edit</button>
-                    <button className="btn-icon-act delete" onClick={() => handleDelete(rule.id)}>Delete</button>
-                    <button
-                      className="btn-icon-act"
-                      onClick={() => handleEnableToggle(rule.id, rule.status === 'active' ? 'inactive' : 'active')}
-                    >
-                      {rule.status === 'active' ? 'Disable' : 'Enable'}
-                    </button>
-                  </td>
+        {/* Pricing Rules Tab */}
+        {activeTab === 'pricing' && (
+          <div className="tab-content">
+            {/* Filters */}
+            <div className="pricing-filters">
+              <input
+                type="text"
+                placeholder="Search actions or roles..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="filter-input"
+              />
+              <select
+                value={filterRole}
+                onChange={e => setFilterRole(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">All Roles</option>
+                {ROLES.map(role => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Pricing Table */}
+            <table className="pricing-table">
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Action Type</th>
+                  <th>Unit Price</th>
+                  <th>Bonus Multiplier</th>
+                  <th>Description</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Bonus Management */}
-      <div className="categories-card">
-        <h3>Bonus Management</h3>
-        <div>
-          <h4>Worker-Specific Bonuses</h4>
-          <table className="categories-table">
-            <thead>
-              <tr>
-                <th>Worker</th>
-                <th>Role</th>
-                <th>Bonus</th>
-                <th>Expires At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {workerBonuses.map(b => (
-                <tr key={b.id}>
-                  <td>{b.workerId}</td>
-                  <td>{b.role}</td>
-                  <td><span className="bonus-badge">+${b.bonus.toFixed(2)}</span></td>
-                  <td>{b.expiresAt ? new Date(b.expiresAt).toLocaleDateString() : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div style={{ marginTop: 24 }}>
-          <h4>Top-3 Bonus per Role</h4>
-          {roles.map(role => (
-            <div key={role} style={{ marginBottom: 16 }}>
-              <h5>{role} Top 3</h5>
-              <table className="categories-table">
-                <thead>
+              </thead>
+              <tbody>
+                {filteredPrices.length === 0 ? (
                   <tr>
-                    <th>Rank</th>
-                    <th>Worker</th>
-                    <th>Approved Actions</th>
-                    <th>Approval Rate</th>
-                    <th>Bonus</th>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
+                      No pricing rules found
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {(topWorkers[role] || []).map(w => (
-                    <tr key={w.workerId}>
-                      <td>{w.rank}</td>
-                      <td>{w.name}</td>
-                      <td>{w.approvedActions}</td>
-                      <td>{(w.approvalRate * 100).toFixed(1)}%</td>
+                ) : (
+                  filteredPrices.map(price => (
+                    <tr key={price.id}>
                       <td>
-                        <span className="bonus-badge">
-                          +${(topBonusRules.find(b => b.role === role && b.rank === w.rank)?.bonus ?? 0).toFixed(2)}
-                        </span>
+                        <strong>{price.roleId}</strong>
+                      </td>
+                      <td>{price.actionType}</td>
+                      <td>${price.amount.toFixed(2)}</td>
+                      <td>{price.bonusMultiplier.toFixed(2)}x</td>
+                      <td>{price.description || '-'}</td>
+                      <td className="actions-cell">
+                        <button
+                          className="btn-edit"
+                          onClick={() => handleEditPrice(price)}
+                          title="Edit"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn-delete"
+                          onClick={() => handleDeletePrice(price.id)}
+                          title="Delete"
+                        >
+                          Delete
+                        </button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Payment Records Tab */}
+        {activeTab === 'payments' && (
+          <div className="tab-content">
+            <div className="pricing-filters">
+              <select
+                value={filterRole}
+                onChange={e => setFilterRole(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">All Roles</option>
+                {ROLES.map(role => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filterStatus}
+                onChange={e => setFilterStatus(e.target.value)}
+                className="filter-select"
+              >
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="paid">Paid</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              {selectedPayments.size > 0 && (
+                <button className="btn-primary" onClick={handleProcessPayments}>
+                  Mark {selectedPayments.size} as Paid
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Payment Overview */}
-      <div className="categories-card">
-        <h3>Payment Overview</h3>
-        <div className="table-responsive">
-          <table className="categories-table">
-            <thead>
-              <tr>
-                <th>Worker</th>
-                <th>Role</th>
-                <th>Category</th>
-                <th>Total Earned</th>
-                <th>Total Paid</th>
-                <th>Pending</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPayments.map(p => (
-                <tr key={p.workerId + p.role + p.category}>
-                  <td>{p.name}</td>
-                  <td>{p.role}</td>
-                  <td>{p.category}</td>
-                  <td>${p.totalEarned.toFixed(2)}</td>
-                  <td>${p.totalPaid.toFixed(2)}</td>
-                  <td>${p.pending.toFixed(2)}</td>
+            {/* Payments Table */}
+            <table className="pricing-table">
+              <thead>
+                <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      onChange={e => {
+                        if (e.target.checked) {
+                          const newSet = new Set(
+                            filteredPayments.map(p => p.id)
+                          );
+                          setSelectedPayments(newSet);
+                        } else {
+                          setSelectedPayments(new Set());
+                        }
+                      }}
+                      checked={selectedPayments.size === filteredPayments.length && filteredPayments.length > 0}
+                    />
+                  </th>
+                  <th>User ID</th>
+                  <th>Role</th>
+                  <th>Action</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredPayments.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: '20px' }}>
+                      No payments found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPayments.map(payment => (
+                    <tr key={payment.id}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedPayments.has(payment.id)}
+                          onChange={e => {
+                            const newSet = new Set(selectedPayments);
+                            if (e.target.checked) {
+                              newSet.add(payment.id);
+                            } else {
+                              newSet.delete(payment.id);
+                            }
+                            setSelectedPayments(newSet);
+                          }}
+                        />
+                      </td>
+                      <td>{payment.userId.substring(0, 8)}...</td>
+                      <td>{payment.role}</td>
+                      <td>{payment.actionType}</td>
+                      <td>${payment.amount.toFixed(2)}</td>
+                      <td>{getStatusBadge(payment.status)}</td>
+                      <td>{new Date(payment.createdAt || '').toLocaleDateString()}</td>
+                      <td className="actions-cell">
+                        {payment.status === 'pending' && (
+                          <button
+                            className="btn-approve"
+                            onClick={() => handleApprovePayment(payment.id)}
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {payment.status !== 'paid' && payment.status !== 'rejected' && (
+                          <button
+                            className="btn-reject"
+                            onClick={() => handleRejectPayment(payment.id)}
+                          >
+                            Reject
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Payment Records */}
-      <div className="categories-card">
-        <h3>Payment History</h3>
-        <div className="table-responsive">
-          <table className="categories-table">
-            <thead>
-              <tr>
-                <th>Worker</th>
-                <th>Role</th>
-                <th>Category</th>
-                <th>Period</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Payment Date</th>
-                <th>Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paymentRecords.map(r => (
-                <tr key={r.id}>
-                  <td>{r.workerId}</td>
-                  <td>{r.role}</td>
-                  <td>{r.category}</td>
-                  <td>
-                    {new Date(r.periodStart).toLocaleDateString()} - {new Date(r.periodEnd).toLocaleDateString()}
-                  </td>
-                  <td>${r.amount.toFixed(2)}</td>
-                  <td>
-                    <span className={`status-pill ${r.status === 'paid' ? 'active' : 'inactive'}`}>
-                      {r.status.charAt(0).toUpperCase() + r.status.slice(1)}
-                    </span>
-                  </td>
-                  <td>{r.paymentDate ? new Date(r.paymentDate).toLocaleDateString() : '-'}</td>
-                  <td>{r.notes || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Create/Edit Modal */}
-      {(showCreateModal || editRule) && (
+      {/* Price Modal */}
+      {showPriceModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 600 }}>
-            <h2>{editRule ? 'Edit Pricing Rule' : 'Create Pricing Rule'}</h2>
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                const fd = new FormData(e.currentTarget as HTMLFormElement);
-                const newRule: PricingRule = {
-                  id: editRule ? editRule.id : Date.now().toString(),
-                  actionType: fd.get('actionType') as string,
-                  role: fd.get('role') as Role,
-                  category: fd.get('category') as string,
-                  unitPrice: Number(fd.get('unitPrice')),
-                  bonus: Number(fd.get('bonus')),
-                  status: fd.get('status') as Status,
-                  effectiveDate: fd.get('effectiveDate') as string,
-                };
-                if (editRule) handleSaveEdit(newRule);
-                else handleCreate(newRule);
-              }}
-            >
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2>{editingPrice ? 'Edit Pricing Rule' : 'Add Pricing Rule'}</h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowPriceModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body">
               <div className="form-group">
-                <label>Action Type</label>
-                <input name="actionType" defaultValue={editRule?.actionType || ''} required />
-              </div>
-              <div className="form-group">
-                <label>Role</label>
-                <select name="role" defaultValue={editRule?.role || roles[0]}>
-                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                <label>Role *</label>
+                <select
+                  value={formRole}
+                  onChange={e => {
+                    setFormRole(e.target.value);
+                    setFormActionType('');
+                  }}
+                  disabled={!!editingPrice}
+                >
+                  <option value="">Select Role</option>
+                  {ROLES.map(role => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
                 </select>
               </div>
+
               <div className="form-group">
-                <label>Category</label>
-                <input name="category" defaultValue={editRule?.category || ''} required />
-              </div>
-              <div className="form-group">
-                <label>Unit Price (USD)</label>
-                <input type="number" name="unitPrice" min={0} step={0.01} defaultValue={editRule?.unitPrice || 0} required />
-              </div>
-              <div className="form-group">
-                <label>Bonus (USD)</label>
-                <input type="number" name="bonus" min={0} step={0.01} defaultValue={editRule?.bonus || 0} />
-              </div>
-              <div className="form-group">
-                <label>Status</label>
-                <select name="status" defaultValue={editRule?.status || 'active'}>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                <label>Action Type *</label>
+                <select
+                  value={formActionType}
+                  onChange={e => setFormActionType(e.target.value)}
+                  disabled={!formRole || !!editingPrice}
+                >
+                  <option value="">Select Action</option>
+                  {formRole && (ACTION_TYPES[formRole] || [])?.map((action: string) => (
+                    <option key={action} value={action}>
+                      {action}
+                    </option>
+                  ))}
                 </select>
               </div>
+
               <div className="form-group">
-                <label>Effective Date</label>
-                <input type="date" name="effectiveDate" defaultValue={editRule?.effectiveDate ? editRule.effectiveDate.slice(0,10) : ''} />
+                <label>Unit Price ($) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formAmount}
+                  onChange={e => setFormAmount(e.target.value)}
+                  placeholder="e.g., 10.50"
+                />
               </div>
-              <div className="modal-actions">
-                <button type="button" onClick={() => { setEditRule(null); setShowCreateModal(false); }}>Cancel</button>
-                <button type="submit">{editRule ? 'Save' : 'Create'}</button>
+
+              <div className="form-group">
+                <label>Bonus Multiplier (for top 3)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={formBonus}
+                  onChange={e => setFormBonus(e.target.value)}
+                  placeholder="e.g., 1.5"
+                />
               </div>
-            </form>
+
+              <div className="form-group">
+                <label>Description</label>
+                <input
+                  type="text"
+                  value={formDescription}
+                  onChange={e => setFormDescription(e.target.value)}
+                  placeholder="e.g., Standard research submission"
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-secondary"
+                onClick={() => setShowPriceModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn-primary"
+                onClick={handleSavePrice}
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       )}

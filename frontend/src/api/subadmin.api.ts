@@ -140,14 +140,23 @@ export async function getLinkedInResearchTasks(
   status?: string,
   limit = 50,
   offset = 0,
-): Promise<ResearchItem[]> {
+): Promise<{ data: ResearchItem[]; total: number }> {
   try {
     const params: any = { limit, offset };
     if (categoryId) params.categoryId = categoryId;
     if (status && status !== 'all') params.status = status;
 
     const response = await client.get('/subadmin/research/linkedin', { params });
-    return response.data || [];
+    
+    // Handle both array and paginated response
+    if (Array.isArray(response.data)) {
+      return { data: response.data, total: response.data.length };
+    }
+    
+    return {
+      data: response.data?.data || [],
+      total: response.data?.total || 0,
+    };
   } catch (error: any) {
     console.error('Failed to fetch LinkedIn research tasks:', error);
     throw error;
@@ -235,7 +244,7 @@ export async function getInquiryTasks(
   status?: string,
   limit = 50,
   offset = 0,
-): Promise<any[]> {
+): Promise<{ data: any[]; total: number }> {
   try {
     const params: any = { limit, offset };
     if (categoryId) params.categoryId = categoryId;
@@ -243,7 +252,16 @@ export async function getInquiryTasks(
     if (status && status !== 'all') params.status = status;
 
     const response = await client.get('/subadmin/inquiry', { params });
-    return response.data || [];
+    
+    // Handle both array and paginated response
+    if (Array.isArray(response.data)) {
+      return { data: response.data, total: response.data.length };
+    }
+    
+    return {
+      data: response.data?.data || [],
+      total: response.data?.total || 0,
+    };
   } catch (error: any) {
     console.error('Failed to fetch inquiry tasks:', error);
     throw error;
@@ -520,4 +538,54 @@ export async function updateCategoryRuleCooldown(
     cooldownDaysOverride,
   });
   return response.data;
+}
+
+/**
+ * Get pending research tasks for review
+ */
+export async function getPendingResearchTasks(
+  limit = 50,
+  offset = 0,
+): Promise<{ data: any[]; total: number }> {
+  try {
+    const params: any = { limit, offset };
+    const response = await client.get('/subadmin/pending/research', { params });
+    
+    if (Array.isArray(response.data)) {
+      return { data: response.data, total: response.data.length };
+    }
+    
+    return {
+      data: response.data?.data || [],
+      total: response.data?.total || 0,
+    };
+  } catch (error: any) {
+    console.error('Failed to fetch pending research tasks:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get pending inquiry tasks for review
+ */
+export async function getPendingInquiryTasks(
+  limit = 50,
+  offset = 0,
+): Promise<{ data: any[]; total: number }> {
+  try {
+    const params: any = { limit, offset };
+    const response = await client.get('/subadmin/pending/inquiry', { params });
+    
+    if (Array.isArray(response.data)) {
+      return { data: response.data, total: response.data.length };
+    }
+    
+    return {
+      data: response.data?.data || [],
+      total: response.data?.total || 0,
+    };
+  } catch (error: any) {
+    console.error('Failed to fetch pending inquiry tasks:', error);
+    throw error;
+  }
 }
