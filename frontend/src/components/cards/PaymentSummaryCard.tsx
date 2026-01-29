@@ -36,9 +36,16 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
       const response = await axios.get(
         `/api/payments/summary/${userId || 'current'}`,
       );
-      setSummary(response.data);
+      // Validate response structure before setting
+      if (response.data && response.data.pending && response.data.inProcess && response.data.completed) {
+        setSummary(response.data);
+      } else {
+        console.error('Invalid payment summary structure:', response.data);
+        setSummary(null);
+      }
     } catch (error) {
       console.error('Error loading payment summary:', error);
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -52,7 +59,14 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
     );
   }
 
+  // Don't render if no data (API error or not authenticated)
   if (!summary) {
+    return null;
+  }
+
+  // Additional safety check
+  if (!summary.pending || !summary.inProcess || !summary.completed) {
+    console.error('Invalid summary data structure:', summary);
     return null;
   }
 
